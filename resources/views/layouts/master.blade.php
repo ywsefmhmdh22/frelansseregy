@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -314,8 +314,8 @@
                     <h1>نفذ مشروعك بسهولة مع<br>أفضل المستقلين في الوطن العربي</h1>
                     <p class="lead text-muted mb-4 fs-6 fs-md-5">نوفر لك بيئة آمنة واحترافية لتحويل أفكارك إلى واقع، مع شبكة متكاملة من الخبراء.</p>
                     <div class="hero-btns mt-4 d-flex flex-wrap justify-content-center gap-2 gap-md-3">
-                        <a href="Projects" class="boxed-btn"><i class="fas fa-briefcase me-2"></i> تصفح المشاريع</a>
-                        <a href="contact" class="bordered-btn"><i class="fas fa-envelope me-2"></i> تواصل معنا</a>
+                        <a href="/Projects" class="boxed-btn"><i class="fas fa-briefcase me-2"></i> تصفح المشاريع</a>
+                        <a href="/contact" class="bordered-btn"><i class="fas fa-envelope me-2"></i> تواصل معنا</a>
                     </div>
                 </div>
             </div>
@@ -356,7 +356,7 @@
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 
 <script>
-    // 1. إشعارات السيشن (Laravel Sessions)
+    // 1. إشعارات السيشن
     @if(session('success'))
         Swal.fire({
             icon: 'success',
@@ -369,21 +369,9 @@
         });
     @endif
 
-    @if(session('error'))
-        Swal.fire({
-            icon: 'error',
-            title: 'خطأ!',
-            text: "{{ session('error') }}",
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 4000
-        });
-    @endif
-
-    // 2. إعداد Pusher لاستقبال الإشعارات اللحظية
-    var pusher = new Pusher('YOUR_APP_KEY', {
-        cluster: 'mt1',
+    // 2. إعداد Pusher - تم تحديث المفاتيح من ملفك الـ .env
+    var pusher = new Pusher('7b3a7562c0aea93ec1a1', {
+        cluster: 'eu',
         forceTLS: true
     });
 
@@ -392,7 +380,6 @@
         Swal.fire({
             icon: 'info',
             title: 'رسالة جديدة من ' + (data.message.user_name || 'مستخدم'),
-            // التعديل هنا: استخدام html بدلاً من text لعرض الصور والإيموجي بشكل صحيح
             html: data.message.content,
             toast: true,
             position: 'top-start',
