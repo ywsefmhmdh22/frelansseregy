@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -229,7 +229,7 @@
                         <ul class="dropdown-menu text-end border-0 shadow-sm">
                             <li><a class="dropdown-item" href="/Projects">المشاريع</a></li>
                             <li><a class="dropdown-item" href="/Services">الخدمات</a></li>
-                            <li><a class="dropdown-item" href="/Works">الأعمال</a></li>
+                             <li><a class="dropdown-item" href="{{ route('works.index') }}">الأعمال</a></li>
                             <li><a class="dropdown-item" href="/contact">تواصل معنا</a></li>
                         </ul>
                     </li>
@@ -297,9 +297,6 @@
                             </button>
                         </form>
                     @endauth
-
-                    <a class="text-dark fs-5" href="#"><i class="fas fa-shopping-cart"></i></a>
-                    <a class="text-dark fs-5" href="#"><i class="fas fa-search"></i></a>
                 </div>
             </div>
         </nav>
@@ -315,7 +312,9 @@
                     <p class="lead text-muted mb-4 fs-6 fs-md-5">نوفر لك بيئة آمنة واحترافية لتحويل أفكارك إلى واقع، مع شبكة متكاملة من الخبراء.</p>
                     <div class="hero-btns mt-4 d-flex flex-wrap justify-content-center gap-2 gap-md-3">
                         <a href="/Projects" class="boxed-btn"><i class="fas fa-briefcase me-2"></i> تصفح المشاريع</a>
-                        <a href="/contact" class="bordered-btn"><i class="fas fa-envelope me-2"></i> تواصل معنا</a>
+                         <a href="{{ route('support.tickets') }}" class="bordered-btn">
+    <i class="fas fa-headset me-2"></i> الدعم الفني
+</a>
                     </div>
                 </div>
             </div>

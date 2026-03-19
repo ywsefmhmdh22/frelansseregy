@@ -28,23 +28,24 @@ class ProfileCompletionController extends Controller
             'skills'        => 'required|string|max:255',
             'bio'           => 'required|string|min:30',
             'country'       => 'required|string',
-            'id_number'     => 'required|string|unique:users,id_number',
-            'id_image'      => 'required|image|mimes:jpeg,png,jpg|max:2048', // الحد الأقصى 2 ميجا
+            'id_number'     => 'required|string|unique:users,id_number,' . Auth::id(), // السماح بتحديث نفس الرقم للمستخدم الحالي
+            'id_image'      => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'id_image_back' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $user = Auth::user();
 
         // 2. معالجة رفع صور الهوية
-        $idFrontPath = null;
-        $idBackPath  = null;
+        $idFrontPath = $user->id_image;
+        $idBackPath  = $user->id_image_back;
 
         if ($request->hasFile('id_image')) {
-            // تخزين في: storage/app/public/identities
+            if ($user->id_image) Storage::delete('public/' . $user->id_image);
             $idFrontPath = $request->file('id_image')->store('identities', 'public');
         }
 
         if ($request->hasFile('id_image_back')) {
+            if ($user->id_image_back) Storage::delete('public/' . $user->id_image_back);
             $idBackPath = $request->file('id_image_back')->store('identities', 'public');
         }
 
@@ -58,47 +59,43 @@ class ProfileCompletionController extends Controller
             'id_image'             => $idFrontPath,
             'id_image_back'        => $idBackPath,
             'is_profile_completed' => true,
-            'verification_status'  => 'pending', // الحالة الافتراضية حتى يراجعها الأدمن
+            'verification_status'  => 'pending', // الحالة ترجع انتظار حتى يراجعها الأدمن
         ]);
 
-        // 4. التوجيه الذكي بناءً على رتبة المستخدم (Role)
+        // 4. التوجيه الذكي (إرسال رابط التوجيه كـ JSON ليتعامل معه Axios)
+        $redirectUrl = route('home');
+
         if ($user->role === 'freelancer') {
-            return redirect()->route('freelancer.dashboard')->with('success', 'تم إرسال بياناتك بنجاح، وهي قيد المراجعة الآن.');
+            $redirectUrl = route('freelancer.dashboard');
+        } elseif ($user->role === 'client') {
+            $redirectUrl = route('client.dashboard');
         }
 
-        if ($user->role === 'client') {
-            return redirect()->route('client.dashboard')->with('success', 'تم إرسال بياناتك بنجاح، وهي قيد المراجعة الآن.');
-        }
-
-        // في حال عدم وجود رتبة محددة، يرجع للهوم
-        return redirect()->route('home')->with('success', 'تم حفظ البيانات بنجاح.');
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إرسال بياناتك بنجاح، وهي قيد المراجعة الآن.',
+            'redirect_to' => $redirectUrl
+        ]);
     }
 
     /**
-     * تحديث الصورة الشخصية (الإضافة المطلوبة لزر الكاميرا)
+     * تحديث الصورة الشخصية
      */
     public function updateImage(Request $request)
     {
-        // 1. التحقق من الصورة الشخصية
         $request->validate([
             'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $user = Auth::user();
 
-        // 2. حذف الصورة القديمة إذا وجدت لتوفير المساحة
         if ($user->profile_image) {
             Storage::delete('public/' . $user->profile_image);
         }
 
-        // 3. رفع الصورة الجديدة في مجلد profile_images
         if ($request->hasFile('profile_image')) {
             $path = $request->file('profile_image')->store('profile_images', 'public');
-
-            // 4. تحديث قاعدة البيانات
-            $user->update([
-                'profile_image' => $path
-            ]);
+            $user->update(['profile_image' => $path]);
         }
 
         return back()->with('success', 'تم تحديث الصورة الشخصية بنجاح!');
