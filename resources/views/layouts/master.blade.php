@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -8,201 +8,190 @@
 
     <title>FreelancerPro - منصة العمل الحر</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
 
 <style>
-    /* التنسيقات الأساسية والخلفية المتدرجة */
+    :root {
+        --primary-color: #047857;
+        --secondary-color: #d97706;
+        --bg-soft: #f8fafc;
+        --sidebar-width: 110px;
+        --glass-bg: rgba(255, 255, 255, 0.8);
+        --card-bg: #ffffff;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border-color: rgba(0,0,0,0.05);
+        --nav-hover: #ecfdf5;
+    }
+
+    /* --- Dark Mode Variables --- */
+    [data-theme="dark"] {
+        --bg-soft: #0f172a;
+        --glass-bg: rgba(30, 41, 59, 0.8);
+        --card-bg: #1e293b;
+        --text-main: #f1f5f9;
+        --text-muted: #94a3b8;
+        --border-color: rgba(255,255,255,0.1);
+        --nav-hover: rgba(4, 120, 87, 0.2);
+    }
+
     body {
         margin: 0;
-        padding: 0;
         font-family: 'Cairo', sans-serif;
-        background: linear-gradient(180deg, #d8ebd9 0%, #f4f7f4 100%);
-        color: #1e293b;
+        background: var(--bg-soft);
+        color: var(--text-main);
         min-height: 100vh;
-        display: flex;
-        flex-direction: column;
         overflow-x: hidden;
-        position: relative;
+        transition: background 0.3s, color 0.3s;
     }
 
-    /* إعدادات مساحة الأكواد في الخلفية */
     #bg-canvas {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
         z-index: -1;
-        pointer-events: none;
+        opacity: 0.8;
     }
 
-    /* الهيدر المتجاوب */
-    .top-header-area {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(15px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        transition: all 0.3s ease;
-    }
-
-    .navbar {
-        padding: 15px 0;
-    }
-
-    /* اللوجو */
-    .site-logo h1 {
-        color: #10b981;
-        font-weight: 800;
-        margin: 0;
-        font-size: 28px;
-    }
-    .site-logo span {
-        color: #3b82f6;
-    }
-
-    /* تخصيص القوائم لتناسب الموبايل والشاشات الكبيرة */
-    .nav-link {
-        color: #334155 !important;
-        font-weight: 600;
-        transition: color 0.3s ease;
-        padding: 10px 15px !important;
-        font-size: 16px;
-    }
-
-    .nav-link:hover, .nav-link.active {
-        color: #10b981 !important;
-    }
-
-    .navbar-toggler {
-        border-color: rgba(16, 185, 129, 0.5);
-    }
-
-    .navbar-toggler-icon {
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2816, 185, 129, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-    }
-
-    /* تنسيق جرس الإشعارات */
-    .notification-dropdown .dropdown-menu {
-        width: 320px;
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        padding: 15px;
-    }
-    .notif-badge {
-        font-size: 0.6rem;
-        padding: 0.3em 0.5em;
-    }
-
-    @media (max-width: 991.98px) {
-        .navbar-collapse {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-top: 15px;
-        }
-        .header-icons {
-            justify-content: center;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-    }
-
-    /* Hero Area */
-    .hero-area {
-        padding: 100px 0;
-        position: relative;
-    }
-
-    .hero-text h1 {
-        font-size: clamp(28px, 5vw, 48px);
-        font-weight: 800;
-        line-height: 1.5;
-        color: #0f172a;
-        margin-bottom: 25px;
-    }
-
-    /* الأزرار */
-    .boxed-btn {
-        background: linear-gradient(45deg, #10b981, #059669);
-        border-radius: 30px;
-        padding: 12px 30px;
-        color: #fff;
-        font-weight: bold;
-        border: none;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        display: inline-block;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-        margin-bottom: 10px;
-    }
-
-    .bordered-btn {
-        border: 2px solid #10b981;
-        background: transparent;
-        border-radius: 30px;
-        padding: 10px 30px;
-        color: #10b981;
-        font-weight: bold;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        display: inline-block;
-        margin-bottom: 10px;
-    }
-
-    /* منطقة المحتوى لـ Laravel */
-    .main-background {
-        min-height: 400px;
-        padding: 40px 20px;
-        background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        margin-bottom: 50px;
-    }
-
-    /* الفوتر */
-    .copyright {
-        background: rgba(255, 255, 255, 0.9);
-        border-top: 1px solid #e2e8f0;
-        color: #64748b;
-        padding: 25px 0;
-        margin-top: auto;
-    }
-
-    .social-icons ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
+    /* --- Sidebar (Desktop) --- */
+    .sidebar {
+        width: var(--sidebar-width);
+        background: var(--card-bg);
+        height: 94vh;
+        position: fixed;
+        right: 20px;
+        top: 3vh;
         display: flex;
-        justify-content: center;
-        gap: 15px;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px 0;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        border-radius: 30px;
+        z-index: 1040;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
     }
 
-    .social-icons a {
-        color: #64748b;
-        transition: color 0.3s ease;
-        font-size: 1.2rem;
+    .sidebar-logo { font-size: 30px; color: var(--primary-color); margin-bottom: 30px; }
+
+    .nav-item-custom { width: 100%; text-align: center; margin-bottom: 5px; }
+
+    .nav-link-custom {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-muted);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 12px 0;
+        transition: 0.3s;
+        border-radius: 18px;
+        margin: 0 12px;
     }
 
-    .social-icons a:hover {
-        color: #10b981;
+    .nav-link-custom i { font-size: 22px; margin-bottom: 4px; }
+
+    .nav-link-custom:hover, .nav-link-custom.active {
+        color: var(--primary-color);
+        background: var(--nav-hover);
     }
 
-    .border-start-lg {
-        border-left: 1px solid #e2e8f0;
+    .nav-link-special { color: var(--secondary-color); }
+
+    /* --- Header & Wrapper --- */
+    .top-header {
+        background: var(--glass-bg);
+        backdrop-filter: blur(15px);
+        padding: 12px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        position: relative;
+        z-index: 1030;
     }
 
-    @media (max-width: 991px) {
-        .border-start-lg {
-            border-left: none;
+    .dropdown-menu {
+        z-index: 2000 !important;
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+
+    .dropdown-item { color: var(--text-main) !important; }
+
+    .search-box {
+        background: rgba(0,0,0,0.05);
+        border-radius: 12px;
+        padding: 8px 15px;
+        display: flex;
+        align-items: center;
+        width: 300px;
+    }
+    [data-theme="dark"] .search-box { background: rgba(255,255,255,0.05); }
+
+    .search-box input { border: none; background: transparent; color: var(--text-main); margin-right: 10px; width: 100%; outline: none; }
+
+    .main-wrapper {
+        margin-right: calc(var(--sidebar-width) + 40px);
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .hero-section-card {
+        background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+        border-radius: 30px;
+        padding: 45px;
+        color: white;
+        margin-bottom: 40px;
+        box-shadow: 0 20px 40px rgba(4, 120, 87, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .user-profile-img {
+        width: 40px; height: 40px; border-radius: 10px; object-fit: cover;
+        border: 2px solid white;
+    }
+
+    .floating-footer {
+        background: var(--card-bg); padding: 20px 40px; border-radius: 20px;
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 50px; border: 1px solid var(--border-color);
+    }
+
+    /* --- Responsive Fix for Mobile --- */
+    @media (max-width: 992px) {
+        .sidebar {
+            width: 90%;            /* جعل الشريط لا يأخذ عرض الشاشة كاملاً لشكل أشيك */
+            height: 70px;          /* ارتفاع مناسب للموبايل */
+            bottom: 20px;          /* مسافة من الأسفل */
+            top: auto;             /* إلغاء الـ top القديم */
+            right: 5%;             /* توسيط نسبي */
+            left: 5%;              /* توسيط نسبي */
+            flex-direction: row;   /* ترتيب العناصر بالعرض */
+            justify-content: space-around;
+            padding: 0 10px;
+            border-radius: 20px;   /* حواف دائرية */
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.15);
+            z-index: 2000;
         }
+        .sidebar-logo, .desktop-theme-toggle { display: none !important; }
+        .mobile-theme-item { display: block !important; }
+        .nav-item-custom { margin-bottom: 0; width: auto; }
+        .nav-link-custom { margin: 0; padding: 8px 5px; font-size: 10px; }
+        .nav-link-custom i { font-size: 20px; margin-bottom: 2px; }
+        .main-wrapper { margin-right: 0; padding-bottom: 100px; }
+        .search-box { width: 140px; }
+    }
+
+    @media (min-width: 993px) {
+        .mobile-theme-item { display: none !important; }
     }
 </style>
 </head>
@@ -210,293 +199,226 @@
 
 <canvas id="bg-canvas"></canvas>
 
-<header class="top-header-area">
-    <div class="container-fluid px-3 px-lg-5">
-        <nav class="navbar navbar-expand-lg">
-            <a class="navbar-brand site-logo m-0 p-0" href="/">
-                <h1>Freelancer<span>Pro</span></h1>
-            </a>
+<aside class="sidebar shadow">
+    <div class="sidebar-logo"><i class="fas fa-rocket"></i></div>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainMenu">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="mainMenu">
-                <ul class="navbar-nav mx-auto align-items-lg-center">
-                    <li class="nav-item"><a class="nav-link" href="/about">من نحن</a></li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">الصفحات</a>
-                        <ul class="dropdown-menu text-end border-0 shadow-sm">
-                            <li><a class="dropdown-item" href="/Projects">المشاريع</a></li>
-                            <li><a class="dropdown-item" href="/Services">الخدمات</a></li>
-                             <li><a class="dropdown-item" href="{{ route('works.index') }}">الأعمال</a></li>
-                            <li><a class="dropdown-item" href="/contact">تواصل معنا</a></li>
-                        </ul>
-                    </li>
-
-                    @guest
-                        <li class="nav-item"><a class="nav-link" href="/register">تسجيل كمستقل</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/register">تسجيل كصاحب مشاريع</a></li>
-                    @endguest
-
-                    @auth
-                        <li class="nav-item">
-                            @if(auth()->user()->role === 'freelancer')
-                                <a class="nav-link fw-bold" href="{{ route('freelancer.dashboard') }}">
-                                    <i class="fas fa-user-circle"></i> ملف المستقل
-                                </a>
-                            @elseif(auth()->user()->role === 'client')
-                                <a class="nav-link fw-bold" href="{{ route('client.dashboard') }}">
-                                    <i class="fas fa-user-tie"></i> ملف العميل
-                                </a>
-                            @elseif(auth()->user()->role === 'admin')
-                                <a class="nav-link fw-bold text-primary" href="{{ route('admin.dashboard') }}">
-                                    <i class="fas fa-user-shield"></i> لوحة الإدارة
-                                </a>
-                            @endif
-                        </li>
-                    @endauth
-
-                    <li class="nav-item"><a class="nav-link" href="/top-rated">الأعلى تقييم</a></li>
-                </ul>
-
-                <div class="header-icons d-flex gap-4 align-items-center ms-lg-3 ps-lg-3 border-start-lg">
-                    @auth
-                        <div class="dropdown notification-dropdown">
-                            <a class="text-dark fs-5 position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-bell"></i>
-                                @if(auth()->user()->unreadNotifications->count() > 0)
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notif-badge">
-                                        {{ auth()->user()->unreadNotifications->count() }}
-                                    </span>
-                                @endif
-                            </a>
-                            <ul class="dropdown-menu shadow border-0 text-end rounded-4 p-3 dropdown-menu-end">
-                                <h6 class="fw-bold mb-3 border-bottom pb-2">الإشعارات</h6>
-                                @forelse(auth()->user()->notifications->take(5) as $notification)
-                                    <li class="mb-3 small border-bottom pb-2">
-                                        <div class="d-flex align-items-start gap-2">
-                                            <i class="{{ $notification->data['icon'] ?? 'fas fa-info-circle text-primary' }} mt-1"></i>
-                                            <div>
-                                                <div class="fw-bold">{{ $notification->data['title'] }}</div>
-                                                <div class="text-muted" style="font-size: 0.75rem;">{{ $notification->data['project'] ?? '' }}</div>
-                                                <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
-                                            </div>
-                                        </div>
-                                    </li>
-                                @empty
-                                    <li class="text-center py-2 text-muted small">لا توجد إشعارات حالياً</li>
-                                @endforelse
-                            </ul>
-                        </div>
-
-                        <form action="{{ route('logout') }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-link text-danger p-0 border-0" title="تسجيل الخروج">
-                                <i class="fas fa-sign-out-alt fs-5"></i>
-                            </button>
-                        </form>
-                    @endauth
-                </div>
-            </div>
-        </nav>
+    <div class="nav-item-custom">
+        <a href="{{ route('works.index') }}" class="nav-link-custom {{ request()->routeIs('works.index') ? 'active' : '' }}">
+            <i class="fas fa-briefcase"></i>
+            <span>الأعمال</span>
+        </a>
     </div>
-</header>
 
-<section class="hero-area">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-9 text-center">
-                <div class="hero-text">
-                    <h1>نفذ مشروعك بسهولة مع<br>أفضل المستقلين في الوطن العربي</h1>
-                    <p class="lead text-muted mb-4 fs-6 fs-md-5">نوفر لك بيئة آمنة واحترافية لتحويل أفكارك إلى واقع، مع شبكة متكاملة من الخبراء.</p>
-                    <div class="hero-btns mt-4 d-flex flex-wrap justify-content-center gap-2 gap-md-3">
-                        <a href="/Projects" class="boxed-btn"><i class="fas fa-briefcase me-2"></i> تصفح المشاريع</a>
-                         <a href="{{ route('support.tickets') }}" class="bordered-btn">
-    <i class="fas fa-headset me-2"></i> الدعم الفني
-</a>
+    <div class="nav-item-custom">
+        <a href="/top-rated" class="nav-link-custom nav-link-special">
+            <i class="fas fa-star"></i>
+            <span>النخبة</span>
+        </a>
+    </div>
+
+    <div class="nav-item-custom">
+        <a href="/Services" class="nav-link-custom">
+            <i class="fas fa-shapes"></i>
+            <span>الخدمات</span>
+        </a>
+    </div>
+
+    @auth
+    <div class="nav-item-custom">
+        @php
+            $dashboardUrl = auth()->user()->role === 'freelancer' ? route('freelancer.dashboard') : route('client.dashboard');
+        @endphp
+        <a href="{{ $dashboardUrl }}" class="nav-link-custom">
+            <i class="fas fa-gauge-high"></i>
+            <span>لوحه التحكم </span>
+        </a>
+    </div>
+    @endauth
+
+    <div class="nav-item-custom mobile-theme-item">
+        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn">
+            <i class="fas fa-moon theme-icon"></i>
+            <span>المظهر</span>
+        </button>
+    </div>
+
+    <div class="nav-item-custom mt-auto mb-3 desktop-theme-toggle">
+        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn">
+            <i class="fas fa-moon theme-icon"></i>
+        </button>
+    </div>
+</aside>
+
+<main class="main-wrapper">
+    <header class="top-header">
+        <div class="search-box">
+            <i class="fas fa-search text-muted small"></i>
+            <input type="text" placeholder="ابحث عن مشاريع...">
+        </div>
+
+        <div class="header-actions d-flex align-items-center gap-3">
+            @auth
+                <div class="dropdown">
+                    <div class="position-relative cursor-pointer" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-regular fa-bell fs-5 text-secondary"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-3 mt-3">
+                        <li class="small text-muted p-2">لا توجد إشعارات جديدة</li>
+                    </ul>
+                </div>
+
+                <div class="dropdown">
+                    <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="https://ui-avatars.com/api/?name={{ auth()->user()->name }}&background=047857&color=fff" class="user-profile-img">
+                        <i class="fas fa-chevron-down small text-muted d-none d-md-block"></i>
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4">
+                        <li><a class="dropdown-item py-2" href="{{ route('profile.settings') }}"><i class="fas fa-user-gear me-2"></i> الإعدادات</a></li>
+                        <li><hr class="dropdown-divider opacity-50"></li>
+                        <li>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button class="dropdown-item text-danger py-2"><i class="fas fa-sign-out-alt me-2"></i> خروج</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            @else
+                <a href="/login" class="btn btn-sm text-secondary fw-bold">دخول</a>
+                <a href="/register" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" style="background: var(--primary-color); border:none;">انضم إلينا</a>
+            @endauth
+        </div>
+    </header>
+
+    <div class="container-fluid p-0">
+        @if(request()->is('/'))
+        <section class="hero-section-card shadow-lg">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="fw-800 mb-3 display-5">عالم من المبدعين بين يديك</h1>
+                    <p class="opacity-75 mb-4 fs-5">نفذ مشاريعك بأعلى جودة مع أفضل المستقلين في الوطن العربي.</p>
+                    <div class="d-flex gap-3">
+                        <a href="/projects" class="btn btn-light rounded-pill px-4 fw-bold" style="color: var(--primary-color);">ابدأ مشروعك</a>
+                        <a href="/top-rated" class="btn btn-outline-light rounded-pill px-4 border-2">الأعلى تقييماً</a>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
+        </section>
+        @endif
 
-<div class="container">
-    <div class="main-background shadow-sm">
-        <div class="p-4 text-center">
+        <div class="page-content">
             @yield('content')
         </div>
     </div>
-</div>
 
-<footer class="copyright">
-    <div class="container">
-        <div class="row align-items-center text-center text-lg-start">
-            <div class="col-lg-6 mb-3 mb-lg-0">
-                <p class="m-0 text-dark">حقوق النشر &copy; 2026 - Youssef almajek</p>
-            </div>
-            <div class="col-lg-6">
-                <div class="social-icons">
-                    <ul>
-                        <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
-                        <li><a href="#"><i class="fab fa-twitter"></i></a></li>
-                        <li><a href="#"><i class="fab fa-instagram"></i></a></li>
-                        <li><a href="#"><i class="fab fa-linkedin"></i></a></li>
-                    </ul>
-                </div>
-            </div>
+    <footer class="floating-footer">
+        <div class="small text-muted">&copy; 2026 FreelancerPro. صنع بكل حب.</div>
+        <div class="d-flex gap-3 text-muted">
+            <i class="fab fa-instagram cursor-pointer"></i>
+            <i class="fab fa-linkedin-in cursor-pointer"></i>
+            <i class="fab fa-x-twitter cursor-pointer"></i>
         </div>
-    </div>
-</footer>
+    </footer>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 
 <script>
-    // 1. إشعارات السيشن
-    @if(session('success'))
-        Swal.fire({
-            icon: 'success',
-            title: 'تم بنجاح',
-            text: "{{ session('success') }}",
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000
-        });
-    @endif
-
-    // 2. إعداد Pusher - تم تحديث المفاتيح من ملفك الـ .env
-    var pusher = new Pusher('7b3a7562c0aea93ec1a1', {
-        cluster: 'eu',
-        forceTLS: true
-    });
-
-    var channel = pusher.subscribe('chat-channel');
-    channel.bind('new-message', function(data) {
-        Swal.fire({
-            icon: 'info',
-            title: 'رسالة جديدة من ' + (data.message.user_name || 'مستخدم'),
-            html: data.message.content,
-            toast: true,
-            position: 'top-start',
-            showConfirmButton: false,
-            timer: 8000,
-            timerProgressBar: true
-        });
-
-        let badge = document.querySelector('.notif-badge');
-        if(badge) {
-            let count = parseInt(badge.innerText) || 0;
-            badge.innerText = count + 1;
-        }
-    });
-
-    // 3. كود الأنيميشن للخلفية
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
-    let width, height;
+    let width, height, particles = [];
+    let mouse = { x: null, y: null };
 
-    function resizeCanvas() {
+    window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
+
+    function resize() {
         width = canvas.width = window.innerWidth;
         height = canvas.height = window.innerHeight;
     }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    window.addEventListener('resize', resize);
+    resize();
 
-    const freelanceSkills = [
-        "UI/UX Design", "Laravel", "React.js", "SEO", "Copywriting",
-        "تصميم جرافيك", "Video Editing", "Mobile Apps", "ترجمة",
-        "Digital Marketing", "WordPress", "Python", "Data Analysis",
-        "Voice Over", "3D Animation", "برمجة ويب", "إدارة حسابات",
-        "Flutter", "Node.js", "Branding"
-    ];
-
-    class SkillTag {
-        constructor() {
-            this.init();
+    class Particle {
+        constructor() { this.reset(); }
+        reset() {
             this.x = Math.random() * width;
             this.y = Math.random() * height;
-        }
-        init() {
-            this.text = freelanceSkills[Math.floor(Math.random() * freelanceSkills.length)];
-            this.fontSize = Math.random() * 4 + 14;
-            ctx.font = `600 ${this.fontSize}px 'Cairo', sans-serif`;
-            this.textWidth = ctx.measureText(this.text).width;
-            this.padding = 15;
-            this.width = this.textWidth + (this.padding * 2);
-            this.height = this.fontSize + (this.padding * 2);
-            this.x = Math.random() > 0.5 ? -this.width : width + this.width;
-            this.y = Math.random() * height;
-            this.speedX = (Math.random() - 0.5) * 0.8;
-            this.speedY = (Math.random() - 0.5) * 0.8;
-            const colors = [{ r: 16, g: 185, b: 129 }, { r: 59, g: 130, b: 246 }, { r: 5, g: 150, b: 105 }];
-            this.color = colors[Math.floor(Math.random() * colors.length)];
-            this.alpha = 0;
-            this.maxAlpha = Math.random() * 0.4 + 0.2;
-            this.fadingIn = true;
-            this.fadingOut = false;
-            this.lifeTime = Math.random() * 500 + 500;
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+            this.size = Math.random() * 2 + 1;
         }
         update() {
-            this.x += this.speedX; this.y += this.speedY;
-            if (this.fadingIn) { this.alpha += 0.005; if (this.alpha >= this.maxAlpha) this.fadingIn = false; }
-            else if (this.fadingOut) { this.alpha -= 0.005; if (this.alpha <= 0) this.init(); }
-            else { this.lifeTime--; if (this.lifeTime <= 0) this.fadingOut = true; }
+            this.x += this.vx; this.y += this.vy;
+            if(this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.reset();
+            let dx = mouse.x - this.x;
+            let dy = mouse.y - this.y;
+            let distance = Math.sqrt(dx*dx + dy*dy);
+            if (distance < 100) { this.x -= dx/20; this.y -= dy/20; }
         }
         draw() {
-            if (this.alpha <= 0) return;
-            ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha * 0.8})`;
-            ctx.strokeStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.alpha})`;
-            this.drawRoundRect(this.x, this.y, this.width, this.height, this.height / 2);
-            ctx.fill(); ctx.stroke();
-            ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.alpha * 1.5})`;
-            ctx.font = `600 ${this.fontSize}px 'Cairo', sans-serif`;
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(this.text, this.x + this.width / 2, this.y + this.height / 2);
-        }
-        drawRoundRect(x, y, w, h, radius) {
-            ctx.beginPath(); ctx.moveTo(x + radius, y); ctx.lineTo(x + w - radius, y);
-            ctx.quadraticCurveTo(x + w, y, x + w, y + radius); ctx.lineTo(x + w, y + h - radius);
-            ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h); ctx.lineTo(x + radius, y + h);
-            ctx.quadraticCurveTo(x, y + h, x, y + h - radius); ctx.lineTo(x, y + radius);
-            ctx.quadraticCurveTo(x, y, x + radius, y); ctx.closePath();
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+            ctx.fillStyle = document.documentElement.getAttribute('data-theme') === 'dark' ? `rgba(4, 120, 87, 0.2)` : `rgba(4, 120, 87, 0.2)`;
+            ctx.fill();
         }
     }
 
-    const tagsCount = Math.min(Math.floor((width * height) / 45000), 25);
-    const tags = Array.from({ length: tagsCount }, () => new SkillTag());
+    for(let i=0; i<80; i++) particles.push(new Particle());
 
     function animate() {
-        ctx.clearRect(0, 0, width, height);
-        for (let i = 0; i < tags.length; i++) {
-            for (let j = i + 1; j < tags.length; j++) {
-                const tagA = tags[i];
-                const tagB = tags[j];
-                const cxA = tagA.x + tagA.width / 2;
-                const cyA = tagA.y + tagA.height / 2;
-                const cxB = tagB.x + tagB.width / 2;
-                const cyB = tagB.y + tagB.height / 2;
-                const dx = cxA - cxB;
-                const dy = cyA - cyB;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance < 180) {
-                    const lineAlpha = (1 - (distance / 180)) * Math.min(tagA.alpha, tagB.alpha);
-                    ctx.beginPath(); ctx.moveTo(cxA, cyA); ctx.lineTo(cxB, cyB);
-                    ctx.strokeStyle = `rgba(16, 185, 129, ${lineAlpha * 0.5})`;
-                    ctx.lineWidth = 1; ctx.stroke();
+        ctx.clearRect(0,0,width,height);
+        particles.forEach((p, i) => {
+            p.update(); p.draw();
+            for(let j=i+1; j<particles.length; j++) {
+                const p2 = particles[j];
+                const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                if(dist < 120) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y);
+                    ctx.strokeStyle = document.documentElement.getAttribute('data-theme') === 'dark' ? `rgba(99, 102, 241, 0.05)` : `rgba(4, 120, 87, 0.05)`;
+                    ctx.stroke();
                 }
             }
-        }
-        tags.forEach(tag => { tag.update(); tag.draw(); });
+        });
         requestAnimationFrame(animate);
     }
+    animate();
 
-    window.addEventListener('load', function() {
-        animate();
+    const themeToggles = document.querySelectorAll('.theme-toggle-btn');
+    const themeIcons = document.querySelectorAll('.theme-icon');
+
+    function updateIcons(theme) {
+        themeIcons.forEach(icon => {
+            if (theme === 'dark') {
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+            }
+        });
+    }
+
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (currentTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        updateIcons('dark');
+    }
+
+    themeToggles.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                updateIcons('light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                updateIcons('dark');
+            }
+        });
     });
 </script>
+
 </body>
 </html>

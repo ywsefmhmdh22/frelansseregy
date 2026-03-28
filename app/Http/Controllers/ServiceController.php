@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Service;
+use App\Models\Order; // أضفنا استدعاء موديل الطلبات
 use Illuminate\Support\Facades\Auth;
 
 class ServiceController extends Controller
@@ -21,7 +22,6 @@ class ServiceController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. فحص البيانات
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string|min:10',
@@ -29,11 +29,9 @@ class ServiceController extends Controller
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        // 2. معالجة ورفع الصورة
         $imageName = time() . '.' . $request->image->extension();
         $request->image->move(public_path('uploads/services'), $imageName);
 
-        // 3. الحفظ في الداتابيز
         Service::create([
             'user_id' => Auth::id(),
             'title' => $request->title,
@@ -42,25 +40,39 @@ class ServiceController extends Controller
             'image' => 'uploads/services/' . $imageName,
         ]);
 
-        // التوجيه إلى الداشبورد مع رسالة نجاح
         return redirect()->route('freelancer.dashboard')->with('success', 'تم نشر خدمتك بنجاح!');
     }
 
     /**
-     * دالة الـ Checkout (اللي كانت ناقصة ومسببة الخطأ)
      * عرض صفحة تأكيد الدفع لخدمة معينة
      */
     public function checkout($id)
     {
-        // جلب بيانات الخدمة مع بيانات صاحب الخدمة (المستقل)
         $service = Service::with('user')->findOrFail($id);
 
-        // التأكد من أن المستخدم مسجل دخول (زيادة أمان)
         if (!Auth::check()) {
             return redirect()->route('login');
         }
 
-        // عرض صفحة الدفع (resources/views/services/checkout.blade.php)
         return view('services.checkout', compact('service'));
+    }
+
+    /**
+     * ====== الدالة التي كانت تسبب الخطأ (الحل) ======
+     * دالة تسليم العمل من قبل المستقل
+     */
+    public function requestDelivery(Order $order)
+    {
+        // التأكد أن المستخدم الحالي هو البائع (المستقل) صاحب الطلب
+        if (Auth::id() !== $order->seller_id) {
+            return back()->with('error', 'عذراً، لا تملك صلاحية تسليم هذا الطلب.');
+        }
+
+        // تحديث حالة الطلب إلى "تم التسليم" (delivered)
+        $order->update([
+            'status' => 'delivered'
+        ]);
+
+        return back()->with('success', 'تم إرسال طلب تسليم الخدمة للعميل بنجاح.');
     }
 }

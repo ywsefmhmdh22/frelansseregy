@@ -1,4 +1,4 @@
-@extends('layouts.master')
+ @extends('layouts.master')
 
 @section('content')
 <div class="container py-5">
@@ -42,11 +42,18 @@
 
                             <div id="conversion-hint" class="mt-3 p-3 rounded-3 bg-light border animate__animated animate__fadeIn" style="display:none;">
                                 <div class="d-flex justify-content-between mb-1">
-                                    <span class="text-muted small">صافي الرصيد المضاف:</span>
+                                    <span class="text-muted small">صافي الرصيد المضاف للمحفظة:</span>
                                     <span class="fw-bold text-success"><span id="usd-estimate">0.00</span> $</span>
                                 </div>
-                                <div class="text-muted" style="font-size: 11px;">
-                                     تم خصم رسوم الخدمة والتشغيل
+
+                                <div id="egp-equivalent-box" class="text-start mt-2 pt-2 border-top" style="display: none;">
+                                    <span class="text-muted" style="font-size: 12px;">
+                                        <i class="fas fa-info-circle me-1 text-primary"></i> سيتم الخصم بما يعادل: <strong id="egp-total-val">0.00</strong> EGP
+                                    </span>
+                                </div>
+
+                                <div class="text-muted mt-1" style="font-size: 11px;">
+                                     تطبق رسوم الخدمة والتشغيل الإدارية
                                 </div>
                             </div>
                         </div>
@@ -87,9 +94,9 @@
 </div>
 
 <script>
-// الإعدادات الأساسية
-const EXCHANGE_RATE = 50.0; // سعر صرف الجنيه مقابل الدولار
-const PLATFORM_FEE = 0.09;  // نسبة المنصة 9%
+// الإعدادات الأساسية (يجب أن تتطابق مع الـ Controller)
+const EXCHANGE_RATE = 50.0;
+const PLATFORM_FEE = 0.11; // تم رفع العمولة لـ 11%
 
 function updateCurrencyLabel() {
     const isUsd = document.getElementById('curr_usd').checked;
@@ -104,18 +111,26 @@ function calculateEstimate() {
     const usdEstimate = document.getElementById('usd-estimate');
     const hint = document.getElementById('conversion-hint');
     const isUsd = document.getElementById('curr_usd').checked;
+    const egpBox = document.getElementById('egp-equivalent-box');
+    const egpVal = document.getElementById('egp-total-val');
 
     if(amount > 0 && amount !== "") {
         hint.style.display = 'block';
 
-        // 1. حساب القيمة بالدولار أولاً
+        // 1. حساب صافي الدولار للمحفظة بعد خصم الـ 11%
         let baseAmountInUsd = isUsd ? parseFloat(amount) : (parseFloat(amount) / EXCHANGE_RATE);
-
-        // 2. خصم العمولة 9%
         let netAmount = baseAmountInUsd * (1 - PLATFORM_FEE);
-
-        // 3. عرض النتيجة
         usdEstimate.innerText = netAmount.toFixed(2);
+
+        // 2. حساب المبلغ المعادل بالجنيه (اللي هيشوفه في صفحة Paymob)
+        if(isUsd) {
+            egpBox.style.display = 'block';
+            let totalInEgp = parseFloat(amount) * EXCHANGE_RATE;
+            egpVal.innerText = totalInEgp.toLocaleString('en-US', {minimumFractionDigits: 2});
+        } else {
+            egpBox.style.display = 'none';
+        }
+
     } else {
         hint.style.display = 'none';
     }
@@ -138,5 +153,6 @@ function toggleFields() {
     .form-control { border: 2px solid #dee2e6; font-size: 1.2rem; }
     .form-control:focus { border-color: #0d6efd; box-shadow: none; }
     .bg-light { background-color: #f8f9fa !important; }
+    .animate__animated { animation-duration: 0.4s; }
 </style>
 @stop

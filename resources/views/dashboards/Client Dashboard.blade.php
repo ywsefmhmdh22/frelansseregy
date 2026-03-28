@@ -1,4 +1,4 @@
-@extends('layouts.master')
+ @extends('layouts.master')
 
 @section('content')
 
@@ -7,7 +7,7 @@
         <div class="row g-4">
             {{-- Sidebar Area --}}
             <div class="col-lg-3">
-                <div class="sidebar-glass p-4 sticky-top" style="top: 20px;">
+                <div class="sidebar-glass p-4 sticky-top" style="top: 20px; z-index: 100;">
                     <div class="text-center mb-4">
                         <div class="position-relative d-inline-block profile-ring">
                             <form id="profileImageForm" action="{{ route('profile.update_image') }}" method="POST" enctype="multipart/form-data">
@@ -35,19 +35,20 @@
                             <span>الرئيسية</span>
                         </a>
 
-                        <a href="{{ route('freelancers.favorites') }}" class="nav-link-custom {{ request()->routeIs('freelancers.favorites') ? 'active' : '' }}">
-                            <div class="nav-icon"><i class="fas fa-star"></i></div>
-                            <span>المفضلين</span>
+                        <a href="{{ route('purchased.services') }}" class="nav-link-custom {{ request()->routeIs('purchased.services') ? 'active' : '' }}">
+                            <div class="nav-icon"><i class="fas fa-shopping-bag"></i></div>
+                            <span>الخدمات المشتراة</span>
                         </a>
+
                         <a href="{{ route('wallet.index') }}" class="nav-link-custom {{ request()->routeIs('wallet.*') ? 'active' : '' }}">
                             <div class="nav-icon"><i class="fas fa-wallet"></i></div>
                             <span>المحفظة</span>
                         </a>
                         <hr class="my-3 opacity-10">
                         <a href="{{ route('profile.settings') }}" class="nav-link-custom {{ request()->routeIs('profile.settings') ? 'active' : '' }}">
-    <div class="nav-icon"><i class="fas fa-cog"></i></div>
-    <span>الإعدادات</span>
-</a>
+                            <div class="nav-icon"><i class="fas fa-cog"></i></div>
+                            <span>الإعدادات</span>
+                        </a>
                     </div>
 
                     <div class="wallet-widget mt-5 p-3 text-center text-white shadow-lg">
@@ -61,21 +62,25 @@
             {{-- Main Content Area --}}
             <div class="col-lg-9">
                 {{-- Header Bar --}}
-                <div class="top-header-bar d-flex justify-content-between align-items-center mb-4 p-3 glass-card">
+                <div class="top-header-bar d-flex justify-content-between align-items-center mb-4 p-3 glass-card shadow-sm">
                     <div class="welcome-text">
                         <h4 class="fw-bold text-dark mb-0">أهلاً، {{ explode(' ', auth()->user()->name)[0] }} ✨</h4>
                         <p class="text-muted small mb-0">لديك بعض التحديثات الجديدة اليوم.</p>
                     </div>
 
                     <div class="header-actions d-flex align-items-center gap-3">
-                        <a href="{{ route('messages.chat', ['user' => Auth::id()]) }}" class="btn btn-white shadow-sm rounded-pill px-3 fw-bold position-relative border-0" style="height: 42px; display: flex; align-items: center;">
+                        {{-- زر الرسائل --}}
+                        <a href="{{ route('messages.chat', ['user' => Auth::id()]) }}" class="btn btn-white shadow-sm rounded-pill px-3 fw-bold position-relative border border-light" style="height: 42px; display: flex; align-items: center; transition: 0.3s;">
                             <i class="far fa-envelope text-dark me-1"></i>
                             <span class="text-dark d-none d-md-inline small">الرسائل</span>
-                            @if(isset($unreadMessagesCount) && $unreadMessagesCount > 0)
-                                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-                            @endif
+                            <span id="unread-messages-count-global"
+                                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none border border-2 border-white animate__animated animate__bounceIn"
+                                  style="font-size: 0.65rem; padding: 0.4em 0.6em; z-index: 5;">
+                                0
+                            </span>
                         </a>
 
+                        {{-- الإشعارات --}}
                         <div class="dropdown">
                             <button class="notification-trigger position-relative border-0 bg-white shadow-sm rounded-circle p-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 42px; height: 42px;">
                                 <i class="far fa-bell text-dark"></i>
@@ -91,11 +96,11 @@
                                 </div>
                                 <div class="notif-body scrollbar-thin" style="max-height: 350px; overflow-y: auto;">
                                     @forelse(auth()->user()->notifications as $notif)
-                                        <div class="notif-item {{ $notif->read_at ? '' : 'unread' }} p-3 border-bottom d-flex gap-3 align-items-start position-relative">
+                                        <div class="notif-item {{ $notif->read_at ? '' : 'unread' }} p-3 border-bottom d-flex gap-3 align-items-start position-relative text-end">
                                             <div class="notif-icon-circle {{ $notif->read_at ? 'bg-light text-muted' : 'bg-success-soft text-success' }}">
                                                 <i class="{{ $notif->data['icon'] ?? 'fas fa-info-circle' }}"></i>
                                             </div>
-                                            <div class="notif-content flex-grow-1 text-end">
+                                            <div class="notif-content flex-grow-1">
                                                 <p class="mb-0 small fw-bold text-dark">{{ $notif->data['title'] ?? 'إشعار جديد' }}</p>
                                                 <p class="mb-1 extra-small text-muted">{{ $notif->data['message'] ?? 'هناك تحديث جديد.' }}</p>
                                                 <span class="extra-small opacity-50">{{ $notif->created_at->diffForHumans() }}</span>
@@ -117,37 +122,112 @@
                     </div>
                 </div>
 
+                {{-- Purchased Services Section --}}
+                <div class="glass-card mb-4 overflow-hidden border-0 shadow-sm">
+                    <div class="p-4 d-flex justify-content-between align-items-center border-bottom bg-light-soft">
+                        <h5 class="fw-bold mb-0 text-dark">الخدمات التي اشتريتها <span class="badge bg-white text-dark fw-normal ms-2 small border shadow-sm">متابعة الطلبات</span></h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table custom-table align-middle mb-0 text-end">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">الخدمة / المستقل</th>
+                                    <th>تاريخ الشراء</th>
+                                    <th>السعر</th>
+                                    <th>حالة الطلب</th>
+                                    <th class="text-center pe-4">التحكم</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                 @forelse($orders ?? [] as $order)
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="project-icon-box ms-3">
+                                                <i class="fas fa-shopping-cart text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark mb-0">{{ Str::limit($order->service->title ?? 'خدمة رقم ' . $order->service_id, 30) }}</div>
+                                                <small class="text-muted extra-small">المستقل: {{ $order->seller->name ?? 'مستقل' }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ $order->created_at->format('Y/m/d') }}</td>
+                                    <td>
+                                        <div class="price-tag fw-bold text-primary">
+                                            <span class="amount">{{ number_format($order->price, 2) }}</span>
+                                            <span class="currency">ج.م</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @php
+                                            $statuses = [
+                                                'processing' => ['warning', 'قيد التنفيذ', ''],
+                                                'pending' => ['secondary', 'بانتظار التأكيد', ''],
+                                                'delivered' => ['info', 'تم التسليم - راجع العمل', 'animate-pulse'],
+                                                'completed' => ['success', 'مكتمل', '']
+                                            ];
+                                            $curr = $statuses[$order->status] ?? ['light', $order->status, ''];
+                                        @endphp
+                                        <span class="badge bg-{{$curr[0]}}-soft text-{{$curr[0]}} rounded-pill px-3 py-2 {{$curr[2]}}">
+                                            {{$curr[1]}}
+                                        </span>
+                                    </td>
+                                     <td class="text-center pe-4">
+                                        @if($order->status == 'delivered')
+                                            <a href="{{ route('orders.complete.view', $order->id) }}" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm">
+                                                قبول وتقييم <i class="fas fa-check-double ms-1"></i>
+                                            </a>
+                                        @else
+                                            <a href="{{ route('orders.show', $order->id) }}" class="btn-action-view">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <p class="text-muted small">لم تقم بشراء أي خدمات بعد.</p>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 {{-- Stats Cards --}}
                 <div class="row g-3 mb-4 text-center">
                     @php
                         $stats = [
-                            ['label' => 'المشاريع', 'val' => $myProjects->count(), 'icon' => 'fas fa-layer-group', 'color' => '#3b82f6', 'bg' => 'rgba(59, 130, 246, 0.1)'],
+                            ['label' => 'المشاريع', 'val' => $myProjects->count() ?? 0, 'icon' => 'fas fa-layer-group', 'color' => '#3b82f6', 'bg' => 'rgba(59, 130, 246, 0.1)'],
                             ['label' => 'قيد المراجعة', 'val' => $myProjects->where('admin_status', 'pending')->count(), 'icon' => 'fas fa-hourglass-half', 'color' => '#f59e0b', 'bg' => 'rgba(245, 158, 11, 0.1)'],
                             ['label' => 'مكتملة', 'val' => $myProjects->where('status', 'completed')->count(), 'icon' => 'fas fa-check-circle', 'color' => '#10b981', 'bg' => 'rgba(16, 185, 129, 0.1)'],
-                            ['label' => 'العروض', 'val' => $myProjects->sum('proposals_count'), 'icon' => 'fas fa-paper-plane', 'color' => '#8b5cf6', 'bg' => 'rgba(139, 92, 246, 0.1)']
+                            ['label' => 'العروض', 'val' => $myProjects->sum('offers_count'), 'icon' => 'fas fa-paper-plane', 'color' => '#8b5cf6', 'bg' => 'rgba(139, 92, 246, 0.1)']
                         ];
                     @endphp
                     @foreach($stats as $stat)
                     <div class="col-6 col-md-3">
-                        <div class="stat-glass-card p-3 h-100">
+                        <div class="stat-glass-card p-3 h-100 shadow-sm border-0">
                             <div class="stat-icon mx-auto mb-2 shadow-sm" style="color: {{ $stat['color'] }}; background: {{ $stat['bg'] }}">
                                 <i class="{{ $stat['icon'] }}"></i>
                             </div>
                             <h4 class="fw-bold mb-0 text-dark">{{ $stat['val'] }}</h4>
-                            <p class="text-muted small mb-0">{{ $stat['label'] }}</p>
+                            <p class="text-muted small mb-0 fw-bold">{{ $stat['label'] }}</p>
                         </div>
                     </div>
                     @endforeach
                 </div>
 
                 {{-- Projects Table --}}
-                <div class="glass-card mb-4 overflow-hidden border-0">
+                <div class="glass-card mb-4 overflow-hidden border-0 shadow-sm">
                     <div class="p-4 d-flex justify-content-between align-items-center border-bottom bg-light-soft">
                         <h5 class="fw-bold mb-0 text-dark">مشاريعك الحالية <span class="badge bg-white text-dark fw-normal ms-2 small border shadow-sm">آخر 5</span></h5>
-                        <a href="{{ route('projects.my_projects') }}" class="btn btn-sm btn-outline-success rounded-pill px-3 text-decoration-none">كل المشاريع</a>
+                        <a href="{{ route('projects.my_projects') }}" class="btn btn-sm btn-outline-success rounded-pill px-3 text-decoration-none fw-bold">كل المشاريع</a>
                     </div>
                     <div class="table-responsive">
-                        <table class="table custom-table align-middle mb-0">
+                        <table class="table custom-table align-middle mb-0 text-end">
                             <thead>
                                 <tr>
                                     <th class="ps-4">المشروع</th>
@@ -161,7 +241,7 @@
                                 @forelse($myProjects->take(5) as $project)
                                 <tr>
                                     <td class="ps-4">
-                                        <div class="d-flex align-items-center text-end">
+                                        <div class="d-flex align-items-center">
                                             <div class="project-icon-box ms-3">
                                                 <i class="fas fa-briefcase text-success"></i>
                                             </div>
@@ -172,30 +252,23 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="offer-badge">
-                                            <span class="num">{{ $project->proposals_count ?? 0 }}</span>
+                                        <div class="offer-badge shadow-sm">
+                                            <span class="num">{{ $project->offers_count ?? 0 }}</span>
                                             <span class="lab">عرض</span>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="price-tag">
+                                        <div class="price-tag fw-bold">
                                             <span class="amount">{{ number_format($project->price) }}</span>
-                                            <span class="currency">{{ $project->currency ?? 'ج.م' }}</span>
+                                            <span class="currency">ج.م</span>
                                         </div>
                                     </td>
                                     <td>
                                         @php
-                                            if($project->admin_status == 'pending') {
-                                                $sClass = 'warning'; $sText = 'تحت المراجعة'; $sIcon = 'fa-clock';
-                                            } elseif($project->status == 'open') {
-                                                $sClass = 'success'; $sText = 'نشط (يستقبل عروض)'; $sIcon = 'fa-bolt';
-                                            } elseif($project->status == 'in_progress') {
-                                                $sClass = 'primary'; $sText = 'قيد التنفيذ'; $sIcon = 'fa-spinner fa-spin';
-                                            } elseif($project->status == 'completed') {
-                                                $sClass = 'info'; $sText = 'مكتمل'; $sIcon = 'fa-check-double';
-                                            } else {
-                                                $sClass = 'secondary'; $sText = 'مغلق'; $sIcon = 'fa-lock';
-                                            }
+                                            if($project->admin_status == 'pending') { $sClass = 'warning'; $sText = 'تحت المراجعة'; $sIcon = 'fa-clock'; }
+                                            elseif($project->status == 'open') { $sClass = 'success'; $sText = 'نشط'; $sIcon = 'fa-bolt'; }
+                                            elseif($project->status == 'in_progress') { $sClass = 'primary'; $sText = 'قيد التنفيذ'; $sIcon = 'fa-spinner fa-spin'; }
+                                            else { $sClass = 'secondary'; $sText = 'مكتمل/مغلق'; $sIcon = 'fa-check'; }
                                         @endphp
                                         <div class="status-indicator d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-{{$sClass}}-soft text-{{$sClass}} border border-{{$sClass}} border-opacity-10">
                                             <i class="fas {{$sIcon}} extra-small"></i>
@@ -211,52 +284,12 @@
                                 @empty
                                 <tr>
                                     <td colspan="5" class="text-center py-5">
-                                        <img src="https://cdn-icons-png.flaticon.com/512/4076/4076432.png" width="60" class="opacity-25 mb-3">
-                                        <p class="text-muted small">لا توجد مشاريع مضافة في حسابك حالياً.</p>
-                                        <a href="{{ route('projects.create') }}" class="btn btn-sm btn-success rounded-pill">أضف أول مشروع الآن</a>
+                                        <p class="text-muted small">لا توجد مشاريع مضافة حالياً.</p>
                                     </td>
                                 </tr>
                                 @endforelse
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                {{-- Activity & Promo --}}
-                <div class="row g-4 mb-5">
-                    <div class="col-md-7">
-                        <div class="glass-card p-4 h-100">
-                            <h6 class="fw-bold mb-4 text-dark d-flex align-items-center">
-                                <span class="p-2 bg-light rounded-3 ms-2"><i class="fas fa-stream text-success"></i></span>
-                                آخر التحديثات
-                            </h6>
-                            <div class="modern-timeline">
-                                @forelse(auth()->user()->notifications->take(3) as $notif)
-                                <div class="timeline-step">
-                                    <div class="step-icon"></div>
-                                    <div class="step-content text-end">
-                                        <p class="mb-0 fw-bold small text-dark">{{ $notif->data['title'] ?? 'تحديث جديد' }}</p>
-                                        <p class="text-muted extra-small mb-0">{{ $notif->created_at->diffForHumans() }}</p>
-                                    </div>
-                                </div>
-                                @empty
-                                <div class="text-center py-4">
-                                    <p class="text-muted small">لا توجد نشاطات مسجلة</p>
-                                </div>
-                                @endforelse
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-5">
-                        <div class="promo-card h-100 p-4 d-flex flex-column justify-content-between overflow-hidden position-relative shadow-lg border-0">
-                            <div class="promo-shapes"></div>
-                            <div class="position-relative">
-                                <h5 class="fw-bold text-white mb-3">نصيحة المنصة 💡</h5>
-                                <p class="text-white opacity-75 small mb-0">قم بإكمال ملفك الشخصي بنسبة 100% لزيادة ثقة المستقلين والحصول على عروض بجودة أفضل.</p>
-                            </div>
-                             {{-- السطر الجديد المعدل --}}
-<a href="{{ route('profile.settings') }}" class="btn btn-glass-white btn-sm rounded-pill fw-bold mt-4">تطوير الملف الشخصي</a>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -265,212 +298,93 @@
 </div>
 
 <style>
-/* Glassmorphism Core */
+/* المتغيرات الأساسية */
 :root {
-    --glass-bg: rgba(255, 255, 255, 0.9);
-    --glass-border: rgba(255, 255, 255, 0.5);
     --primary-main: #10b981;
     --primary-soft: #ecfdf5;
     --navy-main: #0f172a;
-    --bg-light-soft: #f8fafc;
 }
 
 body {
-    background: #f4f7fa;
-    background-image: radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.03) 0px, transparent 50%),
-                      radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.03) 0px, transparent 50%);
+    background: #f8fafc;
+    font-family: 'Cairo', sans-serif;
 }
 
 .sidebar-glass {
-    background: var(--glass-bg);
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border);
-    border-radius: 30px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.03);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 25px;
 }
 
-.glass-card {
-    background: #fff;
-    border-radius: 24px;
-    border: 1px solid rgba(0,0,0,0.02);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.02);
-}
+.glass-card { background: #fff; border-radius: 20px; }
+.profile-img-wrapper { width: 110px; height: 110px; margin: 0 auto; position: relative; }
+.profile-main-img { width: 100%; height: 100%; object-fit: cover; border-radius: 30px; border: 3px solid #fff; }
+.edit-overlay { position: absolute; bottom: -5px; left: -5px; background: var(--primary-main); color: white; width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #fff; }
 
-.profile-img-wrapper {
-    position: relative;
-    width: 110px;
-    height: 110px;
-    margin: 0 auto;
-}
-.profile-main-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 35px;
-    border: 3px solid #fff;
-}
-.edit-overlay {
-    position: absolute;
-    bottom: -5px;
-    left: -5px;
-    background: var(--primary-main);
-    color: white;
-    width: 35px;
-    height: 35px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: 3px solid #fff;
-    transition: 0.3s;
-}
-.edit-overlay:hover { transform: scale(1.1); background: #059669; }
-
-.status-pulse {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 15px;
-    height: 15px;
-    background: #10b981;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-
-.nav-link-custom {
-    display: flex;
-    align-items: center;
-    padding: 12px 18px;
-    color: #64748b;
-    text-decoration: none;
-    border-radius: 15px;
-    margin-bottom: 5px;
-    transition: 0.3s;
-}
+.nav-link-custom { display: flex; align-items: center; padding: 12px 18px; color: #64748b; text-decoration: none; border-radius: 12px; margin-bottom: 5px; transition: 0.3s; font-weight: bold; }
 .nav-link-custom:hover { background: var(--primary-soft); color: var(--primary-main); }
 .nav-link-custom.active { background: var(--primary-main); color: white !important; }
-.nav-icon { width: 30px; font-size: 1.1rem; }
+.nav-icon { width: 30px; }
 
-.wallet-widget {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    border-radius: 20px;
-}
-.btn-glass-white {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: white;
-}
-.btn-glass-white:hover { background: #fff; color: var(--primary-main); }
+.wallet-widget { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 20px; }
+.btn-glass-white { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; }
 
-/* Table Styling */
-.custom-table thead th {
-    background: var(--bg-light-soft);
-    color: #64748b;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 18px 15px;
-    border-bottom: 1px solid #f1f5f9;
-}
-.project-icon-box {
-    width: 40px;
-    height: 40px;
-    background: var(--primary-soft);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.offer-badge {
-    background: #f1f5f9;
-    padding: 5px 12px;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: fit-content;
-}
-.offer-badge .num { font-weight: 800; color: var(--navy-main); }
-.offer-badge .lab { font-size: 9px; color: #94a3b8; }
+.stat-glass-card { background: #fff; border-radius: 18px; transition: 0.3s; }
+.stat-glass-card:hover { transform: translateY(-5px); }
+.stat-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+.btn-action-view { width: 35px; height: 35px; background: #f8fafc; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: #64748b; border: 1px solid #e2e8f0; transition: 0.3s; }
+.btn-action-view:hover { background: var(--primary-main); color: white; border-color: var(--primary-main); }
+.project-icon-box { width: 38px; height: 38px; background: var(--primary-soft); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.offer-badge { background: #f8fafc; padding: 5px 10px; border-radius: 8px; display: inline-flex; flex-direction: column; align-items: center; border: 1px solid #eee; }
+.offer-badge .num { font-weight: 900; font-size: 14px; color: var(--navy-main); }
+.offer-badge .lab { font-size: 9px; color: #94a3b8; font-weight: bold; }
 
-.btn-action-view {
-    width: 38px;
-    height: 38px;
-    background: #fff;
-    border-radius: 12px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
-    transition: 0.3s;
-}
-.btn-action-view:hover {
-    background: var(--primary-main);
-    color: white;
-    transform: translateX(-3px);
-}
-
-.promo-card { background: #1e293b; border-radius: 24px; color: white; }
-.promo-shapes {
-    position: absolute;
-    top: -20px;
-    left: -20px;
-    width: 100px;
-    height: 100px;
-    background: rgba(16, 185, 129, 0.1);
-    border-radius: 50%;
-    filter: blur(30px);
-}
-
-.modern-timeline .timeline-step { position: relative; padding-right: 25px; padding-bottom: 20px; border-right: 2px solid #f1f5f9; }
-.timeline-step .step-icon { position: absolute; right: -7px; top: 0; width: 12px; height: 12px; background: #10b981; border-radius: 50%; border: 2px solid white; }
-
-.bg-warning-soft { background: rgba(245, 158, 11, 0.1); }
-.bg-success-soft { background: rgba(16, 185, 129, 0.1); }
-.bg-primary-soft { background: rgba(59, 130, 246, 0.1); }
-
+.bg-success-soft { background: #ecfdf5; color: #10b981; }
+.bg-warning-soft { background: #fffbeb; color: #f59e0b; }
+.bg-info-soft { background: #f0f9ff; color: #0ea5e9; }
+.bg-secondary-soft { background: #f1f5f9; color: #64748b; }
 .extra-small { font-size: 11px; }
-.notif-count {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: #ef4444;
-    color: white;
-    font-size: 9px;
-    padding: 2px 5px;
-    border-radius: 50%;
-    border: 2px solid white;
-}
+
+.status-pulse { position: absolute; bottom: 10px; right: 10px; width: 14px; height: 14px; background: #10b981; border-radius: 50%; border: 2px solid white; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+.notif-count { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 10px; padding: 2px 6px; border-radius: 50%; border: 2px solid white; }
 </style>
 
 <script>
+    let lastMessagesCount = -1;
+
+    function updateMessagesCount() {
+        fetch('/messages/unread-count')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('unread-messages-count-global');
+                const count = data.count;
+
+                if (count > 0) {
+                    badge.innerText = count > 99 ? '99+' : count;
+                    badge.classList.remove('d-none');
+                    if (count > lastMessagesCount && lastMessagesCount !== -1) {
+                        badge.classList.remove('animate__bounceIn');
+                        void badge.offsetWidth;
+                        badge.classList.add('animate__bounceIn');
+                    }
+                } else {
+                    badge.classList.add('d-none');
+                }
+                lastMessagesCount = count;
+            })
+            .catch(error => console.error('Error fetching messages count:', error));
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Tooltip init
+        updateMessagesCount();
+        setInterval(updateMessagesCount, 10000);
+
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
-        });
-
-        // Entrance Animation
-        const elements = document.querySelectorAll('.stat-glass-card, .glass-card');
-        elements.forEach((el, i) => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(15px)';
-            setTimeout(() => {
-                el.style.transition = 'all 0.5s ease-out';
-                el.style.opacity = '1';
-                el.style.transform = 'translateY(0)';
-            }, i * 100);
         });
     });
 </script>

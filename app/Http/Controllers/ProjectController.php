@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Proposal;
 use App\Models\User;
 use App\Models\Transaction;
+use App\Models\Review; // تأكد من استدعاء موديل التقييمات
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +47,7 @@ class ProjectController extends Controller
                     $imagePath = $request->file('image_url')->store('projects/covers', 'public');
                 }
 
-                // معالجة الملفات المرفقة (تخزين المسارات في مصفوفة لتناسب حقل JSON)
+                // معالجة الملفات المرفقة
                 $attachmentsPaths = [];
                 if ($request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $file) {
@@ -54,7 +55,7 @@ class ProjectController extends Controller
                     }
                 }
 
-                // إنشاء المشروع وحفظ مصفوفة المسارات مباشرة في حقل attachments
+                // إنشاء المشروع
                 $project = Project::create([
                     'user_id'      => Auth::id(),
                     'title'        => $request->title,
@@ -63,7 +64,7 @@ class ProjectController extends Controller
                     'currency'     => $request->currency,
                     'duration'     => $request->duration,
                     'image_url'    => $imagePath,
-                    'attachments'  => $attachmentsPaths, // يتم تحويلها لـ JSON تلقائياً بواسطة الموديل
+                    'attachments'  => $attachmentsPaths,
                     'type'         => $request->input('type', 'normal'),
                     'status'       => 'open',
                     'admin_status' => 'pending',
@@ -81,7 +82,6 @@ class ProjectController extends Controller
      */
     public function show(Project $project)
     {
-        // تم حذف 'attachments' من هنا لأنها حقل في الجدول وليست علاقة Relation
         $project->load(['proposals.user', 'user', 'freelancer']);
         return view('projects.show', compact('project'));
     }
@@ -156,19 +156,33 @@ class ProjectController extends Controller
     }
 
     /**
-     * 7. استلام المشروع وتحويل الأموال للمستقل
+     * 7. استلام المشروع وتحويل الأموال للمستقل مع حفظ التقييم التفصيلي
      */
     public function completeProject(Request $request, Project $project)
     {
+        // التأكد من الصلاحية
         if (Auth::id() !== $project->user_id) {
-            return back()->with('error', 'غير مسموح لك.');
+            return back()->with('error', 'غير مسموح لك بهذا الإجراء.');
         }
+
+        // التحقق من مدخلات التقييم (المعايير الأربعة + التعليق)
+        $request->validate([
+            'rating_quality'       => 'required|integer|min:1|max:5',
+            'rating_time'          => 'required|integer|min:1|max:5',
+            'rating_behavior'      => 'required|integer|min:1|max:5',
+            'rating_communication' => 'required|integer|min:1|max:5',
+            'review_comment'       => 'required|string|min:10|max:1000',
+        ]);
 
         DB::transaction(function () use ($project, $request) {
             $freelancer = User::findOrFail($project->freelancer_id);
             $amount = $project->final_price ?? $project->price;
 
-            // تحويل المبلغ لمحفظة المستقل
+            // حساب متوسط التقييم النهائي
+            $avgRating = ($request->rating_quality + $request->rating_time +
+                          $request->rating_behavior + $request->rating_communication) / 4;
+
+            // أ- تحويل المبلغ لمحفظة المستقل
             if ($freelancer->wallet) {
                 $freelancer->wallet->increment('balance', $amount);
 
@@ -181,17 +195,31 @@ class ProjectController extends Controller
                 ]);
             }
 
-            // تحديث تقييم المستقل
-            if ($request->has('rating')) {
-                $freelancer->update([
-                    'freelancer_rating' => $request->rating,
-                ]);
-            }
+            // ب- إنشاء سجل التقييم في جدول الـ reviews
+            Review::create([
+                'project_id'           => $project->id,
+                'freelancer_id'        => $project->freelancer_id,
+                'user_id'              => Auth::id(),
+                'rating_quality'       => $request->rating_quality,
+                'rating_time'          => $request->rating_time,
+                'rating_behavior'      => $request->rating_behavior,
+                'rating_communication' => $request->rating_communication,
+                'rating'               => $avgRating, // التقييم الكلي
+                'comment'              => $request->review_comment,
+            ]);
 
+            // ج- تحديث حالة المشروع والتقييم العام في ملف المستقل
             $project->update(['status' => 'completed']);
+
+            $freelancer->update([
+                'freelancer_rating' => $avgRating,
+            ]);
+
+            // د- إضافة نقاط التميز (اختياري)
+            // $freelancer->increment('points', 8);
         });
 
         return redirect()->route('projects.show', $project->id)
-            ->with('success', 'تم استلام المشروع بنجاح، وتحويل المستحقات للمنفذ.');
+            ->with('success', 'تم استلام المشروع بنجاح، وتحويل المستحقات، وتقييم المستقل.');
     }
 }

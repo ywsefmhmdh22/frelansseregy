@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\Review; // تأكد أن هذا السطر موجود
+use App\Observers\ReviewObserver; // تأكد أن هذا السطر موجود
 use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,18 +24,30 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // حل مشكلة طول المفاتيح في قواعد البيانات القديمة (احتياطي)
+        // حل مشكلة طول المفاتيح
         Schema::defaultStringLength(191);
 
         /**
-         * 1. إنشاء محفظة تلقائياً لكل مستخدم جديد
-         * بمجرد ما أي حد يسجل في الموقع (فري لانسر أو عميل)
-         * السيستم هيفتحله حساب في جدول wallets ورصيده 0.00
+         * 1. تعريف بوابة الدخول للوحة التحكم
+         */
+        \Illuminate\Support\Facades\Gate::define('admin-access', function (User $user) {
+            return $user->role === 'admin';
+        });
+
+        /**
+         * 2. إنشاء محفظة تلقائياً لكل مستخدم جديد
          */
         User::created(function ($user) {
-            $user->wallet()->create([
-                'balance' => 0.00,
-            ]);
+            if (!$user->wallet) {
+                $user->wallet()->create([
+                    'balance' => 0.00,
+                ]);
+            }
         });
+
+        /**
+         * 3. ربط مراقب التقييمات لتحديث عدادات النخبة (هذا هو السطر الناقص)
+         */
+        Review::observe(ReviewObserver::class);
     }
 }

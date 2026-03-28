@@ -6,6 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+// استدعاء الموديلات المرتبطة
+use App\Models\Wallet;
+use App\Models\Transaction;
+use App\Models\Project;
+use App\Models\Proposal;
+use App\Models\Service;
+use App\Models\Order;
+use App\Models\Review;
+use App\Models\Portfolio;
+
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
@@ -19,6 +29,7 @@ class User extends Authenticatable
         'password',
         'role',
         'phone',
+        'headline', // تم إضافته للمسمى الوظيفي في الداشبورد
         'skills',
         'bio',
         'country',
@@ -32,8 +43,10 @@ class User extends Authenticatable
         'is_profile_completed',
         'last_seen',
         'is_banned',
-        'freelancer_rating', // تم الإضافة للتقييم
-        'total_reviews',    // تم الإضافة لإحصاء التقييمات
+        'freelancer_rating',
+        'total_reviews',
+        'total_projects_completed',
+        'excellent_projects_count',
     ];
 
     /**
@@ -56,11 +69,28 @@ class User extends Authenticatable
             'is_banned' => 'boolean',
             'last_seen' => 'datetime',
             'balance' => 'decimal:2',
-            'freelancer_rating' => 'float', // تحويل التقييم لرقم عشري
+            'freelancer_rating' => 'float',
+            'skills' => 'array', // تم إضافته ليعامل المهارات كمصفوفة تلقائياً في Blade
         ];
     }
 
     // ================= العلاقات والوظائف =================
+
+    /**
+     * علاقة التقييمات المستلمة
+     */
+    public function reviews()
+    {
+        return $this->hasMany(Review::class, 'freelancer_id');
+    }
+
+    /**
+     * علاقة معرض الأعمال
+     */
+    public function portfolios()
+    {
+        return $this->hasMany(Portfolio::class);
+    }
 
     /**
      * علاقة المستخدم بالمحفظة (واحد لواحد)
@@ -103,15 +133,42 @@ class User extends Authenticatable
     }
 
     /**
+     * علاقة الخدمات التي يمتلكها المستقل
+     */
+    public function services()
+    {
+        return $this->hasMany(Service::class);
+    }
+
+    /**
+     * علاقة الخدمات المباعة (الطلبات) - تأكد أن العمود هو seller_id في جدول orders
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'seller_id');
+    }
+
+    /**
+     * علاقة المبيعات
+     */
+    public function sales()
+    {
+        return $this->hasMany(Order::class, 'seller_id');
+    }
+
+    /**
+     * علاقة التقييمات المستلمة (اسم إضافي للوضوح)
+     */
+    public function receivedReviews()
+    {
+        return $this->hasMany(Review::class, 'freelancer_id');
+    }
+
+    /**
      * التحقق هل المستخدم متصل الآن
      */
     public function isOnline()
     {
         return $this->last_seen && $this->last_seen->gt(now()->subMinutes(5));
     }
-    //
-    public function services()
-{
-    return $this->hasMany(Service::class);
-}
 }

@@ -1,4 +1,4 @@
-@extends('layouts.master')
+ @extends('layouts.master')
 
 @section('content')
 <div class="container py-5 text-end" dir="rtl">
@@ -25,7 +25,12 @@
                 <div class="card-inner">
                     {{-- Image Wrapper --}}
                     <div class="image-wrapper">
-                        <img src="{{ asset('storage/' . $work->image) }}" class="img-fluid" alt="{{ $work->title }}" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500&auto=format&fit=crop'">
+                        {{-- تم التعديل لعرض الصورة من عمود image_url مباشرة --}}
+                        <img src="{{ $work->image_url }}"
+                             class="img-fluid"
+                             alt="{{ $work->title }}"
+                             onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500&auto=format&fit=crop'">
+
                         <div class="card-overlay">
                             <a href="{{ route('projects.show', $work->id) }}" class="view-project-btn">عرض المشروع <i class="fas fa-arrow-left ms-2"></i></a>
                         </div>
@@ -37,10 +42,12 @@
                     {{-- Content --}}
                     <div class="content-body p-4">
                         <div class="d-flex align-items-center mb-3">
-                            <img src="https://ui-avatars.com/api/?name={{ $work->freelancer->name }}&background=10b981&color=fff" class="author-avatar" alt="freelancer">
+                            {{-- استخدام ? لتجنب الخطأ في حالة عدم وجود freelancer --}}
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($work->freelancer?->name ?? 'User') }}&background=10b981&color=fff" class="author-avatar" alt="freelancer">
                             <div class="ms-3 me-2 text-start">
-                                <h6 class="mb-0 fw-bold text-dark">{{ $work->freelancer->name }}</h6>
-                                <small class="text-muted">لصالح: {{ $work->client->name }}</small>
+                                {{-- استخدام ? و الـ Null Coalesce لعرض اسم بديل آمن --}}
+                                <h6 class="mb-0 fw-bold text-dark">{{ $work->freelancer?->name ?? 'مستقل متميز' }}</h6>
+                                <small class="text-muted">لصالح: {{ $work->client?->name ?? 'مشروع خاص' }}</small>
                             </div>
                         </div>
                         <h5 class="work-title mb-0">{{ $work->title }}</h5>
@@ -63,10 +70,8 @@
 </div>
 
 <style>
-    /* الخطوط والأوزان */
     .fw-800 { font-weight: 800; }
 
-    /* ستايل الفلتر */
     .filter-btn {
         background: white;
         border: 2px solid #e2e8f0;
@@ -76,6 +81,7 @@
         font-weight: 700;
         transition: all 0.3s ease;
     }
+
     .filter-btn:hover, .filter-btn.active {
         background: #10b981;
         border-color: #10b981;
@@ -83,11 +89,7 @@
         box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
     }
 
-    /* ستايل الكارت الخرافي */
-    .modern-work-card {
-        perspective: 1000px;
-        height: 100%;
-    }
+    .modern-work-card { perspective: 1000px; height: 100%; }
 
     .card-inner {
         background: rgba(255, 255, 255, 0.9);
@@ -107,11 +109,7 @@
         box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
     }
 
-    .image-wrapper {
-        position: relative;
-        overflow: hidden;
-        height: 240px;
-    }
+    .image-wrapper { position: relative; overflow: hidden; height: 240px; }
 
     .image-wrapper img {
         width: 100%;
@@ -120,11 +118,8 @@
         transition: transform 0.6s ease;
     }
 
-    .modern-work-card:hover .image-wrapper img {
-        transform: scale(1.15);
-    }
+    .modern-work-card:hover .image-wrapper img { transform: scale(1.15); }
 
-    /* الأوفرلاي الزجاجي */
     .card-overlay {
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
@@ -136,9 +131,7 @@
         transition: all 0.4s ease;
     }
 
-    .modern-work-card:hover .card-overlay {
-        opacity: 1;
-    }
+    .modern-work-card:hover .card-overlay { opacity: 1; }
 
     .view-project-btn {
         background: white;
@@ -151,11 +144,8 @@
         transition: all 0.4s ease;
     }
 
-    .modern-work-card:hover .view-project-btn {
-        transform: translateY(0);
-    }
+    .modern-work-card:hover .view-project-btn { transform: translateY(0); }
 
-    /* بادج التقييم */
     .rating-badge {
         position: absolute;
         top: 15px;
@@ -169,13 +159,13 @@
         z-index: 2;
     }
 
-    /* تفاصيل المحتوى */
     .author-avatar {
         width: 45px;
         height: 45px;
         border-radius: 12px;
         border: 2px solid white;
         box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        object-fit: cover;
     }
 
     .work-title {
@@ -193,9 +183,7 @@
         transition: width 0.5s ease;
     }
 
-    .modern-work-card:hover .card-footer-line {
-        width: 100%;
-    }
+    .modern-work-card:hover .card-footer-line { width: 100%; }
 
     .header-line {
         height: 4px;

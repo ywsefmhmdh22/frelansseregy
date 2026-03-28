@@ -10,7 +10,7 @@ use App\Models\User;
 
 class PaymentController extends Controller
 {
-    // سعر الصرف الثابت
+    // سعر الصرف الثابت (1 دولار = 50 جنيه)
     protected $exchangeRate = 50.0;
 
     // نسبة عمولة المنصة (9%)
@@ -26,10 +26,20 @@ class PaymentController extends Controller
             'phone_number' => 'required_if:payment_method,wallet',
         ]);
 
-        $amount = $request->amount;
-        $currency = $request->currency;
+        $originalAmount = $request->amount; // المبلغ اللي اليوزر كتبه (سواء $ أو ج.م)
+        $originalCurrency = $request->currency;
         $method = $request->payment_method;
         $user = auth()->user();
+
+        // --- التعديل الجوهري هنا ---
+        // هنحول كل حاجة لجنيه عشان Paymob تقبل العملية بدون مشاكل
+        if ($originalCurrency === 'USD') {
+            $paymobAmount = $originalAmount * $this->exchangeRate;
+        } else {
+            $paymobAmount = $originalAmount;
+        }
+        $paymobCurrency = 'EGP'; // نجبر العملة تكون جنيه مصري دائماً للبوابة
+        // ---------------------------
 
         // 2. Token التوثيق
         $authResponse = Http::post('https://accept.paymob.com/api/auth/tokens', [
@@ -42,11 +52,11 @@ class PaymentController extends Controller
 
         $token = $authResponse->json()['token'];
 
-        // 3. تسجيل الطلب
+        // 3. تسجيل الطلب (نبعت المبلغ بالجنيه المحول)
         $orderResponse = Http::withToken($token)->post('https://accept.paymob.com/api/ecommerce/orders', [
             'delivery_needed' => 'false',
-            'amount_cents' => $amount * 100,
-            'currency' => $currency,
+            'amount_cents' => $paymobAmount * 100, // السعر بالجنيه المحول
+            'currency' => $paymobCurrency, // EGP
             'items' => [],
         ]);
 
@@ -61,9 +71,9 @@ class PaymentController extends Controller
                          ? env('PAYMOB_WALLET_INTEGRATION_ID')
                          : env('PAYMOB_INTEGRATION_ID');
 
-        // 5. مفتاح الدفع
+        // 5. مفتاح الدفع (نبعت المبلغ بالجنيه المحول والعملة EGP)
         $paymentKeyResponse = Http::withToken($token)->post('https://accept.paymob.com/api/acceptance/payment_keys', [
-            'amount_cents' => $amount * 100,
+            'amount_cents' => $paymobAmount * 100,
             'expiration' => 3600,
             'order_id' => $orderId,
             'billing_data' => [
@@ -75,7 +85,7 @@ class PaymentController extends Controller
                 'shipping_method' => 'NA', 'postal_code' => 'NA', 'city' => 'Cairo',
                 'country' => 'EG', 'state' => 'Cairo',
             ],
-            'currency' => $currency,
+            'currency' => $paymobCurrency, // دائماً EGP
             'integration_id' => $integrationId,
         ]);
 
@@ -85,11 +95,11 @@ class PaymentController extends Controller
 
         $paymentToken = $paymentKeyResponse->json()['token'];
 
-        // 6. تسجيل العملية (حفظ البيانات الأساسية قبل الدفع)
+        // 6. تسجيل العملية (نحفظ العملة الأصلية والمبلغ الأصلي عشان الـ Callback يعرف يشحن إيه)
         Transaction::create([
             'user_id' => $user->id,
-            'amount' => $amount,
-            'currency' => $currency,
+            'amount' => $originalAmount, // نحفظ الـ 10 لو كانت دولار
+            'currency' => $originalCurrency, // نحفظ USD
             'type' => 'deposit',
             'payment_id' => $orderId,
             'payment_method' => $method,
@@ -107,13 +117,10 @@ class PaymentController extends Controller
             ]);
 
             $walletData = $walletPayResponse->json();
-
             if ($walletPayResponse->successful() && !empty($walletData['redirect_url'])) {
                 return redirect()->away($walletData['redirect_url']);
             }
-
             return back()->with('error', 'محفظة الموبايل غير مسجلة أو بها مشكلة.');
-
         } else {
             $iframeId = env('PAYMOB_IFRAME_ID');
             return redirect()->away("https://accept.paymob.com/api/acceptance/iframes/{$iframeId}?payment_token={$paymentToken}");
@@ -130,23 +137,23 @@ class PaymentController extends Controller
 
             if ($transaction && $transaction->status !== 'success') {
 
-                // 1. تحويل المبلغ المكتوب للدولار أولاً (إذا كان بالجنيه)
-                $amountInUsd = $transaction->amount;
-                if ($transaction->currency == 'EGP') {
-                    $amountInUsd = $transaction->amount / $this->exchangeRate;
-                }
+                // 1. بما إننا مخزنين العملة الأصلية في الداتا بيز:
+                // لو كانت USD، هناخد المبلغ زي ما هو.
+                // لو كانت EGP، هنقسمه على 50.
+                $amountInUsd = ($transaction->currency == 'USD')
+                               ? $transaction->amount
+                               : ($transaction->amount / $this->exchangeRate);
 
                 // 2. تطبيق خصم عمولة المنصة (9%)
-                // الصافي = المبلغ بالدولار * (1 - 0.09)
                 $finalNetUsd = $amountInUsd * (1 - $this->platformFee);
 
-                // 3. تحديث حالة العملية وحفظ الصافي النهائي
+                // 3. تحديث حالة العملية
                 $transaction->update([
                     'status' => 'success',
                     'converted_amount' => $finalNetUsd
                 ]);
 
-                // 4. إضافة الرصيد الصافي للمحفظة
+                // 4. إضافة الرصيد الصافي للمحفظة بالدولار
                 $wallet = Wallet::firstOrCreate(
                     ['user_id' => $transaction->user_id],
                     ['balance' => 0]

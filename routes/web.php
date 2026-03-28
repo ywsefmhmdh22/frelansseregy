@@ -1,4 +1,4 @@
-<?php
+ <?php
 
 use Illuminate\Support\Facades\Route;
 use App\Models\Category;
@@ -18,6 +18,9 @@ use App\Models\Service;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Broadcast;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\PortfolioController;
+use App\Http\Controllers\Freelancer\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,12 +54,14 @@ Route::get('/Works', function () {
 Route::get('/top-rated', function () {
     $freelancers = User::where('role', 'freelancer')
                     ->where('is_profile_completed', 1)
+                    ->where('freelancer_rating', '>=', 4)
                     ->orderBy('freelancer_rating', 'desc')
                     ->take(20)->get();
     return view('top-rated', compact('freelancers'));
 })->name('top_rated');
 
-// سكريبت إصلاح المحافظ
+// ملاحظة: تم نقل Route::get('/profile/{id}') للأسفل لتجنب التعارض
+
 Route::get('/fix-wallets', function () {
     $users = User::all();
     foreach ($users as $user) {
@@ -87,17 +92,25 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // --- إعدادات الحساب الاحترافية (Profile Settings) ---
+    // --- إعدادات الحساب (يجب أن تكون قبل مسار الـ ID المتغير) ---
     Route::prefix('profile')->group(function () {
         Route::get('/settings', [ProfileController::class, 'settings'])->name('profile.settings');
-
-        // المسارات المعدلة لتتوافق مع الـ View والـ Controller
         Route::post('/settings/update-personal', [ProfileController::class, 'updatePersonal'])->name('profile.update.personal');
         Route::post('/settings/update-password', [ProfileController::class, 'updatePassword'])->name('profile.update.password');
-
-        // هنا التعديل المهم: تم تغيير الاسم لـ update_image (بالـ underscore) ليطابق الـ Dashboard
         Route::post('/settings/update-image', [ProfileController::class, 'updateImage'])->name('profile.update_image');
+        Route::get('/portfolio/create', [PortfolioController::class, 'create'])->name('portfolio.create');
+        Route::post('/portfolio/store', [PortfolioController::class, 'store'])->name('portfolio.store');
+        Route::post('/orders/{order}/submit-delivery', [OrderController::class, 'submitDelivery'])->name('orders.submit_delivery');
+    Route::get('/orders/{order}/dispute', [OrderController::class, 'dispute'])->name('orders.dispute');
     });
+
+    // مسارات الملفات الشخصية العامة (تم وضعها هنا بعد الـ settings)
+    Route::get('/profile/{id}', [UserController::class, 'show'])->name('profile.show');
+    Route::get('/profile/{id}/reviews', [UserController::class, 'showReviews'])->name('profile.reviews');
+    Route::get('/profile/{id}/portfolio', [UserController::class, 'showPortfolio'])->name('profile.portfolio');
+    // تأكد أن الاسم مطابق تماماً لما تناديه في الـ Blade
+    Route::post('/profile/orders/{id}/submit-delivery', [OrderController::class, 'submitDelivery'])
+    ->name('orders.submitDelivery');
 
     // استكمال البروفايل لأول مرة
     Route::get('/complete-profile', [ProfileCompletionController::class, 'index'])->name('profile.complete');
@@ -116,17 +129,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['profile.completed'])->group(function () {
 
         // لوحة تحكم المستقل
-        Route::get('/freelancer/dashboard', function() {
-            $user = auth()->user();
-            if($user->role !== 'freelancer') return redirect()->route('client.dashboard');
-
-            $workingProjects = Project::where('freelancer_id', $user->id)
-                                        ->whereIn('status', ['in_progress', 'pending_delivery'])->get();
-            $pendingBalance = Project::where('freelancer_id', $user->id)
-                                        ->where('status', 'in_progress')->sum('final_price');
-
-            return view('dashboards.freelancer Dashboard', compact('user', 'workingProjects', 'pendingBalance'));
-        })->name('freelancer.dashboard');
+        Route::get('/freelancer/dashboard', [DashboardController::class, 'index'])->name('freelancer.dashboard');
 
         // لوحة تحكم العميل
         Route::get('/client/dashboard', [ClientDashboardController::class, 'index'])->name('client.dashboard');
@@ -142,6 +145,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/{project}/review', [ProjectController::class, 'reviewPage'])->name('projects.review');
             Route::post('/{project}/complete', [ProjectController::class, 'completeProject'])->name('projects.complete');
             Route::post('/{project}/request-delivery', [ProjectController::class, 'requestDelivery'])->name('projects.requestDelivery');
+
+            Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+            Route::get('/orders/{id}/complete', [OrderController::class, 'showCompletePage'])->name('orders.complete.view');
+            Route::post('/orders/complete-process', [OrderController::class, 'completeAndRate'])->name('orders.complete.post');
+            Route::post('/services/order/{order}/request-delivery', [ServiceController::class, 'requestDelivery'])->name('services.requestDelivery');
         });
 
         // --- نظام المحفظة والدفع ---
@@ -151,15 +159,16 @@ Route::middleware('auth')->group(function () {
             Route::post('/payment/initiate', [PaymentController::class, 'initiatePayment'])->name('pay.initiate');
             Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('pay.callback');
 
-            // سحب الأرباح
             Route::get('/withdraw', [WithdrawController::class, 'create'])->name('withdraw.create');
             Route::post('/withdraw/process', [WithdrawController::class, 'store'])->name('withdraw.request');
+            Route::get('/wallet/withdraw', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
         });
 
         // --- نظام الخدمات المصغرة ---
         Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
         Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
         Route::get('/services/checkout/{id}', [ServiceController::class, 'checkout'])->name('services.checkout');
+        Route::get('/purchased-services', [OrderController::class, 'purchasedServices'])->name('purchased.services');
         Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.store');
 
         // الإشعارات والمفضلة
