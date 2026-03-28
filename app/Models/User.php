@@ -29,7 +29,7 @@ class User extends Authenticatable
         'password',
         'role',
         'phone',
-        'headline', // تم إضافته للمسمى الوظيفي في الداشبورد
+        'headline',
         'skills',
         'bio',
         'country',
@@ -39,14 +39,15 @@ class User extends Authenticatable
         'id_number',
         'id_image',
         'id_image_back',
-        'verification_status',
-        'is_profile_completed',
+        'verification_status', // هام جداً لقبول الحساب فوراً
+        'is_profile_completed', // هام ليظهر الحساب مكتمل للأدمن
         'last_seen',
         'is_banned',
         'freelancer_rating',
         'total_reviews',
         'total_projects_completed',
         'excellent_projects_count',
+        'email_verified_at', // تم إضافته لتخطي تفعيل البريد للأدمن
     ];
 
     /**
@@ -70,7 +71,7 @@ class User extends Authenticatable
             'last_seen' => 'datetime',
             'balance' => 'decimal:2',
             'freelancer_rating' => 'float',
-            'skills' => 'array', // تم إضافته ليعامل المهارات كمصفوفة تلقائياً في Blade
+            'skills' => 'array',
         ];
     }
 
@@ -141,7 +142,7 @@ class User extends Authenticatable
     }
 
     /**
-     * علاقة الخدمات المباعة (الطلبات) - تأكد أن العمود هو seller_id في جدول orders
+     * علاقة الخدمات المباعة (الطلبات)
      */
     public function orders()
     {
@@ -157,7 +158,7 @@ class User extends Authenticatable
     }
 
     /**
-     * علاقة التقييمات المستلمة (اسم إضافي للوضوح)
+     * علاقة التقييمات المستلمة
      */
     public function receivedReviews()
     {

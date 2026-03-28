@@ -16,29 +16,44 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
-    // 2. معالجة بيانات التسجيل وحفظها في قاعدة البيانات
+    // 2. معالجة بيانات التسجيل وحفظها
     public function register(Request $request)
     {
-        // التأكد من صحة البيانات المدخلة
+        // التأكد من صحة البيانات والسماح بـ admin
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'in:freelancer,client'], // التأكد من نوع الحساب
+            'role' => ['required', 'in:freelancer,client,admin'],
         ]);
 
-        // إنشاء المستخدم
-        $user = User::create([
+        // تجهيز بيانات المستخدم الأساسية
+        $userData = [
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
-        ]);
+        ];
+
+        // منطق الأدمن: التوثيق الفوري بناءً على مسميات موديل اليوزر الخاص بك
+        if ($request->role === 'admin') {
+            $userData['verification_status'] = 'verified'; // القيمة التي تجعل الحساب مقبولاً فوراً
+            $userData['is_profile_completed'] = true;     // تخطي مرحلة إكمال الملف
+            $userData['email_verified_at'] = now();       // تفعيل البريد الإلكتروني تلقائياً
+            $userData['is_banned'] = false;               // التأكد من عدم حظره
+        }
+
+        // إنشاء المستخدم في قاعدة البيانات
+        $user = User::create($userData);
 
         // تسجيل الدخول مباشرة بعد إنشاء الحساب
         Auth::login($user);
 
-        // التوجيه إلى لوحة التحكم المناسبة بناءً على نوع الحساب
+        // التوجيه بناءً على الرتبة (Role)
+        if ($user->role === 'admin') {
+            return redirect('/admin/dashboard');
+        }
+
         if ($user->role === 'freelancer') {
             return redirect('/freelancer/dashboard');
         }
@@ -65,8 +80,13 @@ class AuthController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // التوجيه بناءً على نوع الحساب
             $user = Auth::user();
+
+            // التوجيه بناءً على نوع الحساب عند تسجيل الدخول العادي
+            if ($user->role === 'admin') {
+                return redirect()->intended('/admin/dashboard');
+            }
+
             if ($user->role === 'freelancer') {
                 return redirect()->intended('/freelancer/dashboard');
             }
