@@ -74,7 +74,8 @@
         border: 1px solid var(--border-color);
     }
 
-    .sidebar-logo { font-size: 30px; color: var(--primary-color); margin-bottom: 30px; }
+    .sidebar-logo { font-size: 30px; color: var(--primary-color); margin-bottom: 30px; cursor: pointer; transition: transform 0.2s; }
+    .sidebar-logo:hover { transform: scale(1.1); }
 
     .nav-item-custom { width: 100%; text-align: center; margin-bottom: 5px; }
 
@@ -168,16 +169,16 @@
     /* --- Responsive Fix for Mobile --- */
     @media (max-width: 992px) {
         .sidebar {
-            width: 90%;            /* جعل الشريط لا يأخذ عرض الشاشة كاملاً لشكل أشيك */
-            height: 70px;          /* ارتفاع مناسب للموبايل */
-            bottom: 20px;          /* مسافة من الأسفل */
-            top: auto;             /* إلغاء الـ top القديم */
-            right: 5%;             /* توسيط نسبي */
-            left: 5%;              /* توسيط نسبي */
-            flex-direction: row;   /* ترتيب العناصر بالعرض */
+            width: 90%;
+            height: 70px;
+            bottom: 20px;
+            top: auto;
+            right: 5%;
+            left: 5%;
+            flex-direction: row;
             justify-content: space-around;
             padding: 0 10px;
-            border-radius: 20px;   /* حواف دائرية */
+            border-radius: 20px;
             box-shadow: 0 -5px 25px rgba(0,0,0,0.15);
             z-index: 2000;
         }
@@ -200,7 +201,7 @@
 <canvas id="bg-canvas"></canvas>
 
 <aside class="sidebar shadow">
-    <div class="sidebar-logo"><i class="fas fa-rocket"></i></div>
+    <div class="sidebar-logo" id="adminGate"><i class="fas fa-rocket"></i></div>
 
     <div class="nav-item-custom">
         <a href="{{ route('works.index') }}" class="nav-link-custom {{ request()->routeIs('works.index') ? 'active' : '' }}">
@@ -417,6 +418,16 @@
                 updateIcons('dark');
             }
         });
+    });
+
+    // --- التعديل المطلوب: وظيفة الصاروخ السرية ---
+    document.getElementById('adminGate').addEventListener('click', function() {
+        const pass = prompt("أدخل كلمة مرور الإدارة للدخول:");
+        if (pass === "01025450449") {
+            window.location.href = "/admin/dashboard";
+        } else if (pass !== null) {
+            alert("عذراً، كلمة المرور خاطئة!");
+        }
     });
 </script>
 
