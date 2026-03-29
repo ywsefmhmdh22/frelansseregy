@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -15,10 +18,10 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
 
-            // --- نظام الرول ---
+            // --- نظام الرول (تم إضافة admin لضمان عدم حدوث Data Truncated) ---
             $table->enum('role', ['freelancer', 'client', 'admin'])->default('client');
 
-            // --- البيانات الشخصية (اللي كانت في الملف الصغير) ---
+            // --- البيانات الشخصية ---
             $table->string('profile_image')->nullable();
             $table->string('headline')->nullable();
             $table->text('skills')->nullable();
@@ -38,10 +41,13 @@ return new class extends Migration
             $table->string('id_number')->nullable();
             $table->string('id_image')->nullable();
             $table->string('id_image_back')->nullable();
-            // خليتها Enum هنا عشان تطابق ملف التوثيق بتاعك
+
+            // --- حالة الحساب (تم إضافة verified و is_banned) ---
             $table->enum('verification_status', ['unverified', 'pending', 'verified', 'rejected'])->default('unverified');
             $table->boolean('is_profile_completed')->default(false);
+            $table->boolean('is_banned')->default(false); // العمود اللي كان ناقص
 
+            $table->timestamp('last_seen')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
@@ -62,6 +68,9 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('users');
