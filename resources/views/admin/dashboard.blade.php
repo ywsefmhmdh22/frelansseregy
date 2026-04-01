@@ -1,245 +1,252 @@
  @extends('layouts.master')
 
 @section('content')
-<div class="container-fluid py-4 px-lg-5">
-    <div class="d-flex justify-content-between align-items-center mb-5 bg-white p-4 rounded-4 shadow-sm border-start border-5 border-dark">
-        <div>
-            <h2 class="fw-bold text-dark mb-1"><i class="fas fa-user-shield me-2 text-primary"></i> مركز قيادة المنصة</h2>
-            <p class="text-secondary mb-0 small">أهلاً بك أيها المدير. لديك التحكم الكامل في كافة مفاصل المنصة ومراقبة النشاط اللحظي.</p>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="command-center-wrapper">
+    <div id="particles-js"></div>
+
+    <div class="container-fluid py-4 px-lg-5 position-relative" style="z-index: 2;">
+
+        {{-- الهيدر العلوي --}}
+        <div class="d-flex justify-content-between align-items-center mb-5 glass-header p-4 rounded-4 shadow-2xl border-start border-info border-5 animate__animated animate__fadeInDown">
+            <div>
+                <h1 class="fw-black text-white mb-1 tracking-tighter">
+                    <span class="text-info">FOX</span> HUNTER <span class="fs-6 text-muted fw-light">v2.0</span>
+                </h1>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="status-dot-online"></span>
+                    <p class="text-light opacity-75 mb-0 small">أهلاً يا سيد يوسف. "الرادار المالي" نشط.. الإمبراطورية تحت السيطرة.</p>
+                </div>
+            </div>
+            <div class="stats-pills d-flex gap-3">
+                <div class="stat-pill glass-card p-3 rounded-4 border border-secondary border-opacity-25 shadow-glow-blue">
+                    <small class="text-info d-block fw-bold mb-1 text-uppercase">الخزنة المركزية</small>
+                    <span class="fw-black fs-4 text-white" id="live-balance">{{ number_format($users->sum('balance')) }} <small class="fs-6 opacity-50">ج.م</small></span>
+                </div>
+                <div class="stat-pill bg-info p-3 rounded-4 shadow-glow-info text-center text-black">
+                    <small class="fw-bold d-block mb-1">العملاء النشطون</small>
+                    <span class="fw-black fs-4">{{ $users->filter(fn($u) => method_exists($u, 'isOnline') ? $u->isOnline() : false)->count() }}</span>
+                </div>
+            </div>
         </div>
-        <div class="stats-pills d-flex gap-3">
-            <div class="stat-pill bg-white p-3 rounded-4 border shadow-sm">
-                <small class="text-muted d-block fw-bold mb-1">إجمالي المستخدمين</small>
-                <span class="fw-bold fs-4 text-dark">{{ $users->count() }}</span>
-            </div>
-            <div class="stat-pill bg-white p-3 rounded-4 border shadow-sm border-warning">
-                <small class="text-muted d-block fw-bold mb-1">بانتظار الموافقة</small>
-                <span class="fw-bold fs-4 text-warning">{{ $pendingProjects->count() }}</span>
-            </div>
-            <div class="stat-pill bg-white p-3 rounded-4 border shadow-sm border-success">
-                <small class="text-muted d-block fw-bold mb-1">المتصلون الآن</small>
-                <span class="fw-bold fs-4 text-success">{{ $users->filter(fn($u) => $u->isOnline())->count() }}</span>
-            </div>
+
+        {{-- القائمة العلويّة --}}
+        <div class="d-flex justify-content-center mb-5 animate__animated animate__fadeIn">
+            <ul class="nav nav-pills gap-3 glass-nav p-2 rounded-pill shadow-lg" id="adminTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active rounded-pill px-4 fw-bold" id="registration-tab" data-bs-toggle="pill" data-bs-target="#registration" type="button">
+                        <i class="fas fa-bolt me-2"></i>الطلبات الجديدة
+                        @php $newRequests = $users->where('verification_status', 'unverified')->count(); @endphp
+                        @if($newRequests > 0) <span class="badge bg-info ms-2">{{ $newRequests }}</span> @endif
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill px-4 fw-bold" id="master-directory-tab" data-bs-toggle="pill" data-bs-target="#master-directory" type="button">
+                        <i class="fas fa-shield-halved me-2"></i>سجلات الهيمنة
+                    </button>
+                </li>
+            </ul>
         </div>
-    </div>
 
-    <div class="d-flex justify-content-center mb-4">
-        <ul class="nav nav-pills gap-2 bg-white p-2 rounded-pill shadow-sm border" id="adminTab" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link active rounded-pill px-5 fw-bold" id="freelancers-tab" data-bs-toggle="pill" data-bs-target="#freelancers" type="button">المستقلين</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link rounded-pill px-5 fw-bold" id="clients-tab" data-bs-toggle="pill" data-bs-target="#clients" type="button">العملاء</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link rounded-pill px-5 fw-bold position-relative" id="projects-tab" data-bs-toggle="pill" data-bs-target="#projects" type="button">
-                    المشاريع المعلقة
-                    @if($pendingProjects->count() > 0)
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow">
-                            {{ $pendingProjects->count() }}
-                        </span>
-                    @endif
-                </button>
-            </li>
-        </ul>
-    </div>
+        <div class="tab-content" id="adminTabContent">
+            {{-- قسم السجلات --}}
+            <div class="tab-pane fade show active" id="master-directory" role="tabpanel">
+                <div class="row g-4">
+                    @foreach($users as $user)
+                    <div class="col-xl-4 col-md-6 animate__animated animate__zoomIn">
+                        <div class="dominion-card rounded-4 position-relative overflow-hidden">
+                            <div class="card-status-bar {{ $user->role == 'freelancer' ? 'bg-success' : 'bg-info' }}"></div>
 
-    <div class="tab-content" id="adminTabContent">
-
-        <div class="tab-pane fade show active" id="freelancers" role="tabpanel">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="px-4 py-3">المستقل</th>
-                                <th>التواجد</th>
-                                <th>اكتمال الملف</th>
-                                <th>آخر ظهور</th>
-                                <th class="text-center">الإجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($users->where('role', 'freelancer') as $freelancer)
-                            <tr class="{{ $freelancer->is_banned ? 'bg-light opacity-75' : '' }}">
-                                <td class="px-4">
-                                    <div class="d-flex align-items-center">
-                                        <div class="position-relative">
-                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($freelancer->name) }}&background=random" class="rounded-circle me-3" width="45">
-                                            @if($freelancer->isOnline())
-                                                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1" style="transform: translate(-10px, -5px);"></span>
-                                            @endif
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold text-dark">{{ $freelancer->name }}</div>
-                                            <small class="text-muted">{{ $freelancer->email }}</small>
-                                        </div>
+                            <div class="glass-card p-4 h-100">
+                                <div class="d-flex justify-content-between align-items-start mb-4">
+                                    <div class="online-status">
+                                        <span class="dot {{ method_exists($user, 'isOnline') && $user->isOnline() ? 'online' : 'offline' }}"></span>
+                                        <small class="text-uppercase fw-black opacity-50">{{ method_exists($user, 'isOnline') && $user->isOnline() ? 'Active' : 'Idle' }}</small>
                                     </div>
-                                </td>
-                                <td>
-                                    @if($freelancer->isOnline())
-                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">متصل الآن</span>
-                                    @else
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3">أوفلاين</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="progress flex-grow-1" style="height: 6px; width: 80px;">
-                                            <div class="progress-bar bg-{{ $freelancer->is_profile_completed ? 'success' : 'warning' }}" style="width: {{ $freelancer->is_profile_completed ? '100%' : '40%' }}"></div>
-                                        </div>
-                                        <small class="text-muted fw-bold">{{ $freelancer->is_profile_completed ? '100%' : '40%' }}</small>
-                                    </div>
-                                </td>
-                                <td><small class="text-muted fw-bold">{{ $freelancer->last_seen ? $freelancer->last_seen->diffForHumans() : 'لم يظهر أبداً' }}</small></td>
-                                <td class="text-center">
-                                    <form action="{{ route('admin.user.ban', $freelancer->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button class="btn btn-sm {{ $freelancer->is_banned ? 'btn-success' : 'btn-outline-danger' }} rounded-pill px-3">
-                                            <i class="fas {{ $freelancer->is_banned ? 'fa-unlock' : 'fa-ban' }} me-1"></i> {{ $freelancer->is_banned ? 'إلغاء الحظر' : 'حظر' }}
+
+                                    <div class="dropdown">
+                                        <button class="btn btn-link text-white opacity-50 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
                                         </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="clients" role="tabpanel">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="px-4 py-3">العميل</th>
-                                <th>الحالة</th>
-                                <th>آخر نشاط</th>
-                                <th class="text-center">الإجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($users->where('role', 'client') as $client)
-                            <tr class="{{ $client->is_banned ? 'bg-light opacity-75' : '' }}">
-                                <td class="px-4 text-dark fw-bold">
-                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($client->name) }}&background=0D6EFD&color=fff" class="rounded-circle me-3" width="45">
-                                    {{ $client->name }}
-                                </td>
-                                <td>
-                                    @if($client->is_banned)
-                                        <span class="badge bg-danger rounded-pill">محظور</span>
-                                    @else
-                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill">نشط</span>
-                                    @endif
-                                </td>
-                                <td><small class="text-muted">{{ $client->last_seen ? $client->last_seen->format('Y-m-d H:i') : 'لا يوجد' }}</small></td>
-                                <td class="text-center">
-                                    <form action="{{ route('admin.user.ban', $client->id) }}" method="POST">
-                                        @csrf
-                                        <button class="btn btn-sm btn-light border rounded-pill px-4">إدارة الحساب</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="projects" role="tabpanel">
-            <div class="alert alert-dark border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center">
-                <i class="fas fa-shield-alt fa-2x me-3 text-warning"></i>
-                <div>
-                    <h6 class="fw-bold mb-1">نظام المراجعة الصارم</h6>
-                    <small>أنت في وضع "الحارس". أي مشروع يظهر هنا هو مخفي تماماً عن المستقلين حتى تمنحه الضوء الأخضر.</small>
-                </div>
-            </div>
-
-            <div class="row g-4">
-                @forelse($pendingProjects as $project)
-                <div class="col-md-6 col-xl-4">
-                    <div class="project-mod-card bg-white rounded-4 shadow-sm border p-4 h-100 d-flex flex-column">
-                        <div class="d-flex justify-content-between mb-3 align-items-center">
-                            <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill fw-bold">مراجعة أمنية</span>
-                             <small class="text-muted fw-bold">
-    <i class="far fa-clock me-1"></i>
-    {{ $project->created_at ? $project->created_at->diffForHumans() : 'منذ قليل' }}
-</small>
-                        </div>
-                        <h5 class="fw-bold mb-2 text-dark">{{ $project->title }}</h5>
-                        <p class="text-secondary small mb-4 flex-grow-1">{{ Str::limit($project->description, 130) }}</p>
-
-                        <div class="d-flex align-items-center mb-4 p-2 bg-light rounded-4">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($project->user->name) }}" class="rounded-circle me-2 border border-white" width="35">
-                            <div>
-                                <small class="text-muted d-block" style="font-size: 10px;">طلب بواسطة:</small>
-                                <small class="fw-bold">{{ $project->user->name }}</small>
-                            </div>
-                            <div class="ms-auto pe-2">
-                                <span class="fw-bold text-primary">{{ number_format($project->price) }} ج.م</span>
-                            </div>
-                        </div>
-
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <form action="{{ route('admin.projects.approve', $project->id) }}" method="POST">
-                                    @csrf
-                                    <button class="btn btn-success w-100 rounded-pill fw-bold py-2 shadow-sm"><i class="fas fa-check-circle me-1"></i> فسح</button>
-                                </form>
-                            </div>
-                            <div class="col-6">
-                                <button class="btn btn-outline-danger w-100 rounded-pill fw-bold py-2" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $project->id }}">
-                                    <i class="fas fa-trash-alt me-1"></i> حذف
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal fade" id="deleteModal{{ $project->id }}" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content rounded-4 border-0 shadow-lg">
-                                <div class="modal-header border-0 pb-0">
-                                    <h5 class="fw-bold text-danger">سبب الرفض والحذف</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        <ul class="dropdown-menu dropdown-menu-dark border border-secondary shadow-lg">
+                                            {{-- رابط سجل العمليات الفعلي --}}
+                                            <li><a class="dropdown-item py-2" href="{{ route('admin.user.transactions', $user->id) }}"><i class="fas fa-history me-2 text-info"></i>سجل العمليات</a></li>
+                                            <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="showUserDetails({{ json_encode($user) }})"><i class="fas fa-envelope me-2 text-warning"></i>إرسال تنبيه</a></li>
+                                        </ul>
+                                    </div>
                                 </div>
-                                <form action="{{ route('admin.projects.delete', $project->id) }}" method="POST">
-                                    @csrf @method('DELETE')
-                                    <div class="modal-body py-4">
-                                        <p class="text-secondary small mb-3">سيتم إرسال الرسالة التالية للعميل لإخطاره بسبب حذف مشروعه:</p>
-                                        <textarea name="notification_message" class="form-control border-0 bg-light p-3 rounded-4" rows="4" placeholder="مثال: المشروع مخالف لسياسة المحتوى الخاصة بنا..." required></textarea>
+
+                                <div class="text-center mb-4">
+                                    <div class="profile-main-img mb-3">
+                                        <img src="https://ui-avatars.com/api/?name={{urlencode($user->name)}}&background=random&size=128" class="rounded-circle border border-3 border-dark shadow-lg" width="90">
+                                        <div class="role-icon-float shadow-glow-{{ $user->role == 'freelancer' ? 'success' : 'info' }}">
+                                            <i class="fas {{ $user->role == 'freelancer' ? 'fa-laptop-code' : 'fa-crown' }}"></i>
+                                        </div>
                                     </div>
-                                    <div class="modal-footer border-0">
-                                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
-                                        <button type="submit" class="btn btn-danger rounded-pill px-4 shadow">تأكيد الحذف النهائي</button>
+                                    <h5 class="fw-black text-white mb-0">{{ $user->name }}</h5>
+                                    <div class="d-flex justify-content-center gap-2 mt-1">
+                                        <span class="small text-info"><i class="fas fa-fingerprint me-1"></i> ID-{{ $user->id }}</span>
                                     </div>
-                                </form>
+                                </div>
+
+                                <div class="quick-stats bg-black bg-opacity-40 rounded-3 p-3 mb-4 border border-white border-opacity-5">
+                                    <div class="row text-center">
+                                        <div class="col-6 border-end border-white border-opacity-10">
+                                            <small class="d-block text-muted mb-1 small">الرصيد</small>
+                                            <span class="text-success fw-black fs-5">{{ number_format($user->balance) }}</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="d-block text-muted mb-1 small">الحالة</small>
+                                            <span class="text-info fw-black fs-6">{{ strtoupper($user->role) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="action-grid d-grid gap-2">
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ route('admin.user.impersonate', $user->id) }}" class="btn btn-action btn-glass-white flex-fill text-decoration-none">
+                                            <i class="fas fa-user-secret"></i> <span>تقمص</span>
+                                        </a>
+                                        <button class="btn btn-action btn-glass-warning flex-fill" onclick="showIdModal('{{ asset('storage/'.$user->id_image) }}', '{{ asset('storage/'.$user->id_image_back) }}')">
+                                            <i class="fas fa-id-card"></i> <span>البطاقة</span>
+                                        </button>
+                                        <button class="btn btn-action btn-glass-success flex-fill" onclick="showUserDetails({{ json_encode($user) }})">
+                                            <i class="fas fa-list-ul"></i> <span>تفاصيل</span>
+                                        </button>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        {{-- زر التعديل الحقيقي الذي يفتح صفحة التعديل --}}
+                                        <a href="{{ route('admin.user.edit', $user->id) }}" class="btn btn-action btn-glass-info flex-fill text-decoration-none">
+                                            <i class="fas fa-user-edit"></i> <span>تعديل</span>
+                                        </a>
+
+                                        <form id="ban-form-{{ $user->id }}" action="{{ route('admin.user.ban', $user->id) }}" method="POST" class="flex-fill d-grid">
+                                            @csrf
+                                            <button type="button" class="btn btn-action btn-glass-danger w-100" onclick="confirmBan('{{ $user->id }}', '{{ $user->name }}')">
+                                                <i class="fas fa-ban"></i> <span>حظر نهائي</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    @endforeach
                 </div>
-                @empty
-                <div class="col-12 text-center py-5">
-                    <i class="fas fa-check-double fa-4x text-light mb-3"></i>
-                    <h5 class="text-muted">الرادار نظيف! لا توجد مشاريع تنتظر المراجعة.</h5>
-                </div>
-                @endforelse
             </div>
         </div>
+    </div>
+</div>
 
+{{-- المودالز --}}
+<div class="modal fade" id="idViewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-card border-info">
+            <div class="modal-header border-0 text-white">
+                <h5 class="modal-title fw-black"><i class="fas fa-fingerprint me-2 text-info"></i>الوثائق الرسمية</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <p class="text-muted mb-2 small">وجه البطاقة</p>
+                        <img id="idFrontImg" src="" class="img-fluid rounded-3 border border-secondary shadow-lg">
+                    </div>
+                    <div class="col-md-6">
+                        <p class="text-muted mb-2 small">ظهر البطاقة</p>
+                        <img id="idBackImg" src="" class="img-fluid rounded-3 border border-secondary shadow-lg">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="userDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-info">
+            <div class="modal-header border-0 text-white border-bottom border-white border-opacity-10">
+                <h5 class="modal-title fw-black"><i class="fas fa-user-circle me-2 text-info"></i>ملف البيانات الكامل</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="userDetailsBody"></div>
+        </div>
     </div>
 </div>
 
 <style>
-    body { background-color: #f8fafc; }
-    .nav-pills .nav-link { color: #64748b; background: #fff; border: 1px solid #e2e8f0; margin: 0 5px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .nav-pills .nav-link.active { background: #0f172a !important; color: white !important; transform: scale(1.05); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-    .project-mod-card { transition: all 0.4s ease; border: 1px solid #e2e8f0; }
-    .project-mod-card:hover { transform: translateY(-10px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1) !important; border-color: #3b82f6; }
-    .stat-pill { min-width: 140px; }
-    .table thead th { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
-    .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Orbitron:wght@400;900&display=swap');
+    :root { --glass-bg: rgba(13, 17, 23, 0.9); --neon-blue: #0ea5e9; --neon-green: #10b981; --neon-red: #ef4444; }
+    body { font-family: 'Cairo', sans-serif; background: #05070a; color: #fff; overflow-x: hidden; }
+    .fw-black { font-weight: 900; }
+    #particles-js { position: fixed; width: 100%; height: 100%; top: 0; left: 0; z-index: 1; }
+    .glass-card { background: var(--glass-bg); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .dominion-card { transition: 0.5s; border: 1px solid transparent; cursor: pointer; }
+    .dominion-card:hover { transform: translateY(-12px); border-color: var(--neon-blue); }
+    .btn-action { border-radius: 12px; font-weight: 700; font-size: 0.75rem; padding: 12px 5px; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+    .btn-glass-danger { background: rgba(239, 68, 68, 0.1); color: var(--neon-red); }
+    .btn-glass-danger:hover { background: var(--neon-red); color: #fff; box-shadow: 0 0 20px var(--neon-red); }
+    .btn-glass-info { background: rgba(14, 165, 233, 0.1); color: var(--neon-blue); }
+    .btn-glass-info:hover { background: var(--neon-blue); color: #000; }
+    .swal2-popup { background: var(--glass-bg) !important; backdrop-filter: blur(15px); border: 1px solid var(--neon-red) !important; color: white !important; }
 </style>
+
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+<script>
+    particlesJS("particles-js", { "particles": { "number": { "value": 60 }, "color": { "value": "#0ea5e9" }, "opacity": { "value": 0.2 }, "line_linked": { "enable": true, "opacity": 0.1 }, "move": { "enable": true, "speed": 1 } } });
+
+    function showIdModal(front, back) {
+        document.getElementById('idFrontImg').src = front;
+        document.getElementById('idBackImg').src = back;
+        new bootstrap.Modal(document.getElementById('idViewerModal')).show();
+    }
+
+    function showUserDetails(user) {
+        let body = document.getElementById('userDetailsBody');
+        body.innerHTML = `
+            <div class="detail-item d-flex justify-content-between p-2 border-bottom border-white border-opacity-5">
+                <span class="text-muted small">الاسم:</span><span class="text-white fw-bold">${user.name}</span>
+            </div>
+            <div class="detail-item d-flex justify-content-between p-2 border-bottom border-white border-opacity-5">
+                <span class="text-muted small">البريد:</span><span class="text-info">${user.email}</span>
+            </div>
+            <div class="detail-item d-flex justify-content-between p-2 border-bottom border-white border-opacity-5">
+                <span class="text-muted small">الرصيد:</span><span class="text-success fw-bold">${user.balance} ج.م</span>
+            </div>
+            <div class="detail-item d-flex justify-content-between p-2">
+                <span class="text-muted small">تاريخ الانضمام:</span><span class="text-white">${new Date(user.created_at).toLocaleDateString('ar-EG')}</span>
+            </div>
+        `;
+        new bootstrap.Modal(document.getElementById('userDetailsModal')).show();
+    }
+
+    function confirmBan(userId, userName) {
+        let timerInterval;
+        Swal.fire({
+            title: 'تأكيد الحظر الإمبراطوري!',
+            html: `أنت على وشك طرد <b>${userName}</b> من النظام.<br>سيتم التنفيذ خلال <b></b> ثانية.`,
+            icon: 'warning',
+            timer: 5000,
+            timerProgressBar: true,
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'نفذ الآن!',
+            cancelButtonText: 'إلغاء',
+            didOpen: () => {
+                const b = Swal.getHtmlContainer().querySelector('b');
+                timerInterval = setInterval(() => {
+                    b.textContent = Math.ceil(Swal.getTimerLeft() / 1000);
+                }, 100);
+            },
+            willClose: () => { clearInterval(timerInterval); }
+        }).then((result) => {
+            if (result.isConfirmed || result.dismiss === Swal.DismissReason.timer) {
+                document.getElementById('ban-form-' + userId).submit();
+            }
+        });
+    }
+</script>
 @endsection
