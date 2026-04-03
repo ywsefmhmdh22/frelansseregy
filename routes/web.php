@@ -8,7 +8,9 @@ use App\Models\Service;
 use App\Http\Controllers\{
     AuthController,
     ProfileCompletionController,
-    AdminController,
+    AdminDashboardController,    // الجديد
+    UserManagementController,    // الجديد
+    FinanceAdminController,       // الجديد
     ProjectController,
     ProposalController,
     ClientDashboardController,
@@ -174,36 +176,33 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | 4. لوحة تحكم الأدمن (منطقة سيطرة يوسف)
+    | 4. لوحة تحكم الأدمن (المقسمة الجديدة)
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin')->name('admin.')->middleware('can:admin-access')->group(function () {
-        // العرض الأساسي
-        Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
-        // إدارة المستخدمين
-        Route::get('/user/{user}', [AdminController::class, 'show'])->name('user.details');
-        Route::post('/user/{user}/approve', [AdminController::class, 'approveUser'])->name('user.approve');
-        Route::post('/user/{user}/verify', [AdminController::class, 'verify'])->name('verify');
-        Route::post('/user/{user}/ban', [AdminController::class, 'toggleBan'])->name('user.ban');
+        // 1. الإحصائيات والمشاريع (AdminDashboardController)
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/projects/{id}/approve', [AdminDashboardController::class, 'approveProject'])->name('projects.approve');
+        Route::delete('/projects/{id}/delete', [AdminDashboardController::class, 'deleteProject'])->name('projects.delete');
 
-        // تعديل بيانات المستخدم وسجل العمليات (تم تصحيح الـ Name)
-        Route::get('/user/{id}/edit', [AdminController::class, 'editUser'])->name('user.edit');
-        Route::get('/user/{id}/transactions', [AdminController::class, 'userTransactions'])->name('user.transactions');
+        // 2. إدارة المستخدمين (UserManagementController)
+        Route::controller(UserManagementController::class)->group(function () {
+            Route::get('/user/{user}', 'show')->name('user.details');
+            Route::post('/user/{user}/approve', 'approveUser')->name('user.approve');
+            Route::post('/user/{user}/verify', 'verify')->name('verify');
+            Route::post('/user/{user}/ban', 'ban')->name('user.ban'); // تم توحيد الاسم لـ ban
+            Route::get('/user/{user}/edit', 'edit')->name('user.edit');
+            Route::put('/user/{user}/update', 'update')->name('user.update');
+            Route::get('/user/{user}/impersonate', 'impersonate')->name('user.impersonate');
+        });
 
-        // نظام "عين الصقر"
-        Route::get('/user/{user}/impersonate', [AdminController::class, 'impersonate'])->name('user.impersonate');
-
-        // إدارة المشاريع والنزاعات
-        Route::post('/projects/{id}/approve', [AdminController::class, 'approveProject'])->name('projects.approve');
-        Route::delete('/projects/{id}/delete', [AdminController::class, 'deleteProject'])->name('projects.delete');
-
-        // التحكيم المالي
-        Route::get('/disputes', [AdminController::class, 'disputesIndex'])->name('disputes.index');
-        Route::get('/disputes/{id}', [AdminController::class, 'showDispute'])->name('disputes.show');
-
-        // الرادار المالي
-        Route::get('/finance-radar', [AdminController::class, 'financeRadar'])->name('finance.radar');
-        Route::post('/verify/reject/{id}', [AdminController::class, 'rejectVerification'])->name('reject');
+        // 3. الإدارة المالية والنزاعات (FinanceAdminController)
+        Route::controller(FinanceAdminController::class)->group(function () {
+            Route::get('/user/{user}/transactions', 'userTransactions')->name('user.transactions');
+            Route::get('/disputes', 'disputesIndex')->name('disputes.index');
+            Route::get('/finance-radar', 'financeRadar')->name('finance.radar');
+            Route::post('/verify/reject/{user}', 'rejectVerification')->name('reject');
+        });
     });
 });

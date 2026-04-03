@@ -19,11 +19,20 @@ class AuthController extends Controller
     // 2. معالجة بيانات التسجيل وحفظها
     public function register(Request $request)
     {
-        // التأكد من صحة البيانات والسماح بـ admin
+        // تم تعديل قواعد التحقق لفرض كلمة مرور قوية (أرقام، حروف كبيرة وصغيرة، رموز)
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                'required',
+                'confirmed',
+                Rules\Password::min(8) // حد أدنى 8 أحرف
+                    ->letters()       // يجب أن تحتوي على حروف
+                    ->mixedCase()     // حروف كبيرة وصغيرة
+                    ->numbers()       // أرقام
+                    ->symbols()       // رموز خاصة (@, #, $, etc)
+                    ->uncompromised() // التأكد من أن الباسورد لم تسرب في اختراقات عالمية سابقة
+            ],
             'role' => ['required', 'in:freelancer,client,admin'],
         ]);
 
@@ -35,12 +44,12 @@ class AuthController extends Controller
             'role' => $request->role,
         ];
 
-        // منطق الأدمن: التوثيق الفوري بناءً على مسميات موديل اليوزر الخاص بك
+        // منطق الأدمن: التوثيق الفوري
         if ($request->role === 'admin') {
-            $userData['verification_status'] = 'verified'; // القيمة التي تجعل الحساب مقبولاً فوراً
-            $userData['is_profile_completed'] = true;     // تخطي مرحلة إكمال الملف
-            $userData['email_verified_at'] = now();       // تفعيل البريد الإلكتروني تلقائياً
-            $userData['is_banned'] = false;               // التأكد من عدم حظره
+            $userData['verification_status'] = 'verified';
+            $userData['is_profile_completed'] = true;
+            $userData['email_verified_at'] = now();
+            $userData['is_banned'] = false;
         }
 
         // إنشاء المستخدم في قاعدة البيانات
@@ -82,7 +91,7 @@ class AuthController extends Controller
 
             $user = Auth::user();
 
-            // التوجيه بناءً على نوع الحساب عند تسجيل الدخول العادي
+            // التوجيه بناءً على نوع الحساب
             if ($user->role === 'admin') {
                 return redirect()->intended('/admin/dashboard');
             }
