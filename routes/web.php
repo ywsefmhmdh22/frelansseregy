@@ -8,9 +8,9 @@ use App\Models\Service;
 use App\Http\Controllers\{
     AuthController,
     ProfileCompletionController,
-    AdminDashboardController,    // الجديد
-    UserManagementController,    // الجديد
-    FinanceAdminController,       // الجديد
+    AdminDashboardController,
+    UserManagementController,
+    FinanceAdminController,
     ProjectController,
     ProposalController,
     ClientDashboardController,
@@ -176,33 +176,51 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | 4. لوحة تحكم الأدمن (المقسمة الجديدة)
+    | 4. لوحة تحكم الأدمن (تم الإصلاح لتعمل مع AJAX وتجنب تضارب المسارات)
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin')->name('admin.')->middleware('can:admin-access')->group(function () {
 
-        // 1. الإحصائيات والمشاريع (AdminDashboardController)
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-        Route::post('/projects/{id}/approve', [AdminDashboardController::class, 'approveProject'])->name('projects.approve');
-        Route::delete('/projects/{id}/delete', [AdminDashboardController::class, 'deleteProject'])->name('projects.delete');
+        // --- أ: العمليات السريعة وعرض الداشبورد ---
+        Route::controller(AdminDashboardController::class)->group(function () {
+            Route::get('/dashboard', 'index')->name('dashboard');
 
-        // 2. إدارة المستخدمين (UserManagementController)
-        Route::controller(UserManagementController::class)->group(function () {
-            Route::get('/user/{user}', 'show')->name('user.details');
-            Route::post('/user/{user}/approve', 'approveUser')->name('user.approve');
-            Route::post('/user/{user}/verify', 'verify')->name('verify');
-            Route::post('/user/{user}/ban', 'ban')->name('user.ban'); // تم توحيد الاسم لـ ban
-            Route::get('/user/{user}/edit', 'edit')->name('user.edit');
-            Route::put('/user/{user}/update', 'update')->name('user.update');
-            Route::get('/user/{user}/impersonate', 'impersonate')->name('user.impersonate');
+            // عمليات الحسابات السريعة
+            Route::post('/user/{id}/reset-wallet', 'resetWallet')->name('user.reset-wallet');
         });
 
-        // 3. الإدارة المالية والنزاعات (FinanceAdminController)
+        // --- ب: إدارة المشاريع (تم التعديل هنا لتعمل الأزرار) ---
+        Route::controller(App\Http\Controllers\Admin\ProjectController::class)->group(function () {
+            // عرض المشاريع المعلقة
+            Route::get('/projects/pending', 'pendingProjects')->name('projects.pending');
+
+            // مسارات القبول والرفض لـ AJAX (تطابق JS: /admin/projects/{id}/approve)
+            Route::post('/projects/{id}/approve', 'approve')->name('projects.approve');
+            Route::post('/projects/{id}/reject', 'reject')->name('projects.reject');
+
+            // مسار الحذف
+            Route::delete('/projects/delete/{id}', 'deleteProject')->name('projects.delete');
+        });
+
+        // --- ج: إدارة المستخدمين (UserManagementController) ---
+        Route::controller(UserManagementController::class)->group(function () {
+            Route::get('/users/view/{user}', 'show')->name('user.details');
+            Route::get('/users/edit/{user}', 'edit')->name('user.edit');
+            Route::put('/users/update/{user}', 'update')->name('user.update');
+            Route::get('/users/impersonate/{user}', 'impersonate')->name('user.impersonate');
+
+            Route::post('/user/{user}/approve', 'approveUser')->name('user.approve');
+            Route::post('/user/{user}/ban', 'ban')->name('user.ban');
+
+            Route::post('/users/verify-action/{user}', 'verify')->name('verify');
+        });
+
+        // --- د: المالية والنزاعات ---
         Route::controller(FinanceAdminController::class)->group(function () {
-            Route::get('/user/{user}/transactions', 'userTransactions')->name('user.transactions');
-            Route::get('/disputes', 'disputesIndex')->name('disputes.index');
-            Route::get('/finance-radar', 'financeRadar')->name('finance.radar');
-            Route::post('/verify/reject/{user}', 'rejectVerification')->name('reject');
+            Route::get('/financial/user/{user}', 'userTransactions')->name('user.transactions');
+            Route::get('/financial/disputes', 'disputesIndex')->name('disputes.index');
+            Route::get('/financial/radar', 'financeRadar')->name('finance.radar');
+            Route::post('/financial/reject/{user}', 'rejectVerification')->name('reject');
         });
     });
 });

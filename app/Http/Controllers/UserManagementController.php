@@ -18,11 +18,28 @@ class UserManagementController extends Controller
         return view('admin.user-details', compact('user', 'workingProjects', 'balance'));
     }
 
-    public function approveUser(User $user)
-    {
-        $user->update(['verification_status' => 'pending']);
-        return back()->with('success', 'تم قبول انضمام ' . $user->name . ' للمنصة.');
+     public function approveUser($id) // غيرنا User $user لـ $id
+{
+    try {
+        // بنجيب اليوزر يدوي بالـ ID عشان نهرب من مشكلة الـ Binding
+        $user = User::findOrFail($id);
+
+        $user->update([
+            'verification_status' => 'verified' // أو 'approved' حسب اللي تحبه
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تفعيل حساب ' . $user->name . ' بنجاح'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'حدث خطأ: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     public function verify(User $user)
     {
