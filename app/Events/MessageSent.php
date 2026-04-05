@@ -3,29 +3,33 @@
 namespace App\Events;
 
 use App\Models\Message;
-use Illuminate\Broadcasting\PrivateChannel; // غيرنا لـ Private
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-// ... الباقي كما هو
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 
 class MessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $message;
-
-    public $user_name; // عشان تظهر في الإشعار
+    /**
+     * @var Message
+     * جعلنا الخصائص protected عشان نتحكم في خروج البيانات من خلال broadcastWith فقط
+     */
+    protected $message;
+    protected $user_name;
 
     public function __construct(Message $message)
     {
+        // 1. التأكد من وجود البيانات وتجنب أي خطأ في حالة عدم وجود Sender
         $this->message = $message;
-        $this->user_name = $message->sender->name;
+        $this->user_name = $message->sender ? $message->sender->name : 'Unknown User';
     }
 
     public function broadcastOn()
     {
-        // القناة لازم تكون متطابقة مع اللي في الـ JS
-        // الـ JS بيسمع لـ Echo.private(`chat.${authId}`)
-        // يبقى هنا نبعت للـ Receiver
+        // 2. إرسال الإشعار فقط لقناة المستلم الخاصة (Private)
         return new PrivateChannel('chat.' . $this->message->receiver_id);
     }
 
@@ -34,16 +38,25 @@ class MessageSent implements ShouldBroadcast
         return 'new-message';
     }
 
-    public function broadcastWith()
+    /**
+     * الحماية القصوى هنا: تنظيف البيانات قبل إرسالها للـ Broadcast
+     */
+    public function broadcastWith(): array
     {
-        // ابعت البيانات اللي الـ JS محتاجها بالضبط عشان ميتلخبطش
         return [
-            'sender_id' => $this->message->sender_id,
-            'content' => $this->message->message,
-            'user_name' => $this->user_name,
-            'type' => $this->message->type,
-            'file_path' => $this->message->file_path,
-            'created_at' => $this->message->created_at->format('H:i A'),
+            'sender_id'  => (int) $this->message->sender_id,
+
+            // 3. حماية XSS: تنظيف محتوى الرسالة من أي أكواد JS خبيثة
+            'content'    => htmlspecialchars($this->message->message, ENT_QUOTES, 'UTF-8'),
+
+            // 4. تنظيف اسم المستخدم أيضاً
+            'user_name'  => htmlspecialchars($this->user_name, ENT_QUOTES, 'UTF-8'),
+
+            'type'       => $this->message->type,
+            'file_path'  => $this->message->file_path ? asset('storage/' . $this->message->file_path) : null,
+
+            // 5. تنسيق الوقت بشكل آمن
+            'created_at' => $this->message->created_at ? $this->message->created_at->format('H:i A') : now()->format('H:i A'),
         ];
     }
 }
