@@ -1,4 +1,4 @@
- <?php
+<?php
 
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -12,11 +12,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // بنسجل هنا الحارس بتاعنا ونديله اسم مستعار 'profile.completed'
-        // عشان نستخدم الاسم ده بسهولة في ملف الروابط (Routes)
+
+        // 1. تفعيل درع الحماية (Security Headers) على كل صفحات الموقع تلقائياً
+        $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
+        // 2. تسجيل الأسماء المستعارة (Aliases) للميدل وير الخاص بك
         $middleware->alias([
             'profile.completed' => \App\Http\Middleware\EnsureProfileIsCompleted::class,
         ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

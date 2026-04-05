@@ -19,11 +19,14 @@ class ChatController extends Controller
     {
         $authId = auth()->id();
 
-        // جلب قائمة الأشخاص (Inbox) مرتبين حسب أحدث رسالة مع منع SQL Injection
+        // جلب قائمة الأشخاص (Inbox) مرتبين حسب أحدث رسالة
+        // تم تعديل السطر أدناه لإصلاح خطأ SQLSTATE[HY093] عبر دمج المتغير مباشرة في الـ Raw Query
         $conversations = Message::where('sender_id', $authId)
             ->orWhere('receiver_id', $authId)
-            ->select(DB::raw('MAX(created_at) as last_msg_at'),
-                     DB::raw('CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as contact_id', [$authId]))
+            ->select([
+                DB::raw('MAX(created_at) as last_msg_at'),
+                DB::raw("CASE WHEN sender_id = $authId THEN receiver_id ELSE sender_id END as contact_id")
+            ])
             ->groupBy('contact_id')
             ->orderBy('last_msg_at', 'desc')
             ->get();

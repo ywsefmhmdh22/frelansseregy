@@ -22,12 +22,13 @@ class User extends Authenticatable
 
     /**
      * الحقول القابلة للتعبئة (Mass Assignment)
+     * تم إزالة الحقول الحساسة (role, balance, verification_status, is_banned)
+     * لضمان عدم التلاعب بها من قبل المستخدم عبر طلبات HTTP
      */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role',
         'phone',
         'headline',
         'skills',
@@ -35,19 +36,12 @@ class User extends Authenticatable
         'country',
         'city',
         'profile_image',
-        'balance',
         'id_number',
         'id_image',
         'id_image_back',
-        'verification_status', // هام جداً لقبول الحساب فوراً
-        'is_profile_completed', // هام ليظهر الحساب مكتمل للأدمن
+        'is_profile_completed',
         'last_seen',
-        'is_banned',
-        'freelancer_rating',
-        'total_reviews',
-        'total_projects_completed',
-        'excellent_projects_count',
-        'email_verified_at', // تم إضافته لتخطي تفعيل البريد للأدمن
+        'email_verified_at',
     ];
 
     /**
@@ -171,5 +165,13 @@ class User extends Authenticatable
     public function isOnline()
     {
         return $this->last_seen && $this->last_seen->gt(now()->subMinutes(5));
+    }
+
+    /**
+     * دالة مساعدة للتحقق من الأدمن (للأمان الإضافي)
+     */
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
     }
 }
