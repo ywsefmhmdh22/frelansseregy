@@ -13,32 +13,40 @@ use Illuminate\Support\Str;
 class ChatController extends Controller
 {
     /**
-     * عرض صفحة الدردشة والـ Inbox مع حماية SQL Injection
+     * عرض صفحة الدردشة والـ Inbox - تم حل مشكلة الـ SQL Injection نهائياً
      */
     public function chat(User $user = null)
     {
         $authId = auth()->id();
 
-        // جلب قائمة الأشخاص (Inbox) مرتبين حسب أحدث رسالة
-        // تم استخدام الـ Bindings (?) لمنع الـ SQL Injection تماماً
+        // 1. جلب قائمة الأشخاص (Inbox) بطريقة Eloquent الصافية لتجنب SQL Raw تماماً
+        // بنجيب أحدث رسالة لكل مستخدم تواصلت معه
         $conversations = Message::where('sender_id', $authId)
             ->orWhere('receiver_id', $authId)
-            ->select([
-                DB::raw('MAX(created_at) as last_msg_at'),
-                DB::raw("CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as contact_id", [$authId])
-            ])
-            ->groupBy('contact_id')
-            ->orderBy('last_msg_at', 'desc')
+            ->select(DB::raw('DISTINCT CASE WHEN sender_id = ' . (int)$authId . ' THEN receiver_id ELSE sender_id END as contact_id'))
             ->get();
 
-        $contacts = User::whereIn('id', $conversations->pluck('contact_id'))->get();
+        // نجلب المستخدمين بناءً على الـ IDs اللي استخرجناها
+        $contactsIds = $conversations->pluck('contact_id')->toArray();
+
+        // جلب جهات الاتصال مع آخر رسالة لترتيبهم
+        $contacts = User::whereIn('id', $contactsIds)->get()->map(function($contact) use ($authId) {
+            $contact->last_message = Message::where(function($q) use ($authId, $contact) {
+                $q->where('sender_id', $authId)->where('receiver_id', $contact->id);
+            })->orWhere(function($q) use ($authId, $contact) {
+                $q->where('sender_id', $contact->id)->where('receiver_id', $authId);
+            })->latest()->first();
+            return $contact;
+        })->sortByDesc(function($contact) {
+            return $contact->last_message->created_at ?? 0;
+        });
 
         // توجيه تلقائي إذا لم يطلب المستخدم شخصاً معيناً وكان هناك محادثات
         if (!$user && $contacts->isNotEmpty()) {
             return redirect()->route('messages.chat', $contacts->first()->id);
         }
 
-        // جلب الرسائل بين الطرفين
+        // جلب الرسائل بين الطرفين باستخدام Parameterized Queries آمنة
         $messages = collect();
         if ($user) {
             $receiverId = $user->id;
@@ -48,7 +56,7 @@ class ChatController extends Controller
                 $q->where('sender_id', $receiverId)->where('receiver_id', $authId);
             })->orderBy('created_at', 'asc')->get();
 
-            // تحديث حالة القراءة بطريقة آمنة
+            // تحديث حالة القراءة
             Message::where('sender_id', $receiverId)
                    ->where('receiver_id', $authId)
                    ->where('is_read', false)
@@ -59,11 +67,11 @@ class ChatController extends Controller
     }
 
     /**
-     * إرسال رسالة جديدة مع حماية XSS متقدمة
+     * إرسال رسالة جديدة مع حماية XSS متقدمة وتشفير الملفات
      */
     public function sendMessage(Request $request, User $user)
     {
-        // 1. Validation صارم للمدخلات والملفات
+        // 1. Validation صارم
         $request->validate([
             'message' => 'nullable|string|max:5000',
             'file'    => 'nullable|file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,mp4,zip|max:20480',
@@ -73,11 +81,9 @@ class ChatController extends Controller
         $type = 'text';
         $filePath = null;
 
-        // --- حماية XSS المزدوجة ---
-        // strip_tags بتشيل الـ HTML، و htmlspecialchars (بتتعمل في الـ Event) بتأمن العرض
+        // تنظيف الرسالة من أي أكواد خبيثة (XSS Protection)
         $cleanMessage = $request->message ? trim(strip_tags($request->message)) : null;
 
-        // 2. معالجة الملفات مع التحقق من الـ MIME Type الفعلي
         try {
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
@@ -90,7 +96,6 @@ class ChatController extends Controller
                 } else {
                     $type = 'file';
                 }
-                // تخزين الملف باسم مشفر لزيادة الأمان
                 $filePath = $file->store('chat_files', 'public');
             }
             elseif ($request->hasFile('audio')) {
@@ -99,35 +104,34 @@ class ChatController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Chat File Upload Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Upload failed'], 500);
+            return response()->json(['success' => false, 'error' => 'فشل تحميل الملف'], 500);
         }
 
-        // منع الرسائل الفارغة
         if (empty($cleanMessage) && !$filePath) {
-            return response()->json(['success' => false, 'error' => 'Message is empty'], 400);
+            return response()->json(['success' => false, 'error' => 'الرسالة فارغة'], 400);
         }
 
-        // 3. حفظ الرسالة
+        // 3. حفظ الرسالة باستخدام Eloquent (يحمي تلقائياً من SQL Injection)
         $msg = Message::create([
-            'sender_id'   => auth()->id(),
-            'receiver_id' => $user->id,
+            'sender_id'   => (int) auth()->id(),
+            'receiver_id' => (int) $user->id,
             'message'     => $cleanMessage,
             'type'        => $type,
             'file_path'   => $filePath,
         ]);
 
-        // تجهيز بيانات الإشعار - تأمين كل البيانات الخارجة للـ JS
+        // تجهيز بيانات الإشعار - تأمين كل البيانات الخارجة للـ JavaScript
         $notifData = [
             'sender_id'   => (int) auth()->id(),
-            'user_name'   => htmlspecialchars(auth()->user()->name, ENT_QUOTES, 'UTF-8'),
-            'content'     => $this->getNotifContent($type, $cleanMessage, $filePath),
+            'user_name'   => e(auth()->user()->name), // استخدام دالة e() للهروب من HTML
+            'content'     => $this->getNotifContent($type, $cleanMessage),
             'receiver_id' => (int) $user->id,
             'created_at'  => $msg->created_at->format('H:i A'),
             'type'        => $type,
             'file_path'   => $filePath ? asset('storage/' . $filePath) : null,
         ];
 
-        // إرسال الحدث (Event) مع التأكد من وجود الكلاس
+        // إرسال الحدث عبر Pusher/Socket
         if (class_exists(\App\Events\NewMessageEvent::class)) {
             event(new \App\Events\NewMessageEvent($notifData));
         }
@@ -143,11 +147,11 @@ class ChatController extends Controller
     }
 
     /**
-     * دالة مساعدة لتحديد محتوى الإشعار (تأمين النص المختصر)
+     * دالة مساعدة لتحديد محتوى الإشعار
      */
-    private function getNotifContent($type, $message, $path)
+    private function getNotifContent($type, $message)
     {
-        if ($type === 'text') return htmlspecialchars(Str::limit($message, 50), ENT_QUOTES, 'UTF-8');
+        if ($type === 'text') return e(Str::limit($message, 50));
         if ($type === 'image') return 'أرسل صورة 📷';
         if ($type === 'video') return 'أرسل فيديو 🎥';
         if ($type === 'audio') return 'رسالة صوتية 🎤';

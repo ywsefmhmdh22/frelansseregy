@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Paymob Payment Gateway (Added for Security & Best Practices)
+    |--------------------------------------------------------------------------
+    */
+    'paymob' => [
+        'api_key'               => env('PAYMOB_API_KEY'),
+        'hmac_secret'           => env('PAYMOB_HMAC_SECRET'),
+        'iframe_id'             => env('PAYMOB_IFRAME_ID'),
+        'integration_id'        => env('PAYMOB_INTEGRATION_ID'),
+        'wallet_integration_id' => env('PAYMOB_WALLET_INTEGRATION_ID'),
+    ],
+
 ];
