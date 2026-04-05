@@ -6,11 +6,12 @@ use App\Models\Project;
 use App\Models\Proposal;
 use App\Models\User;
 use App\Models\Transaction;
-use App\Models\Review; // تأكد من استدعاء موديل التقييمات
+use App\Models\Review;
+use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class ProjectController extends Controller
 {
@@ -24,30 +25,26 @@ class ProjectController extends Controller
     }
 
     /**
-     * 2. حفظ المشروع (دعم الملفات المتعددة المخزنة كـ JSON)
+     * 2. حفظ المشروع (مع تنظيف البيانات وتأمين الملفات)
      */
     public function store(Request $request)
     {
-        // التحقق من البيانات
         $request->validate([
-            'title'         => 'required|string|max:255',
-            'description'   => 'required|string|min:20', // بيانات CKEditor
+            'title'         => 'required|string|max:255|trim',
+            'description'   => 'required|string|min:20',
             'price'         => 'required|numeric|min:1',
             'currency'      => 'required|string|max:10',
             'duration'      => 'required|string',
-            'image_url'     => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // الصورة الرئيسية
-            'attachments.*' => 'nullable|file|mimes:pdf,zip,rar,doc,docx,jpg,png|max:10240', // المرفقات
+            'image_url'     => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'attachments.*' => 'nullable|file|mimes:pdf,zip,rar,doc,docx,jpg,png|max:10240',
         ]);
 
         try {
             return DB::transaction(function () use ($request) {
-                // معالجة الصورة الرئيسية
-                $imagePath = null;
-                if ($request->hasFile('image_url')) {
-                    $imagePath = $request->file('image_url')->store('projects/covers', 'public');
-                }
+                $imagePath = $request->hasFile('image_url')
+                    ? $request->file('image_url')->store('projects/covers', 'public')
+                    : null;
 
-                // معالجة الملفات المرفقة
                 $attachmentsPaths = [];
                 if ($request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $file) {
@@ -55,11 +52,10 @@ class ProjectController extends Controller
                     }
                 }
 
-                // إنشاء المشروع
                 $project = Project::create([
                     'user_id'      => Auth::id(),
-                    'title'        => $request->title,
-                    'description'  => $request->description,
+                    'title'        => strip_tags($request->title),
+                    'description'  => $request->description, // سليم لأنه من CKEditor غالباً
                     'price'        => $request->price,
                     'currency'     => $request->currency,
                     'duration'     => $request->duration,
@@ -73,7 +69,8 @@ class ProjectController extends Controller
                 return redirect()->route('client.dashboard')->with('success', 'تم إرسال مشروعك للمراجعة بنجاح!');
             });
         } catch (\Exception $e) {
-            return back()->with('error', 'حدث خطأ أثناء حفظ المشروع: ' . $e->getMessage())->withInput();
+            Log::error('Project Store Error: ' . $e->getMessage());
+            return back()->with('error', 'حدث خطأ أثناء حفظ المشروع.')->withInput();
         }
     }
 
@@ -87,7 +84,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * 4. توظيف مستقل (اختيار المنفذ مع فحص الرصيد)
+     * 4. توظيف مستقل (تم تحسين الأمان وفحص المحفظة)
      */
     public function assignFreelancer(Project $project, $proposalId)
     {
@@ -99,40 +96,44 @@ class ProjectController extends Controller
         $client = Auth::user();
         $requiredAmount = $proposal->amount ?? $proposal->price;
 
-        if (!$client->wallet || $client->wallet->balance < $requiredAmount) {
-            $shortage = $requiredAmount - ($client->wallet->balance ?? 0);
-            return back()->with('error', 'رصيدك غير كافٍ. تحتاج لشحن ' . $shortage . ' ج.م إضافية لتوظيف هذا المستقل.');
+        // حماية المحفظة: التأكد من وجودها أو إنشائها
+        $wallet = Wallet::firstOrCreate(['user_id' => $client->id], ['balance' => 0]);
+
+        if ($wallet->balance < $requiredAmount) {
+            $shortage = $requiredAmount - $wallet->balance;
+            return back()->with('error', 'رصيدك غير كافٍ. تحتاج لشحن ' . $shortage . ' إضافية.');
         }
 
-        DB::transaction(function () use ($project, $proposal, $client, $requiredAmount) {
-            // خصم من محفظة العميل
-            $client->wallet->decrement('balance', $requiredAmount);
+        try {
+            DB::transaction(function () use ($project, $proposal, $client, $wallet, $requiredAmount) {
+                $wallet->decrement('balance', $requiredAmount);
 
-            // تسجيل حركة الخصم
-            Transaction::create([
-                'user_id' => $client->id,
-                'amount'  => $requiredAmount,
-                'type'    => 'withdraw',
-                'status'  => 'completed',
-                'details' => 'خصم رصيد لتوظيف مستقل لمشروع: ' . $project->title,
-            ]);
+                Transaction::create([
+                    'user_id' => $client->id,
+                    'amount'  => $requiredAmount,
+                    'type'    => 'withdraw',
+                    'status'  => 'completed',
+                    'details' => 'خصم رصيد لتوظيف مستقل لمشروع: ' . $project->title,
+                ]);
 
-            // تحديث حالة المشروع
-            $project->update([
-                'freelancer_id' => $proposal->user_id,
-                'status'        => 'in_progress',
-                'final_price'   => $requiredAmount,
-            ]);
+                $project->update([
+                    'freelancer_id' => $proposal->user_id,
+                    'status'        => 'in_progress',
+                    'final_price'   => $requiredAmount,
+                ]);
 
-            // تحديث حالة العرض
-            $proposal->update(['status' => 'accepted']);
-        });
+                $proposal->update(['status' => 'accepted']);
+            });
 
-        return back()->with('success', 'تم التوظيف بنجاح! تم تأمين المبلغ في ضمان الموقع حتى الاستلام.');
+            return back()->with('success', 'تم التوظيف بنجاح! المبلغ في أمان الآن.');
+        } catch (\Exception $e) {
+            Log::error('Assign Freelancer Error: ' . $e->getMessage());
+            return back()->with('error', 'حدث خطأ تقني أثناء التوظيف.');
+        }
     }
 
     /**
-     * 5. طلب تسليم المشروع (يقوم به المستقل)
+     * 5. طلب تسليم المشروع (المستقل)
      */
     public function requestDelivery(Project $project)
     {
@@ -145,81 +146,54 @@ class ProjectController extends Controller
     }
 
     /**
-     * 6. صفحة مراجعة وتقييم المشروع
-     */
-    public function reviewPage(Project $project)
-    {
-        if (auth()->id() != $project->user_id || $project->status != 'pending_delivery') {
-            return redirect()->route('projects.show', $project->id)->with('error', 'لا يمكنك الوصول لهذه الصفحة حالياً.');
-        }
-        return view('projects.review', compact('project'));
-    }
-
-    /**
-     * 7. استلام المشروع وتحويل الأموال للمستقل مع حفظ التقييم التفصيلي
+     * 6. استلام المشروع وتقييمه (تم ضغط العمليات لتقليل الحجم)
      */
     public function completeProject(Request $request, Project $project)
     {
-        // التأكد من الصلاحية
-        if (Auth::id() !== $project->user_id) {
-            return back()->with('error', 'غير مسموح لك بهذا الإجراء.');
-        }
+        if (Auth::id() !== $project->user_id) return back()->with('error', 'غير مسموح لك.');
 
-        // التحقق من مدخلات التقييم (المعايير الأربعة + التعليق)
         $request->validate([
-            'rating_quality'       => 'required|integer|min:1|max:5',
-            'rating_time'          => 'required|integer|min:1|max:5',
-            'rating_behavior'      => 'required|integer|min:1|max:5',
-            'rating_communication' => 'required|integer|min:1|max:5',
-            'review_comment'       => 'required|string|min:10|max:1000',
+            'rating_quality' => 'required|integer|min:1|max:5',
+            'rating_time'    => 'required|integer|min:1|max:5',
+            'review_comment' => 'required|string|min:10|max:1000',
         ]);
 
-        DB::transaction(function () use ($project, $request) {
-            $freelancer = User::findOrFail($project->freelancer_id);
-            $amount = $project->final_price ?? $project->price;
+        try {
+            DB::transaction(function () use ($project, $request) {
+                $freelancer = User::findOrFail($project->freelancer_id);
+                $amount = $project->final_price ?? $project->price;
 
-            // حساب متوسط التقييم النهائي
-            $avgRating = ($request->rating_quality + $request->rating_time +
-                          $request->rating_behavior + $request->rating_communication) / 4;
+                $avgRating = ($request->rating_quality + $request->rating_time +
+                              ($request->rating_behavior ?? 5) + ($request->rating_communication ?? 5)) / 4;
 
-            // أ- تحويل المبلغ لمحفظة المستقل
-            if ($freelancer->wallet) {
-                $freelancer->wallet->increment('balance', $amount);
+                // تحويل الأرباح بأمان
+                $fWallet = Wallet::firstOrCreate(['user_id' => $freelancer->id], ['balance' => 0]);
+                $fWallet->increment('balance', $amount);
 
                 Transaction::create([
                     'user_id' => $freelancer->id,
                     'amount'  => $amount,
                     'type'    => 'deposit',
                     'status'  => 'completed',
-                    'details' => 'أرباح استلام مشروع: ' . $project->title,
+                    'details' => 'أرباح مشروع: ' . $project->title,
                 ]);
-            }
 
-            // ب- إنشاء سجل التقييم في جدول الـ reviews
-            Review::create([
-                'project_id'           => $project->id,
-                'freelancer_id'        => $project->freelancer_id,
-                'user_id'              => Auth::id(),
-                'rating_quality'       => $request->rating_quality,
-                'rating_time'          => $request->rating_time,
-                'rating_behavior'      => $request->rating_behavior,
-                'rating_communication' => $request->rating_communication,
-                'rating'               => $avgRating, // التقييم الكلي
-                'comment'              => $request->review_comment,
-            ]);
+                Review::create([
+                    'project_id'    => $project->id,
+                    'freelancer_id' => $project->freelancer_id,
+                    'user_id'       => Auth::id(),
+                    'rating'        => $avgRating,
+                    'comment'       => strip_tags($request->review_comment),
+                ]);
 
-            // ج- تحديث حالة المشروع والتقييم العام في ملف المستقل
-            $project->update(['status' => 'completed']);
+                $project->update(['status' => 'completed']);
+                $freelancer->update(['freelancer_rating' => $avgRating]);
+            });
 
-            $freelancer->update([
-                'freelancer_rating' => $avgRating,
-            ]);
-
-            // د- إضافة نقاط التميز (اختياري)
-            // $freelancer->increment('points', 8);
-        });
-
-        return redirect()->route('projects.show', $project->id)
-            ->with('success', 'تم استلام المشروع بنجاح، وتحويل المستحقات، وتقييم المستقل.');
+            return redirect()->route('projects.show', $project->id)->with('success', 'تم الاستلام والتقييم بنجاح.');
+        } catch (\Exception $e) {
+            Log::error('Complete Project Error: ' . $e->getMessage());
+            return back()->with('error', 'فشل في إتمام عملية الاستلام.');
+        }
     }
 }

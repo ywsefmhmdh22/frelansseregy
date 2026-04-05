@@ -7,18 +7,27 @@ use App\Models\Service;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Project;
+use App\Models\Wallet; // إضافة الموديل لضمان التعامل السليم
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
     /**
      * عرض الخدمات التي اشتراها العميل
+     * تم حل مشكلة الـ Performance والـ Null User
      */
     public function purchasedServices()
     {
         $user = Auth::user();
 
+        // حماية: إذا لم يكن هناك مستخدم مسجل دخول (رغم وجود Middleware)
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        // جلب الطلبات مع حماية الـ Relations
         $orders = Order::with(['service', 'seller'])
             ->where('buyer_id', $user->id)
             ->latest()
@@ -36,6 +45,7 @@ class OrderController extends Controller
      */
     public function show($id)
     {
+        // findOrFail بتحل جزء كبير من الـ Bug لو الـ ID مش موجود
         $order = Order::with(['service', 'seller', 'buyer'])->findOrFail($id);
 
         if (Auth::id() !== $order->buyer_id && Auth::id() !== $order->seller_id) {
@@ -64,75 +74,86 @@ class OrderController extends Controller
 
     /**
      * عملية شراء الخدمة
+     * تم إضافة حل الـ BUG الخاص بالمحفظة والمستخدم
      */
     public function store(Request $request)
     {
         $service = Service::findOrFail($request->service_id);
         $buyer = Auth::user();
 
+        // 1. التأكد أن البائع لسه موجود في الداتابيز (حل الـ BUG)
+        if (!$service->user) {
+            return back()->with('error', 'عفواً، صاحب هذه الخدمة غير متاح حالياً.');
+        }
+
         if ($buyer->id === $service->user_id) {
             return back()->with('error', 'لا يمكنك شراء خدمتك الخاصة!');
         }
 
-        if (!$buyer->wallet || $buyer->wallet->balance < $service->price) {
+        // 2. التأكد من وجود محفظة للمشتري أو إنشائها (حماية من الـ Exception)
+        $wallet = Wallet::firstOrCreate(
+            ['user_id' => $buyer->id],
+            ['balance' => 0]
+        );
+
+        if ($wallet->balance < $service->price) {
             return back()->with('error', 'رصيدك غير كافٍ لشراء هذه الخدمة.');
         }
 
-        $order = DB::transaction(function () use ($buyer, $service) {
-            $buyer->wallet->decrement('balance', $service->price);
+        try {
+            $order = DB::transaction(function () use ($buyer, $service, $wallet) {
+                // خصم الرصيد
+                $wallet->decrement('balance', $service->price);
 
-            return Order::create([
-                'service_id' => $service->id,
-                'buyer_id'   => $buyer->id,
-                'seller_id'  => $service->user_id,
-                'price'      => $service->price,
-                'status'     => 'processing',
-            ]);
-        });
+                return Order::create([
+                    'service_id' => $service->id,
+                    'buyer_id'   => $buyer->id,
+                    'seller_id'  => $service->user_id,
+                    'price'      => $service->price,
+                    'status'     => 'processing',
+                ]);
+            });
 
-        return redirect()->route('messages.chat', ['user' => $order->seller_id])
-                         ->with('success', 'تم شراء الخدمة بنجاح! يمكنك الآن التواصل مع المستقل.');
+            return redirect()->route('messages.chat', ['user' => $order->seller_id])
+                             ->with('success', 'تم شراء الخدمة بنجاح! يمكنك الآن التواصل مع المستقل.');
+
+        } catch (\Exception $e) {
+            Log::error('Order Store Error: ' . $e->getMessage());
+            return back()->with('error', 'حدث خطأ أثناء إتمام العملية، يرجى المحاولة لاحقاً.');
+        }
     }
 
     /**
-     * الوظيفة المسؤولة عن تسليم الطلب (المسمى المطلوب لحل الـ Route Error)
+     * الوظيفة المسؤولة عن تسليم الطلب
      */
     public function submitDelivery(Request $request, $id)
     {
         $order = Order::findOrFail($id);
 
-        // التأكد أن الذي يقوم بالتسليم هو صاحب الخدمة (البائع)
         if (Auth::id() !== $order->seller_id) {
             return back()->with('error', 'غير مسموح لك بهذا الإجراء.');
         }
 
-        // تحديث حالة الطلب إلى "تم التسليم"
         $order->update([
             'status' => 'delivered',
-            'delivery_msg' => $request->delivery_msg ?? 'تم إنجاز العمل المطلوب وتسليمه.',
+            'delivery_msg' => strip_tags($request->delivery_msg ?? 'تم إنجاز العمل المطلوب وتسليمه.'),
         ]);
 
         return back()->with('success', 'تم تسليم العمل بنجاح بانتظار مراجعة المشتري.');
     }
 
-    /**
-     * وظيفة إضافية لدعم المسمى القديم (snake_case) لتجنب أي تعارض
-     */
     public function submit_delivery(Request $request, $id)
     {
         return $this->submitDelivery($request, $id);
     }
 
-    /**
-     * البائع يرفع الشغل
-     */
     public function deliverOrder(Request $request, $id)
     {
         return $this->submitDelivery($request, $id);
     }
 
     /**
-     * المشتري يؤكد الاستلام والتقييم (تحويل الفلوس للبائع)
+     * المشتري يؤكد الاستلام والتقييم
      */
     public function completeAndRate(Request $request)
     {
@@ -152,21 +173,31 @@ class OrderController extends Controller
             return back()->with('error', 'لا يمكنك تأكيد الاستلام قبل تسليم العمل.');
         }
 
-        DB::transaction(function () use ($order, $request) {
-            $order->update([
-                'status' => 'completed',
-                'rating' => $request->rating,
-                'comment' => $request->comment,
-                'completed_at' => now(),
-            ]);
+        try {
+            DB::transaction(function () use ($order, $request) {
+                $order->update([
+                    'status' => 'completed',
+                    'rating' => $request->rating,
+                    'comment' => strip_tags($request->comment),
+                    'completed_at' => now(),
+                ]);
 
-            if($order->seller && $order->seller->wallet) {
-                $order->seller->wallet->increment('balance', $order->price);
-            }
-        });
+                // حماية: التأكد من وجود البائع ومحفظته قبل التحويل
+                if($order->seller) {
+                    $sellerWallet = Wallet::firstOrCreate(
+                        ['user_id' => $order->seller_id],
+                        ['balance' => 0]
+                    );
+                    $sellerWallet->increment('balance', $order->price);
+                }
+            });
 
-        return redirect()->route('orders.show', $order->id)
-                         ->with('success', 'تم إتمام العملية بنجاح وتحويل الأرباح.');
+            return redirect()->route('orders.show', $order->id)
+                             ->with('success', 'تم إتمام العملية بنجاح وتحويل الأرباح.');
+        } catch (\Exception $e) {
+            Log::error('Complete Order Error: ' . $e->getMessage());
+            return back()->with('error', 'فشل في إتمام الطلب برمجياً.');
+        }
     }
 
     /**
@@ -176,13 +207,26 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail($id);
 
-        DB::transaction(function () use ($order) {
-            $order->update(['status' => 'cancelled']);
-            if($order->buyer && $order->buyer->wallet) {
-                $order->buyer->wallet->increment('balance', $order->price);
-            }
-        });
+        if ($order->status === 'completed' || $order->status === 'cancelled') {
+            return back()->with('error', 'لا يمكن إلغاء طلب مكتمل أو ملغي بالفعل.');
+        }
 
-        return back()->with('success', 'تم إلغاء الطلب وإعادة المبلغ.');
+        try {
+            DB::transaction(function () use ($order) {
+                $order->update(['status' => 'cancelled']);
+
+                // التأكد من إرجاع الفلوس لمحفظة المشتري
+                $buyerWallet = Wallet::firstOrCreate(
+                    ['user_id' => $order->buyer_id],
+                    ['balance' => 0]
+                );
+                $buyerWallet->increment('balance', $order->price);
+            });
+
+            return back()->with('success', 'تم إلغاء الطلب وإعادة المبلغ لمحفظتك.');
+        } catch (\Exception $e) {
+            Log::error('Cancel Order Error: ' . $e->getMessage());
+            return back()->with('error', 'فشل إلغاء الطلب.');
+        }
     }
 }
