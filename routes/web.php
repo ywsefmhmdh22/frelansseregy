@@ -94,6 +94,20 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // --- [تعديل هاني] نظام المحفظة والمدفوعات المطور ---
+    Route::prefix('wallet')->group(function () {
+        Route::get('/', [ClientDashboardController::class, 'wallet'])->name('wallet.index');
+
+        // تم التعديل: ربط الروت بالكنترولر وتصحيح الاسم لحل مشكلة الـ RouteNotFoundException
+        Route::get('/deposit', [PaymentController::class, 'showDepositForm'])->name('wallet.deposit');
+
+        // روت POST لبدء العملية مع Paymob
+        Route::post('/payment/initiate', [PaymentController::class, 'initiatePayment'])->name('pay.initiate');
+
+        // روت Callback الخاص بـ Paymob
+        Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('pay.callback');
+    });
+
     // --- إعدادات الحساب ---
     Route::prefix('profile')->group(function () {
         Route::get('/settings', [ProfileController::class, 'settings'])->name('profile.settings');
@@ -109,7 +123,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/{id}', [UserController::class, 'show'])->name('profile.show');
     Route::get('/profile/{id}/reviews', [UserController::class, 'showReviews'])->name('profile.reviews');
     Route::get('/profile/{id}/portfolio', [UserController::class, 'showPortfolio'])->name('profile.portfolio');
-
     Route::post('/profile/orders/{id}/submit-delivery', [OrderController::class, 'submitDelivery'])->name('orders.submitDelivery');
 
     // استكمال البروفايل
@@ -148,15 +161,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/services/order/{order}/request-delivery', [ServiceController::class, 'requestDelivery'])->name('services.requestDelivery');
         });
 
-        Route::prefix('wallet')->group(function () {
-            Route::get('/', [ClientDashboardController::class, 'wallet'])->name('wallet.index');
-            Route::get('/deposit', [ClientDashboardController::class, 'deposit'])->name('wallet.deposit');
-            Route::post('/payment/initiate', [PaymentController::class, 'initiatePayment'])->name('pay.initiate');
-            Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('pay.callback');
-
-            Route::get('/withdraw', [WithdrawController::class, 'create'])->name('withdraw.create');
-            Route::post('/withdraw/process', [WithdrawController::class, 'store'])->name('withdraw.request');
-        });
+        Route::get('/withdraw', [WithdrawController::class, 'create'])->name('withdraw.create');
+        Route::post('/withdraw/process', [WithdrawController::class, 'store'])->name('withdraw.request');
 
         Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
         Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
@@ -176,46 +182,33 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | 4. لوحة تحكم الأدمن (تم الإصلاح لتعمل مع AJAX وتجنب تضارب المسارات)
+    | 4. لوحة تحكم الأدمن (داخل الـ Auth)
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin')->name('admin.')->middleware('can:admin-access')->group(function () {
 
-        // --- أ: العمليات السريعة وعرض الداشبورد ---
         Route::controller(AdminDashboardController::class)->group(function () {
             Route::get('/dashboard', 'index')->name('dashboard');
-
-            // عمليات الحسابات السريعة
             Route::post('/user/{id}/reset-wallet', 'resetWallet')->name('user.reset-wallet');
         });
 
-        // --- ب: إدارة المشاريع (تم التعديل هنا لتعمل الأزرار) ---
         Route::controller(App\Http\Controllers\Admin\ProjectController::class)->group(function () {
-            // عرض المشاريع المعلقة
             Route::get('/projects/pending', 'pendingProjects')->name('projects.pending');
-
-            // مسارات القبول والرفض لـ AJAX (تطابق JS: /admin/projects/{id}/approve)
             Route::post('/projects/{id}/approve', 'approve')->name('projects.approve');
             Route::post('/projects/{id}/reject', 'reject')->name('projects.reject');
-
-            // مسار الحذف
             Route::delete('/projects/delete/{id}', 'deleteProject')->name('projects.delete');
         });
 
-        // --- ج: إدارة المستخدمين (UserManagementController) ---
         Route::controller(UserManagementController::class)->group(function () {
             Route::get('/users/view/{user}', 'show')->name('user.details');
             Route::get('/users/edit/{user}', 'edit')->name('user.edit');
             Route::put('/users/update/{user}', 'update')->name('user.update');
             Route::get('/users/impersonate/{user}', 'impersonate')->name('user.impersonate');
-
             Route::post('/user/{user}/approve', 'approveUser')->name('user.approve');
             Route::post('/user/{user}/ban', 'ban')->name('user.ban');
-
             Route::post('/users/verify-action/{user}', 'verify')->name('verify');
         });
 
-        // --- د: المالية والنزاعات ---
         Route::controller(FinanceAdminController::class)->group(function () {
             Route::get('/financial/user/{user}', 'userTransactions')->name('user.transactions');
             Route::get('/financial/disputes', 'disputesIndex')->name('disputes.index');

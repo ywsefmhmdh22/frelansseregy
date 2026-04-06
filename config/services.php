@@ -40,12 +40,15 @@ return [
     | Paymob Payment Gateway (Added for Security & Best Practices)
     |--------------------------------------------------------------------------
     */
+
     'paymob' => [
         'api_key'               => env('PAYMOB_API_KEY'),
         'hmac_secret'           => env('PAYMOB_HMAC_SECRET'),
         'iframe_id'             => env('PAYMOB_IFRAME_ID'),
         'integration_id'        => env('PAYMOB_INTEGRATION_ID'),
         'wallet_integration_id' => env('PAYMOB_WALLET_INTEGRATION_ID'),
+        'exchange_rate_api_key' => env('EXCHANGERATE_API_KEY'),
+        'exchange_rate'         => env('USD_TO_EGP_RATE', 50.0),
     ],
 
 ];
