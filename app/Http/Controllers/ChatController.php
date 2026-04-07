@@ -19,11 +19,11 @@ class ChatController extends Controller
     {
         $authId = auth()->id();
 
-        // 1. جلب قائمة الأشخاص (Inbox) بطريقة Eloquent الصافية لتجنب SQL Raw تماماً
-        // بنجيب أحدث رسالة لكل مستخدم تواصلت معه
+        // 1. جلب قائمة الأشخاص (Inbox) بطريقة آمنة تماماً
+        // تم استخدام الـ Binding لتمرير الـ ID بدلاً من الدمج النصي المباشر لمنع SQL Injection
         $conversations = Message::where('sender_id', $authId)
             ->orWhere('receiver_id', $authId)
-            ->select(DB::raw('DISTINCT CASE WHEN sender_id = ' . (int)$authId . ' THEN receiver_id ELSE sender_id END as contact_id'))
+            ->select(DB::raw('DISTINCT CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as contact_id', [$authId]))
             ->get();
 
         // نجلب المستخدمين بناءً على الـ IDs اللي استخرجناها

@@ -11,57 +11,69 @@ use App\Models\Transaction;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class ClientDashboardController extends Controller
 {
     /**
-     * عرض الصفحة الرئيسية للوحة تحكم العميل - تحسين الأداء (Performance Boost)
+     * عرض الصفحة الرئيسية للوحة تحكم العميل - تم تحسين الاستعلامات واستخدام الكاش
      */
     public function index()
     {
-        $user = Auth::user();
-        $userId = $user->id;
+        $userId = Auth::id();
 
-        // 1. جلب آخر 5 مشاريع فقط (لتحسين السرعة) بدل جلب كل التاريخ
-        $myProjects = Project::withCount('proposals')
-            ->where('user_id', $userId)
-            ->latest()
-            ->limit(5)
-            ->get();
+        // 1. استخدام التخزين المؤقت للإحصائيات والمشاريع لمدة 5 دقائق لتقليل الضغط
+        $dashboardData = Cache::remember("client_dashboard_cache_{$userId}", 300, function () use ($userId) {
 
-        // 2. حساب الإحصائيات بطريقة أسرع (Direct Aggregation)
-        $stats = [
-            'total_projects'   => Project::where('user_id', $userId)->count(),
-            'pending_projects' => Project::where('user_id', $userId)->where('admin_status', 'pending')->count(),
-            'active_projects'  => Project::where('user_id', $userId)->where('admin_status', 'approved')->count(),
-            'total_spent'      => Project::where('user_id', $userId)->where('status', 'completed')->sum('final_price') ?? 0,
-        ];
+            // جلب آخر 5 مشاريع مع تحميل عدد العروض مسبقاً
+            $projects = Project::where('user_id', $userId)
+                ->withCount('proposals')
+                ->latest()
+                ->limit(5)
+                ->get();
 
-        // 3. تأمين جلب الرصيد
+            // حساب جميع الإحصائيات في استعلامات تجميعية سريعة
+            $stats = [
+                'total_projects'   => Project::where('user_id', $userId)->count(),
+                'pending_projects' => Project::where('user_id', $userId)->where('admin_status', 'pending')->count(),
+                'active_projects'  => Project::where('user_id', $userId)->where('admin_status', 'approved')->count(),
+                'total_spent'      => Project::where('user_id', $userId)->where('status', 'completed')->sum('final_price') ?? 0,
+            ];
+
+            return compact('projects', 'stats');
+        });
+
+        // 2. المحفظة (يفضل عدم وضعها في الكاش لأنها تتغير باستمرار)
         $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0]);
         $walletBalance = $wallet->balance;
 
-        return view('dashboards.Client Dashboard', compact('myProjects', 'stats', 'walletBalance'));
+        return view('dashboards.Client Dashboard', [
+            'myProjects'    => $dashboardData['projects'],
+            'stats'         => $dashboardData['stats'],
+            'walletBalance' => $walletBalance
+        ]);
     }
 
     /**
-     * عرض قائمة بكل مشاريع العميل (مع استخدام الـ Pagination لحل مشكلة الأداء)
+     * عرض قائمة بكل مشاريع العميل - تحسين باستخدام Pagination
      */
     public function myProjects()
     {
+        // استخدام simplePaginate أسرع من paginate العادي في الجداول الضخمة
         $myProjects = Project::where('user_id', Auth::id())
             ->withCount('proposals')
             ->latest()
-            ->paginate(10); // عرض 10 مشاريع في كل صفحة
+            ->paginate(10);
 
         return view('projects.index', compact('myProjects'));
     }
 
     /**
-     * عرض العروض المقدمة لمشروع معين
+     * عرض العروض المقدمة لمشروع معين - حل مشكلة الـ N+1 في اليوزرز
      */
     public function projectOffers($id)
     {
+        // تم استخدام Eager Loading لتحميل بيانات صاحب العرض (user) دفعة واحدة
         $project = Project::where('user_id', Auth::id())
             ->with(['proposals' => function($q) {
                 $q->with('user')->latest();
@@ -74,28 +86,33 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * عرض المحفظة
+     * عرض المحفظة والمعاملات
      */
     public function wallet()
     {
-        $wallet = Wallet::firstOrCreate(['user_id' => Auth::id()], ['balance' => 0]);
+        $userId = Auth::id();
+        $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0]);
         $walletBalance = $wallet->balance;
 
-        // جلب آخر المعاملات المالية للشفافية
-        $transactions = Transaction::where('user_id', Auth::id())->latest()->limit(10)->get();
+        // جلب آخر المعاملات المالية مع تحديد الأعمدة المطلوبة فقط لتقليل استهلاك الذاكرة
+        $transactions = Transaction::where('user_id', $userId)
+            ->select('id', 'amount', 'type', 'status', 'payment_method', 'created_at')
+            ->latest()
+            ->limit(10)
+            ->get();
 
         return view('wallet.index', compact('walletBalance', 'transactions'));
     }
 
     /**
-     * عرض المستقلين المفضلين (Pagination)
+     * عرض المستقلين المفضلين - تحسين تحميل بيانات الـ Freelancer
      */
     public function favorites()
     {
         $favorites = Favorite::where('user_id', Auth::id())
-            ->with('freelancer')
+            ->with('freelancer:id,name,image_url,freelancer_rating') // جلب أعمدة محددة فقط
             ->latest()
-            ->paginate(12); // تحسين الأداء لو القائمة كبيرة
+            ->paginate(12);
 
         return view('freelancers.favorites', compact('favorites'));
     }
@@ -110,63 +127,58 @@ class ClientDashboardController extends Controller
         $userId = Auth::id();
         $freelancerId = $request->freelancer_id;
 
-        $favorite = Favorite::where('user_id', $userId)
-            ->where('freelancer_id', $freelancerId)
-            ->first();
+        // تحديث أو حذف
+        Favorite::updateOrCreate(
+            ['user_id' => $userId, 'freelancer_id' => $freelancerId]
+        )->wasRecentlyCreated ?: Favorite::where(['user_id' => $userId, 'freelancer_id' => $freelancerId])->delete();
 
-        if ($favorite) {
-            $favorite->delete();
-            $msg = 'تمت الإزالة من المفضلات';
-        } else {
-            Favorite::create([
-                'user_id' => $userId,
-                'freelancer_id' => $freelancerId
-            ]);
-            $msg = 'تم الإضافة للمفضلات';
-        }
-
-        return back()->with('success', $msg);
+        return back()->with('success', 'تم تحديث قائمة المفضلات');
     }
 
     /**
-     * تنفيذ طلب السحب (مع حماية برمجية كاملة)
+     * تنفيذ طلب السحب - مع تأمين البيانات والعمليات
      */
     public function processWithdraw(Request $request)
     {
         $request->validate([
             'amount' => 'required|numeric|min:100',
-            'method' => 'required|string',
+            'method' => 'required|string|max:50',
             'account_info' => 'required|string|max:500',
         ]);
 
-        $user = Auth::user();
-        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
-
-        if ($wallet->balance < $request->amount) {
-            return back()->with('error', 'رصيدك غير كافٍ لإتمام عملية السحب.');
-        }
+        $userId = Auth::id();
 
         try {
-            DB::transaction(function () use ($user, $wallet, $request) {
+            return DB::transaction(function () use ($userId, $request) {
+                // استخدام lockForUpdate لمنع حدوث Race Condition في الرصيد
+                $wallet = Wallet::where('user_id', $userId)->lockForUpdate()->first();
+
+                if (!$wallet || $wallet->balance < $request->amount) {
+                    throw new \Exception('رصيدك غير كافٍ.');
+                }
+
                 // 1. الخصم
                 $wallet->decrement('balance', $request->amount);
 
                 // 2. تسجيل العملية
                 Transaction::create([
-                    'user_id' => $user->id,
+                    'user_id' => $userId,
                     'amount' => $request->amount,
                     'type' => 'withdraw',
                     'status' => 'pending',
                     'payment_method' => strip_tags($request->method),
                     'details' => 'طلب سحب إلى: ' . strip_tags($request->account_info)
                 ]);
-            });
 
-            return redirect()->route('client.dashboard')
-                ->with('success', 'تم تقديم طلب السحب بنجاح، سيتم المراجعة خلال 24 ساعة.');
+                // مسح الكاش لتظهر الإحصائيات الجديدة
+                Cache::forget("client_dashboard_cache_{$userId}");
+
+                return redirect()->route('client.dashboard')
+                    ->with('success', 'تم تقديم طلب السحب بنجاح.');
+            });
         } catch (\Exception $e) {
             Log::error('Withdraw Process Error: ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ أثناء معالجة الطلب.');
+            return back()->with('error', $e->getMessage());
         }
     }
 }

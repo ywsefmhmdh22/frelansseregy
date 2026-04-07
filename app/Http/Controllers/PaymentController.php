@@ -25,6 +25,12 @@ class PaymentController extends Controller
         return Cache::remember('usd_to_egp_rate', 3600, function () {
             try {
                 $apiKey = config('services.paymob.exchange_rate_api_key');
+
+                // التأكد من وجود المفتاح قبل إرسال الطلب
+                if (!$apiKey) {
+                    return (float) config('services.paymob.exchange_rate', 50.0);
+                }
+
                 $response = Http::get("https://v6.exchangerate-api.com/v6/{$apiKey}/latest/USD");
 
                 if ($response->successful()) {
@@ -32,7 +38,6 @@ class PaymentController extends Controller
                     return (float) $data['conversion_rates']['EGP'];
                 }
 
-                // سعر احتياطي من الإعدادات لو الـ API تعطل
                 return (float) config('services.paymob.exchange_rate', 50.0);
             } catch (Exception $e) {
                 Log::error('Exchange Rate API Error: ' . $e->getMessage());
@@ -80,12 +85,12 @@ class PaymentController extends Controller
             ]);
 
             if (!$authResponse->successful()) {
-                throw new Exception('فشل التوثيق مع Paymob: تأكد من الـ API Key في ملف .env');
+                throw new Exception('فشل التوثيق مع بوابة الدفع. يرجى مراجعة الإعدادات.');
             }
 
             $token = $authResponse->json()['token'];
 
-            // 3. تسجيل الطلب برقم فرعي
+            // 3. تسجيل الطلب
             $orderResponse = Http::withToken($token)->post('https://accept.paymob.com/api/ecommerce/orders', [
                 'delivery_needed' => 'false',
                 'amount_cents' => (int) round($paymobAmount * 100),
@@ -94,7 +99,7 @@ class PaymentController extends Controller
             ]);
 
             if (!$orderResponse->successful()) {
-                throw new Exception('فشل تسجيل الطلب: تحقق من إعدادات الحساب في Paymob.');
+                throw new Exception('فشل تسجيل الطلب لدى بوابة الدفع.');
             }
 
             $orderId = $orderResponse->json()['id'];
@@ -122,7 +127,7 @@ class PaymentController extends Controller
             ]);
 
             if (!$paymentKeyResponse->successful()) {
-                throw new Exception('فشل الحصول على مفتاح الدفع: تأكد من الـ Integration ID.');
+                throw new Exception('فشل الحصول على مفتاح تصريح الدفع.');
             }
 
             $paymentToken = $paymentKeyResponse->json()['token'];
@@ -152,7 +157,7 @@ class PaymentController extends Controller
                 if ($walletPayResponse->successful() && !empty($walletData['redirect_url'])) {
                     return redirect()->away($walletData['redirect_url']);
                 }
-                throw new Exception('فشل توجيه محفظة فودافون كاش: ' . ($walletData['detail'] ?? 'خطأ غير معروف'));
+                throw new Exception('فشل توجيه المحفظة الإلكترونية.');
             } else {
                 $iframeId = config('services.paymob.iframe_id');
                 $secureUrl = "https://accept.paymob.com/api/acceptance/iframes/{$iframeId}?payment_token=" . urlencode($paymentToken);
@@ -162,11 +167,8 @@ class PaymentController extends Controller
         } catch (Exception $e) {
             Log::error('Secure Payment Error: ' . $e->getMessage());
 
-            return dd([
-                'Error_Message' => $e->getMessage(),
-                'Suggestion' => 'تحقق من إعدادات ملف .env أو تواصل مع دعم Paymob',
-                'Line' => $e->getLine()
-            ]);
+            // بدلاً من dd، نعود للخلف برسالة خطأ آمنة للمستخدم
+            return back()->with('error', 'حدث خطأ أثناء معالجة الطلب: ' . $e->getMessage());
         }
     }
 
