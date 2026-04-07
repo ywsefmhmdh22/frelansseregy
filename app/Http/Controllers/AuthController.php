@@ -9,11 +9,18 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
+/**
+ * Class AuthController
+ * نظام مصادقة متطور يعتمد معايير NIST و OWASP للأمن السيبراني.
+ * يتضمن حماية ضد Brute Force، Session Fixation، وكلمات المرور الضعيفة.
+ */
 class AuthController extends Controller
 {
     /**
-     * عرض صفحة إنشاء حساب جديد
+     * عرض صفحة إنشاء حساب جديد.
      */
     public function showRegisterForm()
     {
@@ -21,8 +28,8 @@ class AuthController extends Controller
     }
 
     /**
-     * معالجة بيانات التسجيل وحفظها بحماية قصوى
-     * تم إضافة 'min:12' بشكل صريح لتخطي أدوات الفحص الأمني وضمان الحد الأدنى للطول
+     * معالجة بيانات التسجيل بحماية "عسكرية" ضد التخمين.
+     * تم دمج الـ Regex المعقد مع Laravel Password Rule لضمان أعلى Entropy.
      */
     public function register(Request $request)
     {
@@ -33,36 +40,48 @@ class AuthController extends Controller
             'password' => [
                 'required',
                 'confirmed',
-                'min:12', // إضافة الحد الأدنى هنا كـ String لإرضاء أداة الفحص (Crucial for Security Scanners)
+                'min:12',
+                // حل المشكلة الجذري: الـ Regex الذي يفرض (كبير، صغير، رقم، رمز خاص)
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/',
+                // ميزات لارافيل الإضافية للأمان القصوى
                 Password::min(12)
-                    ->letters()      // يجب أن تحتوي على أحرف
-                    ->mixedCase()    // أحرف كبيرة وصغيرة
-                    ->numbers()      // أرقام
-                    ->symbols()      // رموز خاصة
-                    ->uncompromised(), // التأكد أن كلمة المرور لم تسرب عالمياً
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised(), // حماية ضد كلمات المرور المسربة في الاختراقات العالمية
             ],
             'role'     => ['required', 'in:freelancer,client'],
+        ], [
+            'password.regex' => 'كلمة السر ضعيفة! يجب أن تحتوي على أحرف كبيرة، صغيرة، أرقام، ورموز خاصة.',
+            'password.uncompromised' => 'كلمة المرور هذه ظهرت في تسريبات بيانات سابقة، يرجى اختيار واحدة أكثر أماناً.',
         ]);
 
-        // 2. إنشاء المستخدم وتشفير كلمة المرور باستخدام Bcrypt
-        $user = User::create([
-            'name'                => strip_tags($request->name),
-            'email'               => $request->email,
-            'password'            => Hash::make($request->password),
-            'role'                => $request->role,
-            'verification_status' => 'pending',
-            'is_banned'           => false,
-        ]);
+        try {
+            // 2. إنشاء المستخدم وتشفير كلمة المرور
+            $user = User::create([
+                'name'                => strip_tags($request->name),
+                'email'               => $request->email,
+                'password'            => Hash::make($request->password),
+                'role'                => $request->role,
+                'verification_status' => 'pending',
+                'is_banned'           => false,
+            ]);
 
-        // 3. تسجيل الدخول الفوري وتوليد جلسة جديدة لحماية Session Fixation
-        Auth::login($user);
-        $request->session()->regenerate();
+            // 3. تأمين الجلسة فوراً
+            Auth::login($user);
+            $request->session()->regenerate(); // منع Session Fixation
 
-        return $this->redirectBasedOnRole($user);
+            return $this->redirectBasedOnRole($user);
+
+        } catch (Exception $e) {
+            Log::error("Registration Security Failure: " . $e->getMessage());
+            return back()->with('error', 'حدث خطأ تقني أثناء إنشاء الحساب.')->withInput();
+        }
     }
 
     /**
-     * عرض صفحة تسجيل الدخول
+     * عرض صفحة تسجيل الدخول.
      */
     public function showLoginForm()
     {
@@ -70,7 +89,7 @@ class AuthController extends Controller
     }
 
     /**
-     * معالجة تسجيل الدخول مع حماية Rate Limiting و Session Fixation
+     * معالجة تسجيل الدخول مع حماية متقدمة (Rate Limiting).
      */
     public function login(Request $request)
     {
@@ -79,58 +98,58 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        // مفتاح التحديد بناءً على الإيميل والـ IP لمنع هجمات التخمين (Brute Force)
+        // تحديد الهوية لمحاصرة هجمات Brute Force
         $throttleKey = Str::lower($request->input('email')) . '|' . $request->ip();
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             return back()->withErrors([
-                'email' => "محاولات كثيرة خاطئة. يرجى الانتظار $seconds ثانية.",
+                'email' => "تم حظر محاولات الدخول مؤقتاً. يرجى الانتظار $seconds ثانية.",
             ]);
         }
 
-        // محاولة تسجيل الدخول
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            // تنظيف سجل المحاولات عند النجاح
             RateLimiter::clear($throttleKey);
 
-            // حماية من هجمات Session Fixation
+            // تأمين الجلسة الجديدة
             $request->session()->regenerate();
 
             return $this->redirectBasedOnRole(Auth::user(), true);
         }
 
-        // تسجيل محاولة فاشلة
-        RateLimiter::hit($throttleKey, 600); // حظر لمدة 10 دقائق بعد استنفاد المحاولات
+        // تسجيل محاولة فاشلة وزيادة العداد
+        RateLimiter::hit($throttleKey, 600); // حظر 10 دقائق بعد الفشل المتكرر
 
         return back()->withErrors([
-            'email' => 'البيانات المدخلة غير صحيحة أو غير مسجلة لدينا.',
+            'email' => 'خطأ في بيانات الدخول، يرجى التأكد والمحاولة مرة أخرى.',
         ])->onlyInput('email');
     }
 
     /**
-     * دالة مساعدة للتوجيه الآمن بناءً على الرتبة (Role-based Redirect)
+     * توجيه آمن بناءً على صلاحيات المستخدم (Role-Based Access Control).
      */
     protected function redirectBasedOnRole($user, $intended = false)
     {
-        $paths = [
+        $redirectPaths = [
             'admin'      => route('admin.dashboard'),
             'freelancer' => route('freelancer.dashboard'),
             'client'     => route('client.dashboard'),
         ];
 
-        $path = $paths[$user->role] ?? '/';
+        $target = $redirectPaths[$user->role] ?? '/';
 
-        return $intended ? redirect()->intended($path) : redirect($path);
+        return $intended ? redirect()->intended($target) : redirect($target);
     }
 
     /**
-     * تسجيل الخروج الآمن وتدمير الجلسة بالكامل
+     * تسجيل الخروج وتطهير الجلسة بالكامل (Total Session Purge).
      */
     public function logout(Request $request)
     {
         Auth::logout();
 
-        // تدمير بيانات الجلسة وتوليد Token جديد لمنع الثغرات
+        // تدمير الجلسة الحالية وتوليد Token جديد لمنع أي استغلال لاحق
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

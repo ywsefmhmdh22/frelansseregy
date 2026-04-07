@@ -13,7 +13,7 @@ use Exception;
 /**
  * Class ServiceController
  * مسؤول عن إدارة "الخدمات المصغرة" (Micro-services) التي يقدمها المستقلون.
- * تم تحديثه لإزالة التكرار البرمجي (Code Smell) وتحسين قابلية الصيانة.
+ * تم تحصين الكود وتطبيق مبدأ DRY (Don't Repeat Yourself) لإزالة أي Code Smell.
  */
 class ServiceController extends Controller
 {
@@ -27,36 +27,40 @@ class ServiceController extends Controller
 
     /**
      * حفظ الخدمة في قاعدة البيانات (Refactored لإزالة الـ Code Smell).
+     * يعتمد على دوال المساعدة لضمان نظافة الكود وتسهيل اختباره.
      */
     public function store(Request $request)
     {
-        // 1. استخدام دالة التحقق الموحدة
-        $validated = $this->validateServiceRequest($request);
+        // 1. استخدام دالة التحقق الموحدة (Single Responsibility)
+        $validatedData = $this->validateServiceRequest($request);
 
         try {
             // 2. استخدام دالة رفع الصور الموحدة
             $imagePath = $this->uploadServiceImage($request);
 
-            // 3. إنشاء السجل باستخدام البيانات المعالجة
+            // 3. إنشاء السجل باستخدام البيانات المعالجة وتطهير النصوص (Sanitization)
             Service::create([
                 'user_id'     => Auth::id(),
-                'title'       => strip_tags($validated['title']),
-                'description' => strip_tags($validated['description']),
-                'price'       => $validated['price'],
+                'title'       => strip_tags($validatedData['title']),
+                'description' => strip_tags($validatedData['description']),
+                'price'       => (float) $validatedData['price'],
                 'image'       => $imagePath,
             ]);
 
-            return redirect()->route('freelancer.dashboard')->with('success', 'تم نشر خدمتك بنجاح!');
+            return redirect()->route('freelancer.dashboard')
+                             ->with('success', 'تم نشر خدمتك بنجاح!');
 
-        } catch (Exception $e) {
-            Log::error('Service Store Error: ' . $e->getMessage());
+        } catch (Exception $processingError) {
+            // تسجيل الخطأ التقني مع سياق كامل
+            Log::error('Service Store Failure: ' . $processingError->getMessage());
 
-            // تنظيف السيرفر في حالة فشل قاعدة البيانات (Good Practice)
-            if (isset($imagePath)) {
+            // تنظيف السيرفر: حذف الصورة التي رُفعت إذا فشلت عملية حفظ الداتابيز
+            if (!empty($imagePath)) {
                 Storage::disk('public')->delete($imagePath);
             }
 
-            return back()->with('error', 'حدث خطأ أثناء حفظ الخدمة.')->withInput();
+            return back()->with('error', 'عذراً، حدث خطأ تقني أثناء حفظ الخدمة.')
+                         ->withInput();
         }
     }
 
@@ -65,56 +69,67 @@ class ServiceController extends Controller
      */
     public function checkout($id)
     {
-        $service = Service::with('user')->findOrFail($id);
+        // استخدام Eager Loading لتحسين الأداء
+        $serviceInstance = Service::with('user')->findOrFail((int)$id);
 
         if (!Auth::check()) {
             return redirect()->route('login');
         }
 
-        return view('services.checkout', compact('service'));
+        return view('services.checkout', ['service' => $serviceInstance]);
     }
 
     /**
-     * معالجة طلب تسليم العمل.
+     * معالجة طلب تسليم العمل وتغيير الحالة.
      */
     public function requestDelivery(Order $order)
     {
-        if (Auth::id() !== $order->seller_id) {
-            Log::warning("Unauthorized delivery attempt for Order ID: {$order->id}");
+        // تحقق أمني من الصلاحية (Authorization Check)
+        if (Auth::id() !== (int)$order->seller_id) {
+            Log::warning("Unauthorized Delivery Attempt by User ID " . Auth::id() . " for Order ID: {$order->id}");
             return back()->with('error', 'عذراً، لا تملك صلاحية تسليم هذا الطلب.');
         }
 
         try {
+            // تحديث الحالة بشكل آمن
             $order->update(['status' => 'delivered']);
+
             return back()->with('success', 'تم إرسال طلب تسليم الخدمة للعميل بنجاح.');
-        } catch (Exception $e) {
-            Log::error('Delivery Request Error: ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ تقني أثناء تحديث حالة الطلب.');
+        } catch (Exception $updateError) {
+            Log::error('Order Status Update Error: ' . $updateError->getMessage());
+            return back()->with('error', 'حدث خطأ أثناء تحديث حالة الطلب.');
         }
     }
 
-    // --- Private/Protected Helpers لإزالة التكرار (The Anti-Code Smell Solution) ---
+    // =========================================================================
+    // Private/Protected Helpers (The Anti-Code Smell Architecture)
+    // =========================================================================
 
     /**
-     * توحيد منطق التحقق من البيانات (Validation).
+     * توحيد منطق التحقق من البيانات (Centralized Validation).
+     * @param Request $request
+     * @return array
      */
     protected function validateServiceRequest(Request $request)
     {
         return $request->validate([
             'title'       => 'required|string|max:255|trim',
-            'description' => 'required|string|min:10',
-            'price'       => 'required|numeric|min:1',
-            'image'       => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'description' => 'required|string|min:10|max:5000',
+            'price'       => 'required|numeric|min:1|max:99999',
+            'image'       => 'required|image|mimes:jpeg,png,jpg,webp|max:3072', // زيادة الحجم لرفع الجودة
         ]);
     }
 
     /**
-     * توحيد منطق معالجة ورفع الصور.
+     * توحيد منطق معالجة ورفع الصور لضمان عدم التكرار.
+     * @param Request $request
+     * @return string|null
      */
     protected function uploadServiceImage(Request $request)
     {
         if ($request->hasFile('image')) {
-            return $request->file('image')->store('services', 'public');
+            // تخزين في مجلد منظم حسب التاريخ لسهولة الأرشفة
+            return $request->file('image')->store('services/' . date('Y/m'), 'public');
         }
         return null;
     }
