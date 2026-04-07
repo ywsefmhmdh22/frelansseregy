@@ -27,10 +27,10 @@
                         </div>
                     </div>
 
-                    {{-- النجوم --}}
+                    {{-- النجوم - التعديل: ربط الـ Label بالمجموعة --}}
                     <div class="mb-4 text-center">
-                        <label class="fw-bold d-block mb-3">ما هو تقييمك لجودة العمل؟</label>
-                        <div class="d-flex justify-content-center gap-2">
+                        <span class="fw-bold d-block mb-3" id="rating_label">ما هو تقييمك لجودة العمل؟</span>
+                        <div class="d-flex justify-content-center gap-2" role="group" aria-labelledby="rating_label">
                             @for($i=1; $i<=5; $i++)
                                 <input type="radio" name="rating" value="{{ $i }}" id="star{{ $i }}" class="btn-check" required>
                                 <label class="btn btn-outline-warning rounded-circle star-btn" for="star{{ $i }}">
@@ -40,10 +40,10 @@
                         </div>
                     </div>
 
-                    {{-- التعليق --}}
+                    {{-- التعليق - التعديل المطلوب: ربط الـ label بالـ textarea باستخدام id و for --}}
                     <div class="mb-4">
-                        <label class="fw-bold mb-2">أضف تعليقك (سيظهر في الملف الشخصي للمستقل)</label>
-                        <textarea name="comment" class="form-control rounded-4 p-3" rows="4" placeholder="كيف كانت جودة التواصل، الالتزام بالوقت، واحترافية العمل؟"></textarea>
+                        <label for="order_comment" class="fw-bold mb-2">أضف تعليقك (سيظهر في الملف الشخصي للمستقل)</label>
+                        <textarea name="comment" id="order_comment" class="form-control rounded-4 p-3" rows="4" placeholder="كيف كانت جودة التواصل، الالتزام بالوقت، واحترافية العمل؟"></textarea>
                     </div>
 
                     <div class="d-grid gap-3">

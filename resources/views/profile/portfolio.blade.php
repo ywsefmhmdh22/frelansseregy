@@ -1,7 +1,6 @@
 @extends('layouts.master')
 
 @section('content')
-<!-- المكتبات اللازمة لتجربة بصرية فائقة -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
@@ -10,19 +9,26 @@
     <div class="container position-relative">
 
         {{-- زر إضافة عمل جديد (يظهر فقط لصاحب الحساب) --}}
-         {{-- مبيظهرش الزرار إلا لو كان اليوزر اللي فاتح الصفحة هو صاحب البروفايل نفسه --}}
-@auth
-    @if(auth()->user()->id == $user->id)
-        <a href="{{ route('portfolio.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> إضافة عمل جديد للمعرض
-        </a>
-    @endif
-@endauth
+        @auth
+            @if(auth()->user()->id == $user->id)
+                <div class="add-work-floating-zone animate__animated animate__bounceInUp">
+                    <a href="{{ route('portfolio.create') }}" class="add-work-btn">
+                        <div class="icon-box">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="text-box">إضافة عمل جديد للمعرض</div>
+                    </a>
+                </div>
+            @endif
+        @endauth
+
         {{-- رأس الصفحة بتصميم ناعم --}}
         <div class="portfolio-hero text-center mb-5 pb-4">
             <div class="avatar-ring-premium mx-auto mb-4">
+                {{-- إضافة alt لصورة البروفايل --}}
                 <img src="{{ $user->profile_image ? asset('storage/' . $user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=6366f1&color=fff' }}"
-                     class="img-user">
+                     class="img-user"
+                     alt="الصورة الشخصية للمستقل {{ $user->name }}">
                 <div class="glow-effect"></div>
             </div>
             <h1 class="display-3 fw-black text-dark mb-2">متحف أعمال <span class="text-gradient-gold">{{ $user->name }}</span></h1>
@@ -39,15 +45,17 @@
                     <div class="elite-card">
                         {{-- الجزء العلوي: الصورة --}}
                         <div class="elite-card-preview">
+                            {{-- إضافة alt لصورة المشروع في الكارت --}}
                             <img src="{{ $project->image ? asset('storage/' . $project->image) : 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=800' }}"
-                                 class="preview-img">
+                                 class="preview-img"
+                                 alt="صورة عرض مشروع: {{ $project->title }}">
 
                             <div class="elite-overlay">
                                 <div class="overlay-top text-start w-100 p-3">
                                     <span class="badge-premium">جديد</span>
                                 </div>
                                 <div class="overlay-center">
-                                    <button class="btn-preview-circle" data-bs-toggle="modal" data-bs-target="#eliteModal{{ $project->id }}">
+                                    <button class="btn-preview-circle" data-bs-toggle="modal" data-bs-target="#eliteModal{{ $project->id }}" aria-label="عرض تفاصيل المشروع">
                                         <i class="fas fa-expand-alt"></i>
                                     </button>
                                 </div>
@@ -63,7 +71,7 @@
                         <div class="elite-card-body p-4">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <h3 class="card-title fw-black mb-0">{{ $project->title }}</h3>
-                                <div class="project-year">{{ $project->completed_at ? \Carbon\Carbon::parse($project->completed_at)->year : '2024' }}</div>
+                                <div class="project-year">{{ $project->completed_at ? \Carbon\Carbon::parse($project->completed_at)->year : '2026' }}</div>
                             </div>
                             <p class="card-text text-muted">
                                 {{ Str::limit($project->description, 95) }}
@@ -85,13 +93,15 @@
                             <div class="modal-body p-0">
                                 <div class="row g-0">
                                     <div class="col-lg-7 bg-black d-flex align-items-center justify-content-center">
+                                        {{-- إضافة alt للصورة داخل المودال --}}
                                         <img src="{{ $project->image ? asset('storage/' . $project->image) : 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=800' }}"
-                                             class="img-fluid project-full-img">
+                                             class="img-fluid project-full-img"
+                                             alt="تفاصيل صورة المشروع كاملة: {{ $project->title }}">
                                     </div>
                                     <div class="col-lg-5 p-5 text-end d-flex flex-column justify-content-between">
                                         <div>
                                             <div class="d-flex align-items-center justify-content-between mb-4">
-                                                <button type="button" class="btn-close m-0" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                <button type="button" class="btn-close m-0" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                                                 <span class="text-primary fw-bold">تفاصيل المشروع</span>
                                             </div>
                                             <h2 class="fw-black mb-3 text-dark">{{ $project->title }}</h2>
@@ -138,7 +148,6 @@
     body { background-color: #fcfcfd; font-family: 'Cairo', sans-serif; color: var(--elite-dark); }
     .fw-black { font-weight: 900; }
 
-    /* رأس الصفحة */
     .text-gradient-gold {
         background: linear-gradient(135deg, var(--elite-primary), var(--elite-secondary));
         -webkit-background-clip: text;
@@ -146,14 +155,10 @@
     }
     .designer-line { width: 100px; height: 6px; background: linear-gradient(to right, var(--elite-primary), var(--elite-secondary)); border-radius: 50px; margin-top: 20px; }
 
-    /* صورة البروفايل المعززة */
-    .avatar-ring-premium {
-        position: relative; width: 110px; height: 110px;
-    }
+    .avatar-ring-premium { position: relative; width: 110px; height: 110px; }
     .img-user { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 4px solid white; box-shadow: 0 10px 20px rgba(0,0,0,0.1); position: relative; z-index: 2; }
     .glow-effect { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background: var(--elite-primary); filter: blur(15px); opacity: 0.3; z-index: 1; }
 
-    /* كروت النخبة */
     .elite-card {
         background: white; border-radius: 30px; overflow: hidden;
         box-shadow: 0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01);
@@ -161,16 +166,12 @@
         border: 1px solid #f1f5f9;
         height: 100%; display: flex; flex-direction: column;
     }
-    .elite-card:hover {
-        transform: translateY(-15px) scale(1.02);
-        box-shadow: 0 30px 60px -12px rgba(0,0,0,0.12);
-    }
+    .elite-card:hover { transform: translateY(-15px) scale(1.02); box-shadow: 0 30px 60px -12px rgba(0,0,0,0.12); }
 
     .elite-card-preview { position: relative; height: 280px; overflow: hidden; }
     .preview-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease; }
     .elite-card:hover .preview-img { transform: scale(1.1); filter: blur(2px); }
 
-    /* الأوفرلاي المتطور */
     .elite-overlay {
         position: absolute; inset: 0; background: rgba(15, 23, 42, 0.75);
         display: flex; flex-direction: column; align-items: center; justify-content: space-between;
@@ -187,12 +188,10 @@
     .btn-blur-white { background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); }
     .badge-premium { background: var(--elite-gold); color: black; padding: 4px 12px; border-radius: 50px; font-weight: 800; font-size: 0.7rem; }
 
-    /* بيانات الكارت */
     .card-title { font-size: 1.35rem; color: #1e293b; }
     .project-year { background: #f1f5f9; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #64748b; }
     .tag-soft { background: #eef2ff; color: var(--elite-primary); padding: 5px 15px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; }
 
-    /* زر إضافة عمل عائم */
     .add-work-floating-zone { position: fixed; bottom: 30px; left: 30px; z-index: 1000; }
     .add-work-btn {
         display: flex; align-items: center; background: var(--elite-dark);
@@ -206,11 +205,9 @@
     .add-work-btn .text-box { color: white; padding: 0 20px; font-weight: 700; font-size: 1rem; }
     .add-work-btn:hover { transform: scale(1.05); background: #000; box-shadow: 0 15px 35px rgba(99,102,241,0.4); }
 
-    /* مخصصات المودال */
     .project-full-img { max-height: 80vh; object-fit: contain; }
     .btn-primary-gradient { background: linear-gradient(135deg, var(--elite-primary), var(--elite-secondary)); border: none; }
 
-    /* الهواتف */
     @media (max-width: 768px) {
         .add-work-floating-zone { left: 50%; transform: translateX(-50%); width: 90%; }
         .add-work-btn { justify-content: center; }

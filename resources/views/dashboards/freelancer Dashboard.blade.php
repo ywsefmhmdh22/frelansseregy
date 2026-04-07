@@ -1,4 +1,4 @@
- @extends('layouts.master')
+@extends('layouts.master')
 
 @section('content')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -28,7 +28,7 @@
             </div>
             <div class="col-md-4 text-md-start mt-4 mt-md-0">
                 <a href="{{ route('withdraw.create') }}" class="btn btn-white-glass rounded-pill px-5 py-3 fw-black shadow-sm hover-up">
-                    <i class="fas fa-hand-holding-dollar me-2"></i> سحب الرصيد الآن
+                    <i class="fas fa-hand-holding-dollar me-2" aria-hidden="true"></i> سحب الرصيد الآن
                 </a>
             </div>
         </div>
@@ -39,37 +39,37 @@
     <div class="row g-3 mb-5 text-center">
         <div class="col-6 col-md-2">
             <a href="{{ route('services.create') }}" class="quick-action-card bg-primary-gradient text-white rounded-4 p-3 shadow-sm d-block text-decoration-none">
-                <div class="icon-box mb-2"><i class="fas fa-plus-circle fa-2x"></i></div>
+                <div class="icon-box mb-2"><i class="fas fa-plus-circle fa-2x" aria-hidden="true"></i></div>
                 <span class="fw-bold small">خدمة جديدة</span>
             </a>
         </div>
         <div class="col-6 col-md-2">
             <a href="{{ route('projects.index') }}" class="quick-action-card bg-dark-gradient text-white rounded-4 p-3 shadow-sm d-block text-decoration-none">
-                <div class="icon-box mb-2"><i class="fas fa-search fa-2x"></i></div>
+                <div class="icon-box mb-2"><i class="fas fa-search fa-2x" aria-hidden="true"></i></div>
                 <span class="fw-bold small">تصفح المشاريع</span>
             </a>
         </div>
         <div class="col-6 col-md-2">
             <a href="{{ route('messages.chat', ['user' => $user->id]) }}" class="quick-action-card bg-info-gradient text-white rounded-4 p-3 shadow-sm d-block text-decoration-none">
-                <div class="icon-box mb-2"><i class="fas fa-comments fa-2x"></i></div>
+                <div class="icon-box mb-2"><i class="fas fa-comments fa-2x" aria-hidden="true"></i></div>
                 <span class="fw-bold small">الرسائل</span>
             </a>
         </div>
         <div class="col-6 col-md-2">
             <a href="{{ route('profile.portfolio', ['id' => $user->id]) }}" class="quick-action-card bg-warning-gradient text-white rounded-4 p-3 shadow-sm d-block text-decoration-none">
-                <div class="icon-box mb-2"><i class="fas fa-briefcase fa-2x"></i></div>
+                <div class="icon-box mb-2"><i class="fas fa-briefcase fa-2x" aria-hidden="true"></i></div>
                 <span class="fw-bold small">معرض الأعمال</span>
             </a>
         </div>
         <div class="col-6 col-md-2">
             <div class="quick-action-card {{ $user->verification_status == 'verified' ? 'bg-success-gradient' : 'bg-secondary-gradient' }} text-white rounded-4 p-3 shadow-sm">
-                <div class="icon-box mb-2"><i class="fas {{ $user->verification_status == 'verified' ? 'fa-shield-alt' : 'fa-user-slash' }} fa-2x"></i></div>
+                <div class="icon-box mb-2"><i class="fas {{ $user->verification_status == 'verified' ? 'fa-shield-alt' : 'fa-user-slash' }} fa-2x" aria-hidden="true"></i></div>
                 <span class="fw-bold small">{{ $user->verification_status == 'verified' ? 'حساب موثق' : 'غير موثق' }}</span>
             </div>
         </div>
         <div class="col-6 col-md-2">
             <a href="{{ route('profile.settings') }}" class="quick-action-card bg-secondary-gradient text-white rounded-4 p-3 shadow-sm d-block text-decoration-none">
-                <div class="icon-box mb-2"><i class="fas fa-user-edit fa-2x"></i></div>
+                <div class="icon-box mb-2"><i class="fas fa-user-edit fa-2x" aria-hidden="true"></i></div>
                 <span class="fw-bold small">الإعدادات</span>
             </a>
         </div>
@@ -80,7 +80,7 @@
             {{-- 3. مركز القيادة والعمليات --}}
             <div class="glass-card p-4 rounded-5 shadow-sm border-0 mb-4 overflow-hidden position-relative">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-black text-dark mb-0"><i class="fas fa-chart-line text-primary me-2"></i> مركز القيادة والعمليات</h5>
+                    <h5 class="fw-black text-dark mb-0"><i class="fas fa-chart-line text-primary me-2" aria-hidden="true"></i> مركز القيادة والعمليات</h5>
                     <div class="status-indicator d-flex align-items-center bg-light px-3 py-1 rounded-pill">
                         <span class="small fw-bold text-success">النظام يعمل بكفاءة</span>
                         <span class="status-pulse ms-2"></span>
@@ -95,7 +95,7 @@
                                 <span class="fw-bold">{{ $proStatus['levelPercentage'] ?? 0 }}%</span>
                             </div>
                             <div class="progress mb-4" style="height: 12px; background: rgba(255,255,255,0.1); border-radius: 20px;">
-                                <div class="progress-bar bg-primary-gradient" role="progressbar" style="width: {{ $proStatus['levelPercentage'] ?? 0 }}%;"></div>
+                                <div class="progress-bar bg-primary-gradient" role="progressbar" style="width: {{ $proStatus['levelPercentage'] ?? 0 }}%;" aria-valuenow="{{ $proStatus['levelPercentage'] ?? 0 }}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                             <div class="row g-2 text-center">
                                 <div class="col-4">
@@ -121,28 +121,27 @@
                     </div>
                     <div class="col-md-5">
                         <div class="d-flex flex-column gap-2">
-                            {{-- هدف الأرباح الديناميكي --}}
                             <div class="goal-item p-3 rounded-4 border bg-white d-flex align-items-center shadow-sm">
-                                <i class="fas fa-bullseye text-danger me-3 fs-4"></i>
+                                <i class="fas fa-bullseye text-danger me-3 fs-4" aria-hidden="true"></i>
                                 <div class="flex-grow-1">
                                     @php
-                                        $targetGoal = $user->earnings_goal ?? 5000; // هدف الفريلانسر أو 5000 افتراضي
+                                        $targetGoal = $user->earnings_goal ?? 5000;
                                         $currentEarnings = ($user->wallet->balance ?? 0) + ($pendingBalance ?? 0);
                                         $goalPercentage = min(($currentEarnings / $targetGoal) * 100, 100);
                                     @endphp
                                     <div class="fw-bold small">هدف الأرباح ({{ number_format($targetGoal) }} {{ $user->wallet->currency ?? 'ج.م' }})</div>
                                     <div class="progress mt-1" style="height: 4px;">
-                                        <div class="progress-bar bg-danger" style="width: {{ $goalPercentage }}%"></div>
+                                        <div class="progress-bar bg-danger" style="width: {{ $goalPercentage }}%" role="progressbar" aria-valuenow="{{ $goalPercentage }}" aria-valuemin="0" aria-valuemax="100"></div>
                                     </div>
                                 </div>
                                 <span class="ms-3 fw-bold">{{ round($goalPercentage) }}%</span>
                             </div>
                             <div class="goal-item p-3 rounded-4 border bg-white d-flex align-items-center shadow-sm">
-                                <i class="fas fa-star text-warning me-3 fs-4"></i>
+                                <i class="fas fa-star text-warning me-3 fs-4" aria-hidden="true"></i>
                                 <div class="flex-grow-1">
                                     <div class="fw-bold small">التقييم العام</div>
                                     <div class="progress mt-1" style="height: 4px;">
-                                        <div class="progress-bar bg-warning" style="width: {{ ($projRating ?? 0) * 20 }}%"></div>
+                                        <div class="progress-bar bg-warning" style="width: {{ ($projRating ?? 0) * 20 }}%" role="progressbar" aria-valuenow="{{ ($projRating ?? 0) * 20 }}" aria-valuemin="0" aria-valuemax="100"></div>
                                     </div>
                                 </div>
                                 <span class="ms-3 fw-bold">{{ number_format($projRating ?? 0, 1) }}</span>
@@ -152,7 +151,7 @@
                 </div>
             </div>
 
-            {{-- 4. إدارة الطلبات (الجدول) --}}
+            {{-- 4. إدارة الطلبات --}}
             <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-5">
                 <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="fw-black mb-0">إدارة الطلبات الجارية والمباعة</h5>
@@ -172,11 +171,11 @@
                                 <td class="px-4 py-3">
                                     <div class="d-flex align-items-center">
                                         <div class="service-icon-small bg-primary-soft rounded-3 p-2 me-3 text-primary">
-                                            <i class="fas fa-box-open"></i>
+                                            <i class="fas fa-box-open" aria-hidden="true"></i>
                                         </div>
                                         <div>
                                             <div class="fw-bold text-dark">{{ Str::limit($order->service->title ?? 'مشروع مخصص', 35) }}</div>
-                                            <small class="text-muted"><i class="fas fa-user me-1 small"></i> المشتري: {{ $order->buyer->name ?? 'مستخدم' }}</small>
+                                            <small class="text-muted"><i class="fas fa-user me-1 small" aria-hidden="true"></i> المشتري: {{ $order->buyer->name ?? 'مستخدم' }}</small>
                                         </div>
                                     </div>
                                 </td>
@@ -194,44 +193,50 @@
                                         {{ __($order->status) }}
                                     </span>
 
-                                    {{-- إظهار التقييم إذا كان الطلب مكتمل --}}
                                     @if($order->status == 'completed' && $order->rating)
                                         <div class="rating-stars mt-1">
                                             @for($i = 1; $i <= 5; $i++)
-                                                <i class="fas fa-star small {{ $i <= $order->rating ? 'text-warning' : 'text-muted opacity-25' }}"></i>
+                                                <i class="fas fa-star small {{ $i <= $order->rating ? 'text-warning' : 'text-muted opacity-25' }}" aria-hidden="true"></i>
                                             @endfor
                                         </div>
                                     @endif
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group gap-2">
-                                        <a href="{{ route('orders.show', $order->id) }}" class="btn btn-sm btn-outline-primary rounded-circle shadow-sm" title="عرض التفاصيل">
-                                            <i class="fas fa-eye"></i>
+                                        <a href="{{ route('orders.show', $order->id) }}" class="btn btn-sm btn-outline-primary rounded-circle shadow-sm" aria-label="عرض تفاصيل الطلب رقم {{ $order->id }}">
+                                            <i class="fas fa-eye" aria-hidden="true"></i>
                                         </a>
 
-                                        <a href="{{ route('messages.chat', ['user' => $order->buyer_id]) }}" class="btn btn-sm btn-outline-info rounded-circle shadow-sm" title="مراسلة المشتري">
-                                            <i class="fas fa-comment-dots"></i>
+                                        <a href="{{ route('messages.chat', ['user' => $order->buyer_id]) }}" class="btn btn-sm btn-outline-info rounded-circle shadow-sm" aria-label="مراسلة المشتري {{ $order->buyer->name ?? '' }}">
+                                            <i class="fas fa-comment-dots" aria-hidden="true"></i>
                                         </a>
 
                                         @if($order->status == 'processing')
                                             <form action="{{ route('orders.submitDelivery', $order->id) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm" title="طلب تسليم الخدمة">
-                                                    <i class="fas fa-check-double me-1"></i> تسليم
+                                                <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">
+                                                    <i class="fas fa-check-double me-1" aria-hidden="true"></i> تسليم
                                                 </button>
                                             </form>
                                         @endif
 
                                         @if($order->status != 'completed' && $order->status != 'cancelled')
-                                            <a href="{{ route('orders.dispute', $order->id) }}" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" title="خلاف؟ تحكيم الإدارة">
-                                                <i class="fas fa-gavel"></i>
+                                            <a href="{{ route('orders.dispute', $order->id) }}" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" aria-label="فتح خلاف أو تحكيم للطلب">
+                                                <i class="fas fa-gavel" aria-hidden="true"></i>
                                             </a>
                                         @endif
                                     </div>
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="3" class="text-center py-5 text-muted">لا توجد طلبات جارية حالياً.</td></tr>
+                            <tr>
+                                <td colspan="3" class="text-center py-5 text-muted">
+                                    <div class="mb-3">
+                                        <img src="https://illustrations.popsy.co/flat/no-data.svg" alt="رسم توضيحي لعدم وجود بيانات" style="width: 150px; opacity: 0.5;">
+                                    </div>
+                                    لا توجد طلبات جارية حالياً.
+                                </td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -245,13 +250,16 @@
                 <div class="profile-bg-accent"></div>
                 <div class="position-relative mb-4 pt-4">
                     <div class="avatar-container mx-auto">
+                        {{-- تم إضافة alt هنا --}}
                         <img src="{{ $user->profile_image ? asset('storage/' . $user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=6366f1&color=fff&size=150' }}"
-                             class="rounded-circle border border-4 border-white shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
+                             alt="الصورة الشخصية للمستقل {{ $user->name }}"
+                             class="rounded-circle border border-4 border-white shadow-sm"
+                             style="width: 120px; height: 120px; object-fit: cover;">
                         @if(Auth::id() === $user->id)
                             <form action="{{ route('profile.update_image') }}" method="POST" enctype="multipart/form-data" id="image-form">
                                 @csrf
                                 <input type="file" name="profile_image" id="profile-input" class="d-none" onchange="this.form.submit();">
-                                <label for="profile-input" class="avatar-edit-icon shadow-sm"><i class="fas fa-camera"></i></label>
+                                <label for="profile-input" class="avatar-edit-icon shadow-sm" aria-label="تغيير الصورة الشخصية"><i class="fas fa-camera" aria-hidden="true"></i></label>
                             </form>
                         @endif
                     </div>

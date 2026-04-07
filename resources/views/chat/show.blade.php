@@ -39,9 +39,12 @@
                        class="list-group-item list-group-item-action contact-item p-3 border-0 {{ isset($user) && $user->id == $contact->id ? 'active' : '' }}">
                         <div class="d-flex align-items-center gap-3">
                             <div class="position-relative">
-                                <img src="https://ui-avatars.com/api/?name={{ urlencode($contact->name) }}&background=random" class="rounded-circle" width="45">
+                                {{-- تم إضافة alt لصور جهات الاتصال --}}
+                                <img src="https://ui-avatars.com/api/?name={{ urlencode($contact->name) }}&background=random"
+                                     class="rounded-circle"
+                                     width="45"
+                                     alt="صورة {{ $contact->name }}">
 
-                                {{-- جلب عدد الرسائل غير المقروءة من هذا المستخدم --}}
                                 @php
                                     $unreadCount = \App\Models\Message::where('sender_id', $contact->id)
                                         ->where('receiver_id', auth()->id())
@@ -72,7 +75,11 @@
             @if($user)
                 <div class="card-header bg-white py-2 px-3 d-flex align-items-center border-bottom">
                     <a href="{{ route('messages.chat') }}" class="d-md-none text-dark me-2"><i class="fas fa-arrow-right"></i></a>
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=007bff&color=fff" class="rounded-circle" width="40">
+                    {{-- تم إضافة alt لصورة المستخدم النشط --}}
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=007bff&color=fff"
+                         class="rounded-circle"
+                         width="40"
+                         alt="صورة {{ $user->name }}">
                     <h6 class="mb-0 fw-bold ms-2">{{ $user->name }}</h6>
                 </div>
 
@@ -81,11 +88,15 @@
                         <div class="message {{ $msg->sender_id == auth()->id() ? 'sent' : 'received' }}">
                             @if($msg->type == 'image')
                                 <a href="{{ asset('storage/'.$msg->file_path) }}" target="_blank">
-                                    <img src="{{ asset('storage/'.$msg->file_path) }}" class="chat-img">
+                                    {{-- تم إضافة alt للصور داخل المحادثة --}}
+                                    <img src="{{ asset('storage/'.$msg->file_path) }}"
+                                         class="chat-img"
+                                         alt="صورة مرسلة في المحادثة">
                                 </a>
                             @elseif($msg->type == 'audio')
                                 <audio controls class="audio-player mb-1">
                                     <source src="{{ asset('storage/'.$msg->file_path) }}" type="audio/mpeg">
+                                    متصفحك لا يدعم تشغيل الصوت.
                                 </audio>
                             @elseif($msg->type == 'video')
                                 <video controls style="max-width: 100%; border-radius: 8px;">
@@ -110,22 +121,22 @@
                     <form id="chatForm" action="{{ route('messages.send', $user->id) }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="d-flex align-items-center gap-2">
-                            <button type="button" class="btn-icon" id="emojiBtn"><i class="far fa-smile"></i></button>
+                            <button type="button" class="btn-icon" id="emojiBtn" aria-label="إضافة إيموجي"><i class="far fa-smile"></i></button>
 
                             <div class="dropdown">
-                                <button type="button" class="btn-icon" data-bs-toggle="dropdown"><i class="fas fa-paperclip"></i></button>
+                                <button type="button" class="btn-icon" data-bs-toggle="dropdown" aria-label="إرفاق ملف"><i class="fas fa-paperclip"></i></button>
                                 <ul class="dropdown-menu shadow border-0">
-                                    <li><label class="dropdown-item cursor-pointer"><i class="fas fa-image text-primary me-2"></i> صور <input type="file" name="file" id="fileImage" accept="image/*" hidden></label></li>
-                                    <li><label class="dropdown-item cursor-pointer"><i class="fas fa-file text-warning me-2"></i> ملفات <input type="file" name="file" id="fileDoc" hidden></label></li>
+                                    <li><label for="fileImage" class="dropdown-item cursor-pointer"><i class="fas fa-image text-primary me-2"></i> صور <input type="file" name="file" id="fileImage" accept="image/*" hidden></label></li>
+                                    <li><label for="fileDoc" class="dropdown-item cursor-pointer"><i class="fas fa-file text-warning me-2"></i> ملفات <input type="file" name="file" id="fileDoc" hidden></label></li>
                                 </ul>
                             </div>
 
-                            <input type="text" name="message" id="messageInput" class="form-control rounded-pill border-0 shadow-sm px-4" placeholder="اكتب رسالتك..." autocomplete="off">
+                            <input type="text" name="message" id="messageInput" class="form-control rounded-pill border-0 shadow-sm px-4" placeholder="اكتب رسالتك..." autocomplete="off" aria-label="رسالة نصية">
 
                             <div id="recordingStatus" class="small px-2">جاري التسجيل... <span id="timer">00:00</span></div>
-                            <button type="button" id="recordBtn" class="btn-icon"><i class="fas fa-microphone" id="micIcon"></i></button>
+                            <button type="button" id="recordBtn" class="btn-icon" aria-label="تسجيل صوتي"><i class="fas fa-microphone" id="micIcon"></i></button>
 
-                            <button type="submit" class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;">
+                            <button type="submit" class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;" aria-label="إرسال">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -133,7 +144,7 @@
                 </div>
             @else
                 <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
-                    <i class="fas fa-comments fa-4x mb-3"></i>
+                    <i class="fas fa-comments fa-4x mb-3" aria-hidden="true"></i>
                     <h5>اختر محادثة لبدء الدردشة</h5>
                 </div>
             @endif
@@ -144,7 +155,7 @@
 <script>
     const authId = {{ auth()->id() }};
     const receiverId = {{ $user->id ?? 0 }};
-    const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'); // صوت تنبيه افتراضي
+    const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
     let picker = null;
 
     function scrollToBottom() {
@@ -160,7 +171,7 @@
         let fileHtml = '';
 
         if(data.type === 'image') {
-            fileHtml = `<a href="/storage/${data.file_path}" target="_blank"><img src="/storage/${data.file_path}" class="chat-img"></a>`;
+            fileHtml = `<a href="/storage/${data.file_path}" target="_blank"><img src="/storage/${data.file_path}" class="chat-img" alt="صورة مرسلة"></a>`;
         } else if(data.type === 'audio') {
             fileHtml = `<audio controls class="audio-player mb-1"><source src="/storage/${data.file_path}" type="audio/mpeg"></audio>`;
         } else if(data.type === 'video') {
@@ -179,9 +190,8 @@
         chatWindow.insertAdjacentHTML('beforeend', msgHtml);
         scrollToBottom();
 
-        // تشغيل صوت التنبيه إذا كانت الرسالة مستلمة
         if(!isSent) {
-            notificationSound.play().catch(e => console.log("Audio play blocked by browser"));
+            notificationSound.play().catch(e => console.log("Audio play blocked"));
         }
     }
 
@@ -217,11 +227,8 @@
                 .listen('.new-message', (e) => {
                     if(e.data.sender_id == receiverId) {
                         appendMessage(e.data);
-                        // هنا يمكنك إضافة كود لتصفير الـ Unread count برمجياً إذا أردت
                     } else {
-                        // إذا وصلت رسالة من شخص آخر، يمكننا تشغيل الصوت أيضاً
                         notificationSound.play().catch(e => {});
-                        // تحديث واجهة المستخدم أو إظهار تنبيه بسيط هنا
                     }
                 });
         }
@@ -236,9 +243,6 @@
 
         document.getElementById('fileImage')?.addEventListener('change', () => handleChatSubmit());
         document.getElementById('fileDoc')?.addEventListener('change', () => handleChatSubmit());
-
-        // Emoji & Voice Recording Logic (كما هي في الكود السابق لديك)...
-        // [بقية أكواد الـ Emoji والـ Record التي أرسلتها مسبقاً تعمل هنا بشكل طبيعي]
     };
 </script>
 @endsection

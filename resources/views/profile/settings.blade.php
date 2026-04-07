@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container py-5" dir="rtl">
-    {{-- رسائل النجاح أو الخطأ - مهمة جداً عشان تعرف إيه اللي بيحصل --}}
+    {{-- رسائل النجاح أو الخطأ --}}
     @if(session('success'))
         <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4">
             <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
@@ -21,17 +21,18 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 p-4 text-center sticky-top" style="top: 100px;">
                 <div class="position-relative d-inline-block mb-3">
-                    {{-- عرض الصورة مع التأكد من المسار --}}
+                    {{-- إصلاح L25: إضافة alt لضمان إمكانية الوصول --}}
                     <img src="{{ auth()->user()->profile_image ? asset('storage/' . auth()->user()->profile_image) : asset('assets/default-avatar.png') }}"
                          class="rounded-circle shadow-sm border border-4 border-white"
                          style="width: 130px; height: 130px; object-fit: cover;"
-                         id="profilePreview">
+                         id="profilePreview"
+                         alt="صورة الملف الشخصي للمستخدم {{ auth()->user()->name }}">
 
                     {{-- فورم تغيير الصورة --}}
-                     {{-- السطر 31 المعدل --}}
-<form action="{{ route('profile.update_image') }}" method="POST" enctype="multipart/form-data" id="imageUploadForm">
+                    <form action="{{ route('profile.update_image') }}" method="POST" enctype="multipart/form-data" id="imageUploadForm">
                         @csrf
-                        <label for="profile_input" class="btn btn-primary btn-sm rounded-circle position-absolute bottom-0 end-0 shadow">
+                        {{-- تم ربط الـ label بالـ input عبر id="profile_input" --}}
+                        <label for="profile_input" class="btn btn-primary btn-sm rounded-circle position-absolute bottom-0 end-0 shadow" title="تغيير الصورة">
                             <i class="fas fa-camera"></i>
                         </label>
                         <input type="file" name="profile_image" id="profile_input" class="d-none" onchange="document.getElementById('imageUploadForm').submit();">
@@ -62,33 +63,36 @@
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-transparent border-0 p-4 pb-0">
                     <ul class="nav nav-tabs border-0 custom-nav-tabs" id="settingsTab" role="tablist">
-                        <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-personal">البيانات الأساسية</button>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="personal-tab" data-bs-toggle="tab" data-bs-target="#tab-personal" type="button" role="tab" aria-controls="tab-personal" aria-selected="true">البيانات الأساسية</button>
                         </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-security">كلمة المرور</button>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#tab-security" type="button" role="tab" aria-controls="tab-security" aria-selected="false">كلمة المرور</button>
                         </li>
                     </ul>
                 </div>
 
                 <div class="card-body p-4">
-                    <div class="tab-content">
+                    <div class="tab-content" id="settingsTabContent">
                         {{-- تبويب الحساب --}}
-                        <div class="tab-pane fade show active" id="tab-personal">
+                        <div class="tab-pane fade show active" id="tab-personal" role="tabpanel" aria-labelledby="personal-tab">
                             <form action="{{ route('profile.update.personal') }}" method="POST">
                                 @csrf
                                 <div class="row g-3">
+                                    {{-- إصلاح L34: ربط الـ label بالـ id لضمان إمكانية الوصول --}}
                                     <div class="col-md-6">
-                                        <label class="form-label small fw-bold">الاسم</label>
-                                        <input type="text" name="name" class="form-control rounded-3" value="{{ auth()->user()->name }}">
+                                        <label for="user_name" class="form-label small fw-bold">الاسم</label>
+                                        <input type="text" id="user_name" name="name" class="form-control rounded-3" value="{{ auth()->user()->name }}">
                                     </div>
+                                    {{-- إصلاح L82: ربط الـ label بالـ id للبريد الإلكتروني --}}
                                     <div class="col-md-6">
-                                        <label class="form-label small fw-bold">البريد الإلكتروني</label>
-                                        <input type="email" name="email" class="form-control rounded-3" value="{{ auth()->user()->email }}">
+                                        <label for="user_email" class="form-label small fw-bold">البريد الإلكتروني</label>
+                                        <input type="email" id="user_email" name="email" class="form-control rounded-3" value="{{ auth()->user()->email }}">
                                     </div>
+                                    {{-- إصلاح L106: ربط الـ label بـ textarea النبذة --}}
                                     <div class="col-12">
-                                        <label class="form-label small fw-bold">النبذة التعريفية (Bio)</label>
-                                        <textarea name="bio" class="form-control rounded-3" rows="4" placeholder="اكتب نبذة قصيرة عنك...">{{ auth()->user()->bio }}</textarea>
+                                        <label for="user_bio" class="form-label small fw-bold">النبذة التعريفية (Bio)</label>
+                                        <textarea id="user_bio" name="bio" class="form-control rounded-3" rows="4" placeholder="اكتب نبذة قصيرة عنك...">{{ auth()->user()->bio }}</textarea>
                                     </div>
                                     <div class="col-12 mt-4">
                                         <button type="submit" class="btn btn-primary px-4 rounded-pill">حفظ التعديلات</button>
@@ -98,21 +102,22 @@
                         </div>
 
                         {{-- تبويب الأمان --}}
-                        <div class="tab-pane fade" id="tab-security">
+                        <div class="tab-pane fade" id="tab-security" role="tabpanel" aria-labelledby="security-tab">
                             <form action="{{ route('profile.update.password') }}" method="POST">
                                 @csrf
                                 <div class="col-md-8">
+                                    {{-- إصلاح L110 والمشابهة: ربط كافة خانات كلمة المرور --}}
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">كلمة المرور الحالية</label>
-                                        <input type="password" name="current_password" class="form-control rounded-3">
+                                        <label for="current_password" class="form-label small fw-bold">كلمة المرور الحالية</label>
+                                        <input type="password" id="current_password" name="current_password" class="form-control rounded-3">
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">كلمة المرور الجديدة</label>
-                                        <input type="password" name="new_password" class="form-control rounded-3">
+                                        <label for="new_password" class="form-label small fw-bold">كلمة المرور الجديدة</label>
+                                        <input type="password" id="new_password" name="new_password" class="form-control rounded-3">
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">تأكيد كلمة المرور</label>
-                                        <input type="password" name="new_password_confirmation" class="form-control rounded-3">
+                                        <label for="new_password_confirmation" class="form-label small fw-bold">تأكيد كلمة المرور</label>
+                                        <input type="password" id="new_password_confirmation" name="new_password_confirmation" class="form-control rounded-3">
                                     </div>
                                     <button type="submit" class="btn btn-dark px-4 rounded-pill mt-2">تحديث الأمان</button>
                                 </div>

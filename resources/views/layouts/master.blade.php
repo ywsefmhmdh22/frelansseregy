@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -201,7 +201,7 @@
 <canvas id="bg-canvas"></canvas>
 
 <aside class="sidebar shadow">
-    <div class="sidebar-logo" id="adminGate"><i class="fas fa-rocket"></i></div>
+    <div class="sidebar-logo" id="adminGate" title="بوابة الإدارة"><i class="fas fa-rocket"></i></div>
 
     <div class="nav-item-custom">
         <a href="{{ route('works.index') }}" class="nav-link-custom {{ request()->routeIs('works.index') ? 'active' : '' }}">
@@ -237,14 +237,14 @@
     @endauth
 
     <div class="nav-item-custom mobile-theme-item">
-        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn">
+        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn" aria-label="تبديل مظهر الموقع">
             <i class="fas fa-moon theme-icon"></i>
             <span>المظهر</span>
         </button>
     </div>
 
     <div class="nav-item-custom mt-auto mb-3 desktop-theme-toggle">
-        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn">
+        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn" aria-label="تبديل مظهر الموقع">
             <i class="fas fa-moon theme-icon"></i>
         </button>
     </div>
@@ -271,7 +271,10 @@
 
                 <div class="dropdown">
                     <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="https://ui-avatars.com/api/?name={{ auth()->user()->name }}&background=047857&color=fff" class="user-profile-img">
+                        {{-- إضافة alt لصورة المستخدم --}}
+                        <img src="https://ui-avatars.com/api/?name={{ auth()->user()->name }}&background=047857&color=fff"
+                             class="user-profile-img"
+                             alt="الملف الشخصي: {{ auth()->user()->name }}">
                         <i class="fas fa-chevron-down small text-muted d-none d-md-block"></i>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4">
@@ -316,9 +319,9 @@
     <footer class="floating-footer">
         <div class="small text-muted">&copy; 2026 FreelancerPro. صنع بكل حب.</div>
         <div class="d-flex gap-3 text-muted">
-            <i class="fab fa-instagram cursor-pointer"></i>
-            <i class="fab fa-linkedin-in cursor-pointer"></i>
-            <i class="fab fa-x-twitter cursor-pointer"></i>
+            <i class="fab fa-instagram cursor-pointer" title="إنستجرام"></i>
+            <i class="fab fa-linkedin-in cursor-pointer" title="لينكد إن"></i>
+            <i class="fab fa-x-twitter cursor-pointer" title="إكس"></i>
         </div>
     </footer>
 </main>
@@ -420,7 +423,7 @@
         });
     });
 
-    // --- التعديل المطلوب: وظيفة الصاروخ السرية ---
+    // --- وظيفة الصاروخ السرية ---
     document.getElementById('adminGate').addEventListener('click', function() {
         const pass = prompt("أدخل كلمة مرور الإدارة للدخول:");
         if (pass === "01025450449") {

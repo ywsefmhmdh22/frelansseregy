@@ -2,7 +2,6 @@
 
 @section('content')
 <div class="container py-5" dir="rtl">
-    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <nav aria-label="breadcrumb">
@@ -14,12 +13,11 @@
             <h2 class="fw-bold text-dark">العروض المقدمة ({{ $offers->count() }})</h2>
         </div>
         <a href="{{ route('client.dashboard') }}" class="btn btn-outline-secondary rounded-pill">
-            <i class="fas fa-arrow-right me-1"></i> عودة
+            <i class="fas fa-arrow-right me-1" aria-hidden="true"></i> عودة
         </a>
     </div>
 
     <div class="row">
-        <!-- تفاصيل المشروع المختصرة -->
         <div class="col-lg-4 mb-4">
             <div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 100px;">
                 <h5 class="fw-bold mb-3">تفاصيل المشروع</h5>
@@ -34,31 +32,30 @@
                 </div>
                 <hr>
                 <div class="alert alert-info py-2 small border-0">
-                    <i class="fas fa-info-circle me-1"></i> يمكنك اختيار عرض واحد فقط لبدء العمل.
+                    <i class="fas fa-info-circle me-1" aria-hidden="true"></i> يمكنك اختيار عرض واحد فقط لبدء العمل.
                 </div>
             </div>
         </div>
 
-        <!-- قائمة العروض -->
         <div class="col-lg-8">
             @forelse($offers as $offer)
             <div class="card border-0 shadow-sm rounded-4 mb-3 overflow-hidden offer-card">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-start gap-3">
-                        <!-- صورة المستقل -->
                         <img src="https://ui-avatars.com/api/?name={{ urlencode($offer->user->name) }}&background=random"
-                             class="rounded-circle shadow-sm" width="60" height="60">
+                             class="rounded-circle shadow-sm" width="60" height="60"
+                             alt="صورة المستقل: {{ $offer->user->name }}">
 
                         <div class="flex-grow-1">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="fw-bold mb-1">{{ $offer->user->name }}</h6>
-                                    <div class="text-warning small mb-2">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star-half-alt"></i>
+                                    <div class="text-warning small mb-2" aria-label="تقييم المستقل: 4.5 من 5">
+                                        <i class="fas fa-star" aria-hidden="true"></i>
+                                        <i class="fas fa-star" aria-hidden="true"></i>
+                                        <i class="fas fa-star" aria-hidden="true"></i>
+                                        <i class="fas fa-star" aria-hidden="true"></i>
+                                        <i class="fas fa-star-half-alt" aria-hidden="true"></i>
                                         <span class="text-muted ms-1">(4.5)</span>
                                     </div>
                                 </div>
@@ -74,10 +71,10 @@
 
                             <div class="d-flex gap-2">
                                 <button class="btn btn-success rounded-pill px-4 btn-sm fw-bold">
-                                    <i class="fas fa-check me-1"></i> قبول العرض
+                                    <i class="fas fa-check me-1" aria-hidden="true"></i> قبول العرض
                                 </button>
                                 <button class="btn btn-outline-primary rounded-pill px-4 btn-sm fw-bold">
-                                    <i class="fas fa-comments me-1"></i> تواصل معه
+                                    <i class="fas fa-comments me-1" aria-hidden="true"></i> تواصل معه
                                 </button>
                             </div>
                         </div>
@@ -86,7 +83,7 @@
             </div>
             @empty
             <div class="text-center py-5 bg-white rounded-4 shadow-sm">
-                <img src="https://illustrations.popsy.co/flat/web-design.svg" width="200" class="mb-3">
+                <img src="https://illustrations.popsy.co/flat/web-design.svg" width="200" class="mb-3" alt="رسم توضيحي لعدم وجود عروض">
                 <h5 class="text-muted">لا توجد عروض مقدمة حتى الآن.</h5>
             </div>
             @endforelse

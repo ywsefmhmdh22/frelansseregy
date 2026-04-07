@@ -1,4 +1,4 @@
- @extends('layouts.master')
+@extends('layouts.master')
 
 @section('content')
 
@@ -30,10 +30,10 @@
             @forelse($allData as $service)
                 <div class="col-md-6 col-lg-4 col-xl-3 animate__animated animate__fadeInUp">
                     <div class="service-card h-100 border-0 shadow-sm rounded-4 overflow-hidden bg-white d-flex flex-column">
-                        {{-- صورة الخدمة --}}
+                        {{-- صورة الخدمة مع إضافة alt --}}
                         <div class="position-relative overflow-hidden" style="height: 180px;">
                             <img src="{{ asset($service->image) }}"
-                                 alt="{{ $service->title }}"
+                                 alt="صورة خدمة: {{ $service->title }}"
                                  class="w-100 h-100 object-fit-cover transition-transform">
                             <div class="position-absolute top-0 end-0 p-3">
                                 <span class="badge bg-primary text-white shadow-sm rounded-pill fw-bold px-3 py-2">
@@ -50,7 +50,9 @@
                             </p>
 
                             <div class="d-flex align-items-center mb-3">
+                                {{-- صورة المستخدم مع إضافة alt --}}
                                 <img src="{{ $service->user->profile_image ? asset('storage/' . $service->user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($service->user->name).'&background=10b981&color=fff' }}"
+                                     alt="صورة المستقل: {{ $service->user->name }}"
                                      class="rounded-circle me-2" style="width: 25px; height: 25px; object-fit: cover;">
                                 <small class="fw-bold text-secondary mx-1">{{ $service->user->name }}</small>
                             </div>
@@ -58,7 +60,6 @@
                             <hr class="opacity-25 mt-0">
 
                             <div class="d-grid gap-2">
-                                {{-- تم تغيير الزرار لرابط مباشر لصفحة الدفع وإلغاء المودال --}}
                                 <a href="{{ route('services.checkout', $service->id) }}"
                                    class="btn btn-success rounded-pill fw-bold shadow-sm py-2">
                                     <i class="fas fa-shopping-cart ms-1"></i> شراء الآن

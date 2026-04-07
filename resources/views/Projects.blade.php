@@ -1,4 +1,4 @@
- @extends('layouts.master')
+@extends('layouts.master')
 
 @section('content')
 
@@ -16,7 +16,8 @@
             @php $isCompleted = ($item->status === 'completed'); @endphp
 
             <div class="project-card-v2 {{ $isCompleted ? 'card-completed-premium' : '' }}">
-                <a href="{{ route('projects.show', $item->id) }}" class="stretched-link"></a>
+                {{-- تم حل المشكلة هنا بإضافة aria-label ليكون الرابط متاحاً لقارئات الشاشة --}}
+                <a href="{{ route('projects.show', $item->id) }}" class="stretched-link" aria-label="عرض تفاصيل مشروع: {{ $item->title }}"></a>
 
                 {{-- ختم المنصة العالمي للمشاريع المكتملة --}}
                 @if($isCompleted)

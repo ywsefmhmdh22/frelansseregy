@@ -1,10 +1,10 @@
-@extends('layouts.master')
+ @extends('layouts.master')
 
 @section('content')
-<div class="container py-5">
+<div class="container py-5" style="direction: rtl;">
     <div class="row justify-content-center">
         <div class="col-md-9 col-lg-8">
-            <div class="completion-card bg-white shadow-lg rounded-5 overflow-hidden border-0">
+            <div class="completion-card bg-white shadow-lg rounded-5 overflow-hidden border-0 animate__animated animate__fadeIn">
                 <div class="top-accent-bar" style="height: 8px; background: linear-gradient(90deg, #10b981, #3b82f6);"></div>
 
                 <div class="p-5">
@@ -43,25 +43,28 @@
                         </div>
                     @endif
 
-                    {{-- ظهور الفورم: تم تعديل الشرط هنا ليتوافق مع verified --}}
+                    {{-- ظهور الفورم --}}
                     @if(auth()->user()->verification_status == 'verified' || auth()->user()->verification_status == 'rejected')
                         <form id="uploadForm" method="POST" action="{{ route('profile.store') }}" enctype="multipart/form-data">
                             @csrf
 
                             <h5 class="mb-4 text-success border-bottom pb-2"><i class="fas fa-info-circle me-2"></i> البيانات الأساسية</h5>
+
                             <div class="row">
                                 <div class="col-md-6 mb-4">
-                                    <label class="form-label fw-bold">رقم الهاتف <span class="text-danger">*</span></label>
+                                    {{-- الربط باستخدام for و id --}}
+                                    <label for="phone_input" class="form-label fw-bold">رقم الهاتف <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light border-0"><i class="fas fa-phone text-muted"></i></span>
-                                        <input type="text" name="phone" value="{{ auth()->user()->phone ?? old('phone') }}" class="form-control bg-light border-0 shadow-sm" required>
+                                        <input type="text" id="phone_input" name="phone" value="{{ auth()->user()->phone ?? old('phone') }}" class="form-control bg-light border-0 shadow-sm" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-4">
-                                    <label class="form-label fw-bold">التخصص / المهارة <span class="text-danger">*</span></label>
+                                    {{-- الربط باستخدام for و id --}}
+                                    <label for="skills_input" class="form-label fw-bold">التخصص / المهارة <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light border-0"><i class="fas fa-briefcase text-muted"></i></span>
-                                        <input type="text" name="skills" value="{{ auth()->user()->skills ?? old('skills') }}" class="form-control bg-light border-0 shadow-sm" required>
+                                        <input type="text" id="skills_input" name="skills" value="{{ auth()->user()->skills ?? old('skills') }}" class="form-control bg-light border-0 shadow-sm" required>
                                     </div>
                                 </div>
                             </div>
@@ -75,35 +78,35 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-4">
-                                    <label class="form-label fw-bold">الدولة <span class="text-danger">*</span></label>
-                                    <input type="text" name="country" value="{{ auth()->user()->country ?? old('country') }}" class="form-control bg-light border-0 shadow-sm" required>
+                                    <label for="country_input" class="form-label fw-bold">الدولة <span class="text-danger">*</span></label>
+                                    <input type="text" id="country_input" name="country" value="{{ auth()->user()->country ?? old('country') }}" class="form-control bg-light border-0 shadow-sm" required>
                                 </div>
                                 <div class="col-md-6 mb-4">
-                                    <label class="form-label fw-bold">المدينة <span class="text-danger">*</span></label>
-                                    <input type="text" name="city" value="{{ auth()->user()->city ?? old('city') }}" class="form-control bg-light border-0 shadow-sm" required>
+                                    <label for="city_input" class="form-label fw-bold">المدينة <span class="text-danger">*</span></label>
+                                    <input type="text" id="city_input" name="city" value="{{ auth()->user()->city ?? old('city') }}" class="form-control bg-light border-0 shadow-sm" required>
                                 </div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label fw-bold">نبذة تعريفية <span class="text-danger">*</span></label>
-                                <textarea name="bio" rows="4" class="form-control bg-light border-0 shadow-sm" placeholder="اكتب نبذة عن خبراتك (30 حرف على الأقل)..." required>{{ auth()->user()->bio ?? old('bio') }}</textarea>
+                                <label for="bio_input" class="form-label fw-bold">نبذة تعريفية <span class="text-danger">*</span></label>
+                                <textarea id="bio_input" name="bio" rows="4" class="form-control bg-light border-0 shadow-sm" placeholder="اكتب نبذة عن خبراتك (30 حرف على الأقل)..." required>{{ auth()->user()->bio ?? old('bio') }}</textarea>
                             </div>
 
                             <h5 class="mb-4 text-primary border-bottom pb-2 mt-5"><i class="fas fa-id-card me-2"></i> توثيق الهوية الشخصية</h5>
 
                             <div class="mb-4">
-                                <label class="form-label fw-bold">رقم البطاقة / الهوية <span class="text-danger">*</span></label>
-                                <input type="text" name="id_number" value="{{ auth()->user()->id_number ?? old('id_number') }}" class="form-control bg-light border-0 shadow-sm" placeholder="ادخل الرقم بالكامل" required>
+                                <label for="id_num_input" class="form-label fw-bold">رقم البطاقة / الهوية <span class="text-danger">*</span></label>
+                                <input type="text" id="id_num_input" name="id_number" value="{{ auth()->user()->id_number ?? old('id_number') }}" class="form-control bg-light border-0 shadow-sm" placeholder="ادخل الرقم بالكامل" required>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-4">
-                                    <label class="form-label fw-bold">صورة الهوية (الأمامي)</label>
-                                    <input type="file" name="id_image" class="form-control border-dashed p-3" accept="image/*" required>
+                                    <label for="id_img_front" class="form-label fw-bold">صورة الهوية (الأمامي)</label>
+                                    <input type="file" id="id_img_front" name="id_image" class="form-control border-dashed p-3" accept="image/*" required>
                                 </div>
                                 <div class="col-md-6 mb-4">
-                                    <label class="form-label fw-bold">صورة الهوية (الخلفي)</label>
-                                    <input type="file" name="id_image_back" class="form-control border-dashed p-3" accept="image/*" required>
+                                    <label for="id_img_back" class="form-label fw-bold">صورة الهوية (الخلفي)</label>
+                                    <input type="file" id="id_img_back" name="id_image_back" class="form-control border-dashed p-3" accept="image/*" required>
                                 </div>
                             </div>
 
@@ -165,7 +168,6 @@ document.getElementById('uploadForm').onsubmit = function(e) {
         btn.innerHTML = 'تم الإرسال بنجاح <i class="fas fa-check"></i>';
         btn.classList.replace('submit-btn', 'btn-success');
 
-        // التحويل التلقائي للداشبورد بعد ثانيتين بناءً على رد السيرفر
         setTimeout(() => {
             if (res.data.redirect_to) {
                 window.location.href = res.data.redirect_to;

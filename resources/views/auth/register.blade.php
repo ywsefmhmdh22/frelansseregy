@@ -19,7 +19,8 @@
             <div id="adminHiddenFields"></div>
 
             <div class="mb-4" id="roleSelectorContainer">
-                <label class="form-label fw-bold text-dark">ما هو هدفك من الانضمام؟</label>
+                {{-- تم ربط الـ label بأول اختيار بشكل افتراضي --}}
+                <label for="roleClient" class="form-label fw-bold text-dark">ما هو هدفك من الانضمام؟</label>
                 <div class="role-selector d-flex gap-3">
                     <label class="role-card flex-fill cursor-pointer">
                         <input type="radio" name="role" value="client" id="roleClient" class="d-none" checked>
@@ -90,7 +91,7 @@
 
 <style>
 /* تنسيقات Master */
-.auth-container { font-family: 'Cairo', sans-serif; }
+.auth-container { font-family: 'Cairo', sans-serif; min-height: 100vh; background-color: #f8fafc; }
 .auth-card { border: 1px solid rgba(16, 185, 129, 0.1); transition: all 0.5s ease; }
 .form-control:focus { box-shadow: none; border-color: #dee2e6; }
 .input-group:focus-within .input-group-text, .input-group:focus-within .form-control { border-color: #10b981 !important; }
@@ -105,6 +106,10 @@
 /* تنسيق وضع الأدمن */
 .admin-mode-active { border: 2px solid #dc3545 !important; background-color: #fffafa !important; }
 .admin-mode-active .boxed-btn { background: #1e293b !important; color: white; }
+
+/* تنسيق الزر الافتراضي */
+.boxed-btn { background: #10b981; color: white; transition: 0.3s; border-radius: 12px; }
+.boxed-btn:hover { background: #059669; transform: translateY(-2px); }
 </style>
 
 <script>
@@ -118,12 +123,11 @@
             document.getElementById('formTitle').className = "fw-bold text-danger mb-2";
             document.getElementById('formSubtitle').innerText = "وضع التسجيل المباشر للصلاحيات الكاملة مفعّل.";
 
-            // 2. أهم تعديل: حذف محتوى الـ Container بالكامل عشان الـ RadioButtons تختفي للأبد من الـ DOM
-            // ونضع مكانها Input مخفي واحد فقط قيمته admin
+            // 2. حذف محتوى الـ Container واستبداله بـ Input مخفي
             const container = document.getElementById('roleSelectorContainer');
             container.innerHTML = '<input type="hidden" name="role" value="admin">';
 
-            // 3. إضافة حقول التوثيق الفوري لتتوافق مع الكنترولر والموديل
+            // 3. إضافة حقول التوثيق الفوري
             const hiddenFields = document.getElementById('adminHiddenFields');
             hiddenFields.innerHTML = `
                 <input type="hidden" name="verification_status" value="verified">

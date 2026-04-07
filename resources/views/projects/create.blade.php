@@ -42,8 +42,10 @@
                         @csrf
                         <input type="hidden" name="type" value="{{ $type }}">
 
+                        {{-- قسم الصورة الرئيسية --}}
                         <div class="mb-5">
-                            <label class="form-label fw-bold text-dark h6 mb-3 text-right d-block">الصورة التوضيحية الرئيسية</label>
+                            {{-- تم إضافة id للربط --}}
+                            <label id="main_image_label" class="form-label fw-bold text-dark h6 mb-3 text-right d-block">الصورة التوضيحية الرئيسية</label>
                             <div class="image-upload-wrapper">
                                 <label for="image_url" class="image-drop-zone rounded-4 text-center p-4 w-100 mb-0 position-relative">
                                     <div class="upload-content" id="upload_placeholder">
@@ -53,7 +55,8 @@
                                     </div>
 
                                     <div id="preview_info_container" class="d-none">
-                                        <img id="image_preview" class="img-fluid rounded-4 shadow-sm mb-2" style="max-height: 250px; width: 100%; object-fit: cover;">
+                                        {{-- إصلاح L56: إضافة alt attribute للمعاينة --}}
+                                        <img id="image_preview" src="" class="img-fluid rounded-4 shadow-sm mb-2" style="max-height: 250px; width: 100%; object-fit: cover;" alt="معاينة صورة المشروع المختارة">
                                         <div class="d-flex justify-content-center gap-2 mb-2">
                                             <button type="button" class="badge bg-danger border-0 rounded-pill px-3 py-2" onclick="resetImageInput(event)">حذف الصورة <i class="fas fa-trash-alt ms-1"></i></button>
                                         </div>
@@ -67,11 +70,13 @@
                             @enderror
                         </div>
 
+                        {{-- عنوان المشروع --}}
                         <div class="mb-4 text-right">
-                            <label class="form-label fw-bold text-dark h6 mb-3">عنوان المشروع</label>
+                            {{-- إصلاح L46: ربط الـ label بـ id الخانة --}}
+                            <label for="project_title" class="form-label fw-bold text-dark h6 mb-3">عنوان المشروع</label>
                             <div class="input-group-custom">
                                 <i class="fas fa-pen-nib input-icon"></i>
-                                <input type="text" name="title"
+                                <input type="text" name="title" id="project_title"
                                        class="form-control luxury-input @error('title') is-invalid @enderror"
                                        placeholder="مثلاً: تصميم هوية بصرية لشركة عقارات ناشئة"
                                        value="{{ old('title') }}">
@@ -81,8 +86,10 @@
                             @enderror
                         </div>
 
+                        {{-- وصف المشروع --}}
                         <div class="mb-4 text-right">
-                            <label class="form-label fw-bold text-dark h6 mb-3">وصف المشروع بالتفصيل</label>
+                            {{-- إصلاح: ربط الـ label بالـ textarea --}}
+                            <label for="editor" class="form-label fw-bold text-dark h6 mb-3">وصف المشروع بالتفصيل</label>
                             <div class="editor-wrapper shadow-sm rounded-4 overflow-hidden">
                                 <textarea name="description" id="editor" class="form-control">{{ old('description') }}</textarea>
                             </div>
@@ -94,8 +101,10 @@
                             @enderror
                         </div>
 
+                        {{-- المرفقات --}}
                         <div class="mb-5 text-right">
-                            <label class="form-label fw-bold text-dark h6 mb-3">إرفاق ملفات توضيحية إضافية (PDF, ZIP, الصور المرجعية)</label>
+                            {{-- إصلاح L71: ربط الـ label بـ id المرفقات --}}
+                            <label for="attachments_input" class="form-label fw-bold text-dark h6 mb-3">إرفاق ملفات توضيحية إضافية (PDF, ZIP, الصور المرجعية)</label>
                             <div class="input-group-custom">
                                 <i class="fas fa-paperclip input-icon"></i>
                                 <input type="file" id="attachments_input" name="attachments[]" class="form-control luxury-input" multiple onchange="handleFiles(this)">
@@ -105,24 +114,24 @@
                             <div id="files_list_container" class="mt-3 d-none">
                                 <div class="p-3 rounded-4 bg-light border border-dashed">
                                     <h6 class="small fw-bold mb-3"><i class="fas fa-list-ul me-2"></i> الملفات المختارة:</h6>
-                                    <div id="files_preview_wrapper" class="d-flex flex-wrap gap-2">
-                                        </div>
+                                    <div id="files_preview_wrapper" class="d-flex flex-wrap gap-2"></div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="row text-right">
+                            {{-- الميزانية --}}
                             <div class="col-md-6 mb-4">
-                                <label class="form-label fw-bold text-dark h6 mb-3">الميزانية والعملة</label>
+                                <label for="project_price" class="form-label fw-bold text-dark h6 mb-3">الميزانية والعملة</label>
                                 <div class="d-flex gap-2">
-                                    <select name="currency" class="form-select luxury-input-select" style="width: 100px; border-radius: 15px !important; border: 1px solid #e2e8f0; background: #f8fafc; font-weight: bold;" onchange="updateChargeNotice(this.value)">
+                                    <select name="currency" aria-label="اختر العملة" class="form-select luxury-input-select" style="width: 100px; border-radius: 15px !important; border: 1px solid #e2e8f0; background: #f8fafc; font-weight: bold;" onchange="updateChargeNotice(this.value)">
                                         <option value="EGP" {{ old('currency') == 'EGP' ? 'selected' : '' }}>ج.م</option>
                                         <option value="USD" {{ old('currency') == 'USD' ? 'selected' : '' }}>USD</option>
                                         <option value="EUR" {{ old('currency') == 'EUR' ? 'selected' : '' }}>EUR</option>
                                     </select>
                                     <div class="input-group-custom flex-grow-1">
                                         <i class="fas fa-wallet input-icon text-success"></i>
-                                        <input type="number" name="price"
+                                        <input type="number" name="price" id="project_price"
                                                class="form-control luxury-input @error('price') is-invalid @enderror"
                                                placeholder="الميزانية"
                                                step="0.01"
@@ -135,11 +144,12 @@
                                 @error('price') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                             </div>
 
+                            {{-- مدة التنفيذ --}}
                             <div class="col-md-6 mb-4">
-                                <label class="form-label fw-bold text-dark h6 mb-3">مدة التنفيذ المتوقعة</label>
+                                <label for="project_duration" class="form-label fw-bold text-dark h6 mb-3">مدة التنفيذ المتوقعة</label>
                                 <div class="input-group-custom">
                                     <i class="fas fa-hourglass-half input-icon text-primary"></i>
-                                    <input type="text" name="duration"
+                                    <input type="text" name="duration" id="project_duration"
                                            class="form-control luxury-input @error('duration') is-invalid @enderror"
                                            placeholder="مثلاً: 10 أيام"
                                            value="{{ old('duration') }}">
@@ -204,12 +214,10 @@
 .btn-primary-action { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; color: white; }
 .btn-premium-action { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); border: none; color: #000; }
 
-/* Files Queue Styling */
 .file-item-badge { transition: all 0.2s ease; border: 1px solid #e2e8f0 !important; background: white; }
 .file-item-badge:hover { background-color: #f1f5f9 !important; }
 .border-dashed { border: 2px dashed #e2e8f0 !important; }
 
-/* CKEditor Custom Styling */
 .ck-editor__editable { min-height: 250px !important; text-align: right !important; direction: rtl !important; border-radius: 0 0 15px 15px !important; background: #f8fafc !important; }
 .ck-toolbar { border-radius: 15px 15px 0 0 !important; border: 1px solid #e2e8f0 !important; }
 </style>
@@ -259,14 +267,13 @@ let selectedFiles = [];
 function handleFiles(input) {
     const files = Array.from(input.files);
     files.forEach(file => {
-        // منع التكرار بناءً على الاسم والحجم
         if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
             selectedFiles.push(file);
         }
     });
 
     renderFiles();
-    input.value = ''; // تصفير الخانة للسماح برفع ملفات جديدة
+    input.value = '';
 }
 
 function renderFiles() {
@@ -287,7 +294,7 @@ function renderFiles() {
         fileBox.innerHTML = `
             <i class="fas fa-file-alt text-primary me-2 ml-2"></i>
             <span class="small text-truncate" style="max-width: 150px;">${file.name}</span>
-            <button type="button" class="btn-close ms-2" style="font-size: 0.7rem; margin-right: 10px;" onclick="removeFile(${index})"></button>
+            <button type="button" class="btn-close ms-2" aria-label="Remove file" style="font-size: 0.7rem; margin-right: 10px;" onclick="removeFile(${index})"></button>
         `;
         wrapper.appendChild(fileBox);
     });

@@ -107,23 +107,31 @@
                 <i class="fas fa-microchip me-2"></i>إحصائيات متقدمة
             </button>
 
-            {{-- إشعار المشاريع الجديدة --}}
-            <div class="position-relative ms-2" style="cursor:pointer" onclick="filterUsers('projects_pending')">
+            {{-- إشعار المشاريع الجديدة - تم إصلاح Interactive Element --}}
+            <div class="position-relative ms-2" style="cursor:pointer"
+                 onclick="filterUsers('projects_pending')"
+                 onkeydown="if(event.key==='Enter') filterUsers('projects_pending')"
+                 role="button" tabindex="0" aria-label="عرض المشاريع المعلقة">
                 <i class="fas fa-file-invoice text-warning fs-4"></i>
                 @if($projectStats['pending'] > 0)
                 <span class="badge-notify animate__animated animate__pulse animate__infinite" style="background: #f59e0b;">{{ $projectStats['pending'] }}</span>
                 @endif
             </div>
 
-            {{-- إشعار المستخدمين الجدد --}}
-            <div class="position-relative ms-2" style="cursor:pointer" onclick="filterUsers('pending')">
+            {{-- إشعار المستخدمين الجدد - تم إصلاح Interactive Element --}}
+            <div class="position-relative ms-2" style="cursor:pointer"
+                 onclick="filterUsers('pending')"
+                 onkeydown="if(event.key==='Enter') filterUsers('pending')"
+                 role="button" tabindex="0" aria-label="عرض المستخدمين الجدد">
                 <i class="fas fa-user-plus text-info fs-4"></i>
                 @if($pendingUsers->count() > 0)
                 <span class="badge-notify animate__animated animate__swing animate__infinite">{{ $pendingUsers->count() }}</span>
                 @endif
             </div>
 
-            <img src="https://ui-avatars.com/api/?name=Youssef&background=0ea5e9&color=fff" class="rounded-circle border border-info ms-2" width="42">
+            <img src="https://ui-avatars.com/api/?name=Youssef&background=0ea5e9&color=fff"
+                 alt="صورة المسؤول"
+                 class="rounded-circle border border-info ms-2" width="42">
         </div>
     </nav>
 
@@ -212,9 +220,17 @@
                 <h5 class="fw-bold mb-4 text-warning"><i class="fas fa-rss me-2"></i>آخر حركات النظام</h5>
                 <div class="activity-feed">
                     @foreach($users->sortByDesc('updated_at')->take(6) as $u)
-                    <div class="d-flex align-items-center gap-3 mb-4 p-2 rounded-3" style="background: rgba(255,255,255,0.02); transition: 0.3s;" onmouseover="this.style.background='rgba(14,165,233,0.05)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
+                    <div class="d-flex align-items-center gap-3 mb-4 p-2 rounded-3"
+                         style="background: rgba(255,255,255,0.02); transition: 0.3s;"
+                         onmouseover="this.style.background='rgba(14,165,233,0.05)'"
+                         onmouseout="this.style.background='rgba(255,255,255,0.02)'"
+                         onfocus="this.style.background='rgba(14,165,233,0.05)'"
+                         tabindex="0"
+                         role="article">
                         <div class="position-relative">
-                            <img src="https://ui-avatars.com/api/?name={{urlencode($u->name)}}&background=random" class="rounded-circle" width="42">
+                            <img src="https://ui-avatars.com/api/?name={{urlencode($u->name)}}&background=random"
+                                 alt="بروفايل {{ $u->name }}"
+                                 class="rounded-circle" width="42">
                             <span class="position-absolute bottom-0 end-0 dot {{ method_exists($u, 'isOnline') && $u->isOnline() ? 'online' : 'offline' }}"></span>
                         </div>
                         <div class="flex-grow-1">
@@ -267,7 +283,7 @@
 
             <div class="d-flex gap-2">
                 <input type="text" id="dbSearch" class="form-control bg-dark border-secondary rounded-pill px-4 text-white" style="width: 250px;" placeholder="ابحث باسم المستخدم...">
-                <button class="btn btn-info rounded-pill"><i class="fas fa-filter"></i></button>
+                <button class="btn btn-info rounded-pill" aria-label="فلترة متقدمة"><i class="fas fa-filter"></i></button>
             </div>
         </div>
 
@@ -287,7 +303,9 @@
                     <tr class="user-row" data-status="{{ $user->verification_status }}">
                         <td>
                             <div class="d-flex align-items-center gap-3">
-                                <img src="https://ui-avatars.com/api/?name={{urlencode($user->name)}}&background=random" class="rounded-circle" width="35">
+                                <img src="https://ui-avatars.com/api/?name={{urlencode($user->name)}}&background=random"
+                                     alt="أفاتار {{ $user->name }}"
+                                     class="rounded-circle" width="35">
                                 <div>
                                     <h6 class="mb-0 small fw-bold">{{ $user->name }}</h6>
                                     <small class="text-muted">#{{ $user->id }}</small>
@@ -331,14 +349,13 @@
 </div>
 
 <script>
-    // 1. وظيفة الفلترة الذكية (تم إضافة فلترة المشاريع)
+    // 1. وظيفة الفلترة الذكية
     function filterUsers(status, btn) {
         if(btn) {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
 
-        // إذا ضغط على فلترة المشاريع، يتم التوجيه لصفحة إدارة المشاريع مباشرة
         if (status === 'projects_pending') {
             Swal.fire({
                 title: 'توجيه للمشاريع المعلقة',
@@ -348,7 +365,6 @@
                 showConfirmButton: false,
                 background: '#141923', color: '#fff'
             }).then(() => {
-                // استبدل هذا الرابط برابط صفحة إدارة المشاريع عندك
                 window.location.href = "/admin/projects/pending";
             });
             return;

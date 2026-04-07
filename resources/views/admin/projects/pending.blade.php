@@ -83,9 +83,15 @@
                 <div class="project-img-container">
                     <span class="badge badge-review rounded-pill px-3">قيد المراجعة</span>
                     @if($project->image_url)
-                        <img src="{{ asset('storage/' . $project->image_url) }}" class="project-img" alt="Project Cover">
+                        {{-- تم تعديل الـ alt هنا لحذف كلمة Image/Cover --}}
+                        <img src="{{ asset('storage/' . $project->image_url) }}"
+                             class="project-img"
+                             alt="غلاف مشروع {{ $project->title }}">
                     @else
-                        <img src="https://via.placeholder.com/400x200?text=No+Cover+Image" class="project-img" alt="No Image">
+                        {{-- تم تعديل الـ alt هنا أيضاً --}}
+                        <img src="https://via.placeholder.com/400x200?text=No+Cover+Image"
+                             class="project-img"
+                             alt="لا يتوفر غلاف لهذا المشروع">
                     @endif
                 </div>
 
@@ -143,7 +149,7 @@
     function approveProject(id) {
         Swal.fire({
             title: 'هل أنت متأكد؟',
-            text: "بموافقتك سيتم عرض المشروع في Freelancerig رسمياً",
+            text: "بموافقتك سيتم عرض المشروع في الموقع رسمياً",
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#10b981',
@@ -157,7 +163,7 @@
         });
     }
 
-    // 2. دالة الرفض (اللي كانت ناقصة)
+    // 2. دالة الرفض
     function rejectProject(id) {
         Swal.fire({
             title: 'هل تريد رفض المشروع؟',
@@ -175,9 +181,8 @@
         });
     }
 
-    // 3. دالة الإرسال الموحدة
+    // 3. دالة الإرسال الموحدة (AJAX Fetch)
     function sendAction(id, action) {
-        // تأكد أن الرابط هنا يطابق الـ Routes في web.php
         fetch(`/admin/projects/${id}/${action}`, {
             method: 'POST',
             headers: {
@@ -193,7 +198,7 @@
         .then(data => {
             if(data.success) {
                 Swal.fire({
-                    title: 'عاش يا وحش!',
+                    title: 'تمت العملية بنجاح!',
                     text: data.message,
                     icon: 'success',
                     background: '#141923', color: '#fff'
@@ -204,7 +209,7 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            Swal.fire('عطل فني', 'تأكد من أن الـ Routes معرفة بشكل صحيح في ملف web.php', 'error');
+            Swal.fire('عطل فني', 'حدث خطأ أثناء معالجة الطلب، تأكد من الـ Routes والاتصال', 'error');
         });
     }
 </script>

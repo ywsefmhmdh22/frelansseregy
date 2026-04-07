@@ -34,6 +34,9 @@
 
 .single-product-item {
   margin-bottom: 30px;
+  box-shadow: 0 0 20px #e4e4e4;
+  padding-bottom: 50px;
+  border-radius: 5px;
 }
 
 .product-image {
@@ -193,7 +196,7 @@ td.product-quantity input {
   margin-bottom: 0;
 }
 
-tr.table-body-row {}
+/* تم حذف tr.table-body-row الفارغ من هنا لإنهاء التحذير */
 
 td.product-remove a {
   color: $text-color;
@@ -250,41 +253,49 @@ tr.total-data td strong {
 }
 
 .card.single-accordion {
+  margin-bottom: 15px;
+  border-bottom: 1px solid #EFEFEF !important;
+  border: 1px solid #eeeeee;
+
   .card-header {
     background-color: #fff;
     border: none;
     padding: 0;
-  }
 
-  margin-bottom: 15px;
+    h5 button {
+      color: $text-color;
+      font-size: 15px;
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 20px;
+      text-decoration: none;
+      border: none;
+      background-color: #EFEFEF;
+      position: relative;
+      padding-left: 50px;
+      font-weight: 600;
+
+      &:before {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        content: "\f058";
+        font-family: "Font Awesome 5 Free", sans-serif;
+        font-weight: 900;
+        line-height: 22px;
+        margin-top: -11px;
+        color: $primary-color;
+      }
+    }
+  }
 
   &:last-child {
     margin-bottom: 0;
   }
-
-  border-bottom: 1px solid #EFEFEF !important;
-
-  .card-header h5 button {
-    color: $text-color;
-    font-size: 15px;
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 20px;
-    text-decoration: none;
-    border: none;
-    background-color: #EFEFEF;
-    position: relative;
-    padding-left: 50px;
-    font-weight: 600;
-  }
 }
 
-.card-header h5 {}
-
-.card.single-accordion {
-  border: 1px solid #F9F9F9;
-}
+/* تم حذف .card-header h5 الفارغ من هنا لإنهاء التحذير */
 
 .billing-address-form {
   form p {
@@ -303,6 +314,10 @@ tr.total-data td strong {
       height: 120px;
       resize: none;
     }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 
   padding: 20px;
@@ -310,22 +325,6 @@ tr.total-data td strong {
 
 .shipping-address-form p, .card-details p {
   margin: 0;
-}
-
-.card.single-accordion .card-header h5 button:before {
-  position: absolute;
-  left: 20px;
-  top: 50%;
-  content: "\f058";
-  font-family: "Font Awesome 5 Free";
-  font-weight: 900;
-  line-height: 22px;
-  margin-top: -11px;
-  color: $primary-color;
-}
-
-.billing-address-form form p:last-child {
-  margin-bottom: 0;
 }
 
 table.order-details {
@@ -346,14 +345,4 @@ table.order-details {
 
 .order-details-wrap > a {
   margin-top: 30px;
-}
-
-.card.single-accordion {
-  border: 1px solid #eeeeee;
-}
-
-.single-product-item {
-  box-shadow: 0 0 20px #e4e4e4;
-  padding-bottom: 50px;
-  border-radius: 5px;
 }

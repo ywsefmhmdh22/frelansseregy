@@ -3,7 +3,6 @@
 <head>
 <title>Documentation - Fruitkha </title>
 <meta charset="utf-8">
-<!-- Meta -->
 <meta name="keywords" content="" />
 <meta name="author" content="Imran Hossain">
 <meta name="robots" content="" />
@@ -12,15 +11,33 @@
 <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700" rel="stylesheet">
 
-<!-- favicon -->
 <link rel="shortcut icon" type="image/png" href="images/favicon.png">
 
-<!-- Stylesheets -->
 <link rel="stylesheet" href="css/main.css" type="text/css" />
 <link rel="stylesheet" href="js/jhighlight/jquery.highlight.css" />
 <link rel="stylesheet" href="css/font-awesome/css/font-awesome.min.css">
 <link rel="stylesheet" href="css/et-line-font/et-line-font.css">
 <link rel="stylesheet" media="screen" href="css/responsive-leyouts.css" type="text/css" />
+
+<style>
+    /* تنسيق إضافي لضمان بقاء شكل الأزرار مثل الروابط في السايدبار */
+    .nav li button {
+        background: none;
+        border: none;
+        padding: 10px 20px;
+        display: block;
+        width: 100%;
+        text-align: left;
+        color: #fff;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 14px;
+        transition: 0.3s;
+    }
+    .nav li button:hover, .nav li button.current {
+        color: #F28123;
+    }
+</style>
 
 </head>
 
@@ -31,21 +48,19 @@
 <h3 class="logo-title text-white">Fruitkha</h3>
 <p class="logo-sub-title text-dark">Responsive Bootstrap4 Shop Template</p>
 <ul class="nav">
-            <li><a href="javascript:void(0);" class="current dropdown-toggle" onclick="$('#section-1').animatescroll();">About</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-2').animatescroll();">How to Use</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-3').animatescroll();">Preloader</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-4').animatescroll();">Logo</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-5').animatescroll();">Mean Menu</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-6').animatescroll();">Slider</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-7').animatescroll();">Sections</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-8').animatescroll();">Contact Form, Google Maps</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-9').animatescroll();">Support</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-10').animatescroll();">Credits</a></li>
-            <li><a href="javascript:void(0);" class="dropdown-toggle" onclick="$('#section-11').animatescroll();">Change Log</a></li>
-          </ul>
+    <li><button type="button" class="current dropdown-toggle" onclick="$('#section-1').animatescroll();">About</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-2').animatescroll();">How to Use</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-3').animatescroll();">Preloader</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-4').animatescroll();">Logo</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-5').animatescroll();">Mean Menu</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-6').animatescroll();">Slider</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-7').animatescroll();">Sections</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-8').animatescroll();">Contact Form, Google Maps</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-9').animatescroll();">Support</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-10').animatescroll();">Credits</button></li>
+    <li><button type="button" class="dropdown-toggle" onclick="$('#section-11').animatescroll();">Change Log</button></li>
+</ul>
 </div>
-<!--end left sidebar-->
-
 <div class="right-content">
 
 <div id="section-1"></div>
@@ -53,23 +68,21 @@
 <h3 class="sec-title">About</h3>
 <p>Fruitkha  is a Responsive HTML5 / CSS3 simple, clean and Professional template. It comes with ecommerce pages integrated, which can be used for any kind of shop websites. You will also get deticated news pages for blogging. Sass files are included for easy cutomization</p>
 <p>If you need further help or more customization for this template please ping me at imransdesign@gmail.com</p>
-<p>I provide follwinfg services:
-  <ul>
-    <li><i class="fa fa-hand-o-right"></i> Custom <strong>WordPress</strong> theme from scratch. (I have my own theme at WordPress repository, so you will get latest best practiced WordPress standard coding from me.)</li>
-    <li><i class="fa fa-hand-o-right"></i> <strong>WordPress</strong> theme customizations</li>
-    <li><i class="fa fa-hand-o-right"></i> <strong>WordPress</strong> websites using Elementor</li>
-    <li><i class="fa fa-hand-o-right"></i> <strong>WordPress</strong> websites using WP-Backery</li>
-    <li><i class="fa fa-hand-o-right"></i> Custom Html5/CSS3 templates from scratch.</li>
-    <li><i class="fa fa-hand-o-right"></i> Html5/CSS3 template customizations</li>
-    <li><i class="fa fa-hand-o-right"></i> Knock me at imransdesign@gmail.com</li>
-  </ul>
-</p>
-</div>
-<!--end content box-->
-<div class="clearfix"></div>
 
-<!--=====================================================================
-=====================================================================-->
+<div class="services-wrapper">
+    <p>I provide following services:</p>
+    <ul>
+        <li><i class="fa fa-hand-o-right"></i> Custom <strong>WordPress</strong> theme from scratch. (I have my own theme at WordPress repository, so you will get latest best practiced WordPress standard coding from me.)</li>
+        <li><i class="fa fa-hand-o-right"></i> <strong>WordPress</strong> theme customizations</li>
+        <li><i class="fa fa-hand-o-right"></i> <strong>WordPress</strong> websites using Elementor</li>
+        <li><i class="fa fa-hand-o-right"></i> <strong>WordPress</strong> websites using WP-Backery</li>
+        <li><i class="fa fa-hand-o-right"></i> Custom Html5/CSS3 templates from scratch.</li>
+        <li><i class="fa fa-hand-o-right"></i> Html5/CSS3 template customizations</li>
+        <li><i class="fa fa-hand-o-right"></i> Knock me at imransdesign@gmail.com</li>
+    </ul>
+</div>
+</div>
+<div class="clearfix"></div>
 
 <div id="section-2"></div>
 <div class="content-box">
@@ -90,11 +103,7 @@
 </ul>
 
 </div>
-<!--end content box-->
 <div class="clearfix"></div>
-
-<!--=====================================================================
-=====================================================================-->
 
 <div id="section-3"></div>
 <div class="content-box">
@@ -105,7 +114,7 @@
 
 <h6>CSS code</h6>
 <pre class="code" data-language="css">
- 
+
 .circle:before {
   border-left: 3px solid #F28123;
 }
@@ -129,17 +138,13 @@
 
 
 </div>
-<!--end content box-->
 <div class="clearfix"></div>
-
-<!--=====================================================================
-=====================================================================-->
 
 <div id="section-4"></div>
 <div class="content-box">
 <h3 class="sec-title">Logo</h3>
 
-<p>You can find the logo section in main menu wrapper, where it can be visible in the template. Now add/update your own logo image ( You can create logo of your choice by any editor.) that should be replaced with same name in the img folder. You can also see the included files of  menu and header styles. If you would like to add any other styles, make sure that you are maintaining the code format as it is. 
+<p>You can find the logo section in main menu wrapper, where it can be visible in the template. Now add/update your own logo image ( You can create logo of your choice by any editor.) that should be replaced with same name in the img folder. You can also see the included files of  menu and header styles. If you would like to add any other styles, make sure that you are maintaining the code format as it is.
 </p>
 
 <p>Here is the logo path: <strong>assets/img/logo.png</strong></p>
@@ -156,11 +161,7 @@
 
 
 </div>
-<!--end content box-->
 <div class="clearfix"></div>
-
-<!--=====================================================================
-=====================================================================-->
 
 <div id="section-5"></div>
 <div class="content-box">
@@ -183,11 +184,7 @@
 
 
 </div>
-<!--end content box-->
 <div class="clearfix"></div>
-
-<!--=====================================================================
-=====================================================================-->
 
 <div id="section-6"></div>
 <div class="content-box">
@@ -238,11 +235,7 @@
 </pre>
 
 </div>
-<!--end content box-->
 <div class="clearfix"></div>
-
-<!--=====================================================================
-=====================================================================-->
 
 <div id="section-7"></div>
 <div class="content-box">
@@ -273,11 +266,7 @@
 </pre>
 
 </div>
-<!--end content box-->
 <div class="clearfix"></div>
-
-<!--=====================================================================
-=====================================================================-->
 
 <div id="section-8"></div>
 <div class="content-box">
@@ -288,22 +277,18 @@
 <p><i class="fa fa-hand-o-right"></i> &nbsp; &nbsp; Include the following files in your footer section of the page. Please ensure that all of them have the correct path: </p>
 
 <h6>Smart Forms Links Required Files</h6>
-<!--code-->
 <pre class="code" data-language="html">
 
 <script src="assets/js/form-validate.js"></script>
 
 </pre>
-<!--end code-->
-
 <h6>HTML Code</h6>
 
-<!--code-->
 <pre class="code" data-language="html">
 
 <div id="form_status"></div>
 <div class="contact-form">
-  <form type="POST" id="fruitkha-contact" onSubmit="return valid_datas( this );">
+  <form id="fruitkha-contact" onSubmit="return valid_datas( this );">
     <p>
       <input type="text" placeholder="Name" name="name">
       <input type="email" placeholder="Email" name="email">
@@ -319,9 +304,6 @@
 </div>
 
 </pre>
-<!--end code-->
-
-
 <p>For your email addresses, Open below php file and go to line number 41 and find the following code. Here you can add your email id.
 Use local email address, ex: support@fruitkha.com (because for some servers gmail, yahoo etc do not work properly!)</p>
 
@@ -331,38 +313,26 @@ Use local email address, ex: support@fruitkha.com (because for some servers gmai
 
 <h6>PHP Code</h6>
 
-<!--code-->
 <pre class="code" data-language="php">
 
-	$to = 'support@fruitkha.com';
+    $to = 'support@fruitkha.com';
 
 </pre>
-<!--end code-->
-
-
 <h3 class="sec-title">Google Maps</h3>
 
 <p>Direct embed google maps in your pages using iframe</p>
 
 </div>
-<!--end content box-->
 <div class="clearfix"></div>
-
-<!--=====================================================================
-=====================================================================-->
 
 <div id="section-9"></div>
 <div class="content-box">
 <h3 class="sec-title">Support</h3>
 
-<p>Still If you have any questions, please feel free to email via my profile page contact form <a class="text-blue" href="https://www.imransdesign.com/contact/">here.</a></p> 
+<p>Still If you have any questions, please feel free to email via my profile page contact form <a class="text-blue" href="https://www.imransdesign.com/contact/">here.</a></p>
 
 </div>
-<!--end content box-->
 <div class="clearfix"></div>
-
-<!--=====================================================================
-=====================================================================-->
 
 <div id="section-10"></div>
 <div class="content-box">
@@ -383,38 +353,32 @@ Use local email address, ex: support@fruitkha.com (because for some servers gmai
 </ul>
 
 </div>
-<!--end content box-->
-
 </div>
-<!--end section-->
-
-
-<!-- ============ JS FILES ============ --> 
 <script type="text/javascript" src="js/universal/jquery.js"></script>
-<script src="js/pagescroll/animatescroll.js"></script> 
+<script src="js/pagescroll/animatescroll.js"></script>
 <script src="js/jhighlight/jquery.highlight.js"></script>
 
 <script>
 $(function(){
-   // Add click-event listener
-   $(".nav li a").on("click",function(){
-      // Remove the current class from all a tags
-      $(".nav li a").removeClass("current");
-      // Add the current class to the clicked a
+   // تم تعديل الكود ليتعامل مع button بدلاً من a
+   $(".nav li button").on("click",function(){
+      // Remove the current class from all button tags
+      $(".nav li button").removeClass("current");
+      // Add the current class to the clicked button
       $(this).addClass("current");
    });
-   
+
 });
 </script>
- 
+
 <script>
-		$(document).ready(function(){
-			$('pre.code').highlight({source:1, zebra:1, indent:'space', list:'ol',attribute: 'data-language'});
-		});
-	</script>
-    
-    
-   
-    
+        $(document).ready(function(){
+            $('pre.code').highlight({source:1, zebra:1, indent:'space', list:'ol',attribute: 'data-language'});
+        });
+    </script>
+
+
+
+
 </body>
 </html>

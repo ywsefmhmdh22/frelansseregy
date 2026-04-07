@@ -1,4 +1,4 @@
- @extends('layouts.master')
+@extends('layouts.master')
 
 @section('content')
 
@@ -13,9 +13,11 @@
                             <form id="profileImageForm" action="{{ route('profile.update_image') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <div class="profile-img-wrapper">
+                                    {{-- التعديل: إضافة alt لصور البروفايل --}}
                                     <img src="{{ auth()->user()->profile_image ? asset('storage/'.auth()->user()->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode(auth()->user()->name).'&background=10b981&color=fff' }}"
                                          class="profile-main-img shadow-lg"
-                                         id="profilePreview">
+                                         id="profilePreview"
+                                         alt="صورة الملف الشخصي للمستخدم {{ auth()->user()->name }}">
 
                                     <label for="profile_image_input" class="edit-overlay">
                                         <i class="fas fa-camera"></i>
@@ -179,7 +181,7 @@
                                                 قبول وتقييم <i class="fas fa-check-double ms-1"></i>
                                             </a>
                                         @else
-                                            <a href="{{ route('orders.show', $order->id) }}" class="btn-action-view">
+                                            <a href="{{ route('orders.show', $order->id) }}" class="btn-action-view" aria-label="عرض تفاصيل الطلب">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         @endif

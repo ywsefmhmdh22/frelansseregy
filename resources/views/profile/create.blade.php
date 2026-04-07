@@ -1,7 +1,6 @@
 @extends('layouts.master')
 
 @section('content')
-<!-- المكتبات اللازمة للجماليات القصوى -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -35,16 +34,16 @@
                 <form action="{{ route('portfolio.store') }}" method="POST" enctype="multipart/form-data" id="projectForm" class="glass-form p-4 p-md-5">
                     @csrf
 
-                    {{-- عنوان المشروع --}}
+                    {{-- عنوان المشروع - تم إضافة for --}}
                     <div class="form-group-custom mb-4">
-                        <label class="label-premium"><i class="fas fa-heading me-2"></i> ما هو عنوان تحفتك الفنية؟</label>
+                        <label for="projectTitle" class="label-premium"><i class="fas fa-heading me-2"></i> ما هو عنوان تحفتك الفنية؟</label>
                         <input type="text" name="title" id="projectTitle" class="input-premium"
                                value="{{ old('title') }}" placeholder="مثلاً: تصميم تطبيق توصيل عصري" required>
                     </div>
 
-                    {{-- منطقة رفع الصور --}}
+                    {{-- منطقة رفع الصور - تم إضافة for للـ label --}}
                     <div class="form-group-custom mb-4">
-                        <label class="label-premium"><i class="fas fa-image me-2"></i> الغلاف البصري (الصورة هي الواجهة)</label>
+                        <label for="imageInput" class="label-premium"><i class="fas fa-image me-2"></i> الغلاف البصري (الصورة هي الواجهة)</label>
                         <div class="upload-zone" id="dropZone">
                             <input type="file" name="image" id="imageInput" accept="image/*" class="d-none">
                             <div class="upload-content text-center py-4">
@@ -55,23 +54,24 @@
                                 <p class="text-light opacity-50 small">يفضل مقاس 1200x800 بكسل (بحد أقصى 5 ميجا)</p>
                             </div>
                             <div id="imagePreviewContainer" class="d-none">
-                                <img id="imagePreview" src="" class="img-fluid rounded-4">
-                                <button type="button" class="btn-remove-img" id="removeImg"><i class="fas fa-times"></i></button>
+                                {{-- تم إضافة alt لمعاينة الصورة --}}
+                                <img id="imagePreview" src="" class="img-fluid rounded-4" alt="معاينة العمل الفني المرفوع">
+                                <button type="button" class="btn-remove-img" id="removeImg" aria-label="حذف الصورة"><i class="fas fa-times"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    {{-- وصف المشروع --}}
+                    {{-- وصف المشروع - تم إضافة for --}}
                     <div class="form-group-custom mb-4">
-                        <label class="label-premium"><i class="fas fa-quote-right me-2"></i> احكِ لنا قصة هذا العمل</label>
+                        <label for="projectDesc" class="label-premium"><i class="fas fa-quote-right me-2"></i> احكِ لنا قصة هذا العمل</label>
                         <textarea name="description" id="projectDesc" class="input-premium" rows="5"
                                   placeholder="ما هي المشكلة التي حللتها؟ وما هي الأدوات التي استخدمتها؟" required>{{ old('description') }}</textarea>
                         <div class="char-count text-start small opacity-50 text-white mt-1">0 / 500 حرف</div>
                     </div>
 
-                    {{-- رابط العمل (اختياري) --}}
+                    {{-- رابط العمل - تم إضافة for --}}
                     <div class="form-group-custom mb-4">
-                        <label class="label-premium"><i class="fas fa-link me-2"></i> رابط المعاينة المباشرة (اختياري)</label>
+                        <label for="projectLink" class="label-premium"><i class="fas fa-link me-2"></i> رابط المعاينة المباشرة (اختياري)</label>
                         <input type="url" name="link" id="projectLink" class="input-premium"
                                value="{{ old('link') }}" placeholder="https://www.behance.net/your-work">
                     </div>
@@ -100,7 +100,8 @@
                     {{-- بطاقة المحاكاة --}}
                     <div class="elite-card-mockup shadow-2xl">
                         <div class="mockup-img-container">
-                            <img id="liveImg" src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=800" class="img-fluid">
+                            {{-- تم إضافة alt للمحاكاة الحية --}}
+                            <img id="liveImg" src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=800" class="img-fluid" alt="صورة محاكاة لغلاف المشروع">
                             <div class="mockup-overlay"></div>
                         </div>
                         <div class="mockup-body p-4 bg-white">
@@ -213,10 +214,8 @@
         const uploadContent = document.querySelector('.upload-content');
         const meterBar = document.querySelector('.meter-bar');
 
-        // النقر للرفع
         dropZone.addEventListener('click', () => imageInput.click());
 
-        // سحب وإفلات
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.style.borderColor = '#fbbf24';
@@ -251,7 +250,6 @@
             reader.readAsDataURL(file);
         }
 
-        // تحديث النص في المعاينة الحية
         document.getElementById('projectTitle').addEventListener('input', (e) => {
             const val = e.target.value;
             document.getElementById('liveTitle').innerText = val || "عنوان مشروعك يظهر هنا";
@@ -265,7 +263,6 @@
             updateMeter();
         });
 
-        // حذف الصورة
         document.getElementById('removeImg').addEventListener('click', (e) => {
             e.stopPropagation();
             imageInput.value = "";
@@ -288,10 +285,8 @@
             else meterBar.style.background = '#ef4444';
         }
 
-        // تشغيل الـ Meter لأول مرة في حال وجود بيانات قديمة
         updateMeter();
 
-        // تنبيه احترافي عند الضغط على الزر
         document.getElementById('projectForm').addEventListener('submit', function(e) {
             const btn = document.getElementById('submitBtn');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> جاري النشر...';

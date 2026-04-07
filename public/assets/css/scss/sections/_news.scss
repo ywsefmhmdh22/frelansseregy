@@ -37,13 +37,17 @@
   border-bottom-left-radius: 0;
 }
 
-.single-latest-news h3 {
-  font-size: 20px;
-  line-height: 1.25em;
-  font-weight: 600;
+.single-latest-news {
+  margin-bottom: 30px;
 
-  a {
-    color: $text-color;
+  h3 {
+    font-size: 20px;
+    line-height: 1.25em;
+    font-weight: 600;
+
+    a {
+      color: $text-color;
+    }
   }
 }
 
@@ -79,16 +83,19 @@ p {
   border-bottom-right-radius: 5px;
 }
 
-.single-latest-news {
-  margin-bottom: 30px;
-}
-
 .single-artcile-bg {
   background-image: url(../img/latest-news/news-bg-3.jpg);
   height: 450px;
+  background-size: cover;
+  background-position: center;
+  background-color: #ddd;
+  border-radius: 5px;
+  margin-bottom: 20px;
 }
 
 .pagination-wrap {
+  margin-top: 40px;
+
   ul {
     margin: 0;
     padding: 0;
@@ -103,9 +110,9 @@ p {
         background-color: #f3f3f3;
         display: inline-block;
         padding: 8px 14px;
-        border-radius: 5px;
         margin: 3px;
         font-weight: 600;
+        /* تم الإبقاء على القيمة الأحدث وحذف الـ 5px المكررة */
         border-radius: 50px;
 
         &.active {
@@ -114,17 +121,6 @@ p {
       }
     }
   }
-
-  margin-top: 40px;
-}
-
-//Single News
-.single-artcile-bg {
-  background-size: cover;
-  background-position: center;
-  background-color: #ddd;
-  border-radius: 5px;
-  margin-bottom: 20px;
 }
 
 .single-article-text {
@@ -152,14 +148,25 @@ p {
   }
 }
 
-.comment-template h4 {
-  font-size: 25px;
-  font-weight: 600;
-  margin-bottom: 50px;
+.comment-template {
+  h4 {
+    font-size: 25px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  > p {
+    opacity: 0.7;
+    margin-bottom: 30px;
+  }
 }
 
 .single-comment-body {
   position: relative;
+
+  &.child {
+    margin-left: 75px;
+  }
 }
 
 .comment-user-avater {
@@ -181,6 +188,19 @@ p {
   h4 {
     font-size: 18px;
     font-weight: 600;
+
+    a {
+      color: $text-color;
+      font-size: 80%;
+      margin-left: 10px;
+      border-bottom: 1px solid #aaa;
+    }
+  }
+
+  p {
+    color: #888;
+    line-height: 2;
+    margin: 0;
   }
 }
 
@@ -191,36 +211,10 @@ span.comment-date {
   margin-left: 5px;
 }
 
-.comment-text-body h4 a {
-  color: $text-color;
-  font-size: 80%;
-  margin-left: 10px;
-  border-bottom: 1px solid #aaa;
-}
-
-.single-comment-body.child {
-  margin-left: 75px;
-}
-
-.comment-text-body p {
-  color: #888;
-  line-height: 2;
-  margin: 0;
-}
-
-.comment-template {
-  h4 {
-    margin-bottom: 10px;
-  }
-
-  > p {
-    opacity: 0.7;
-    margin-bottom: 30px;
-  }
-
-  form p {
+.comment-template form {
+  p {
     input {
-      &[type=text] {
+      &[type=text], &[type=email] {
         border: 1px solid #ddd;
         width: 49%;
         padding: 15px;
@@ -230,12 +224,6 @@ span.comment-date {
       }
 
       &[type=email] {
-        border: 1px solid #ddd;
-        width: 49%;
-        padding: 15px;
-        border-radius: 5px;
-        font-size: 15px;
-        color: $text-color;
         margin-left: 10px;
       }
     }
@@ -254,6 +242,8 @@ span.comment-date {
 }
 
 .sidebar-section {
+  margin-left: 30px;
+
   h4 {
     font-size: 20px;
     font-weight: 600;
@@ -266,12 +256,12 @@ span.comment-date {
     list-style: none;
 
     li {
+      line-height: 1.5;
+
       a {
         color: #555;
         font-size: 15px;
       }
-
-      line-height: 1.5;
     }
   }
 
@@ -282,23 +272,21 @@ span.comment-date {
       margin-bottom: 0;
     }
   }
-
-  margin-left: 30px;
 }
 
 .recent-posts ul li, .archive-posts ul li {
   position: relative;
   padding-left: 17px;
   margin-bottom: 10px;
-}
 
-.recent-posts ul li:before, .archive-posts ul li:before {
-  position: absolute;
-  left: 0;
-  top: 2px;
-  content: "\f105";
-  font-family: "Font Awesome 5 Free";
-  font-weight: 900;
+  &:before {
+    position: absolute;
+    left: 0;
+    top: 2px;
+    content: "\f105";
+    font-family: "Font Awesome 5 Free", sans-serif;
+    font-weight: 900;
+  }
 }
 
 .tag-section ul li {

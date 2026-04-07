@@ -16,7 +16,12 @@
             <div class="glass-card p-4 sticky-top" style="top: 20px;">
                 <h5 class="fw-bold mb-4">بطاقة الطلب #{{ $order->id }}</h5>
                 <div class="d-flex align-items-center mb-4">
-                    <img src="{{ asset('storage/' . ($order->seller->profile_image ?? 'default.png')) }}" class="rounded-circle me-3" width="50" height="50">
+                    {{-- إضافة سمة alt لصورة بائع الخدمة لتحسين الوصول --}}
+                    <img src="{{ asset('storage/' . ($order->seller->profile_image ?? 'default.png')) }}"
+                         class="rounded-circle me-3"
+                         width="50"
+                         height="50"
+                         alt="الصورة الشخصية للبائع {{ $order->seller->name }}">
                     <div class="ms-3">
                         <h6 class="mb-0 fw-bold">{{ $order->seller->name }}</h6>
                         <small class="text-muted">بائع الخدمة</small>
