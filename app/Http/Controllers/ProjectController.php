@@ -12,7 +12,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Exception;
 
+/**
+ * Class ProjectController
+ * المسؤول عن إدارة دورة حياة المشاريع من الإضافة والتوظيف حتى الاستلام والتقييم.
+ * تم تحسين معالجة الأخطاء لضمان عدم وجود ملفات يتيمة أو عمليات مالية معلقة في حالة الفشل.
+ */
 class ProjectController extends Controller
 {
     /**
@@ -25,7 +32,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * 2. حفظ المشروع (Refactored)
+     * 2. حفظ المشروع مع نظام معالجة أخطاء شامل (Fixing the BUG)
      */
     public function store(Request $request)
     {
@@ -39,16 +46,21 @@ class ProjectController extends Controller
             'attachments.*' => 'nullable|file|mimes:pdf,zip,rar,doc,docx,jpg,png|max:10240',
         ]);
 
+        // متغيرات لتتبع الملفات المرفوعة لحذفها في حالة فشل قاعدة البيانات
+        $imagePath = null;
+        $attachmentsPaths = [];
+
         try {
-            return DB::transaction(function () use ($request) {
-                // مسؤولية رفع الملفات تم نقلها لدوال خاصة
+            return DB::transaction(function () use ($request, &$imagePath, &$attachmentsPaths) {
+                // 1. رفع الملفات أولاً
                 $imagePath = $this->uploadProjectCover($request);
                 $attachmentsPaths = $this->uploadProjectAttachments($request);
 
-                Project::create([
+                // 2. إنشاء سجل المشروع
+                $project = Project::create([
                     'user_id'      => Auth::id(),
                     'title'        => strip_tags($request->title),
-                    'description'  => $request->description,
+                    'description'  => strip_tags($request->description), // تأمين الوصف ضد XSS
                     'price'        => $request->price,
                     'currency'     => $request->currency,
                     'duration'     => $request->duration,
@@ -61,14 +73,21 @@ class ProjectController extends Controller
 
                 return redirect()->route('client.dashboard')->with('success', 'تم إرسال مشروعك للمراجعة بنجاح!');
             });
-        } catch (\Exception $e) {
-            Log::error('Project Store Error: ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ أثناء حفظ المشروع.')->withInput();
+        } catch (Exception $e) {
+            // معالجة الخطأ وحذف الملفات التي رُفعت لمنع الـ Orphaned Files
+            Log::error('Project Store Error (Bug Prevention): ' . $e->getMessage());
+
+            if ($imagePath) Storage::disk('public')->delete($imagePath);
+            foreach ($attachmentsPaths as $path) {
+                Storage::disk('public')->delete($path);
+            }
+
+            return back()->with('error', 'حدث خطأ أثناء حفظ المشروع، يرجى المحاولة مرة أخرى.')->withInput();
         }
     }
 
     /**
-     * 3. توظيف مستقل (Refactored)
+     * 3. توظيف مستقل مع ضمان سلامة المحفظة المالية
      */
     public function assignFreelancer(Project $project, $proposalId)
     {
@@ -76,16 +95,18 @@ class ProjectController extends Controller
             return back()->with('error', 'غير مسموح لك بهذا الإجراء.');
         }
 
-        $proposal = Proposal::findOrFail($proposalId);
-        $requiredAmount = $proposal->amount ?? $proposal->price;
-        $wallet = Wallet::firstOrCreate(['user_id' => Auth::id()], ['balance' => 0]);
-
-        if ($wallet->balance < $requiredAmount) {
-            return back()->with('error', 'رصيدك غير كافٍ. تحتاج لشحن ' . ($requiredAmount - $wallet->balance) . ' إضافية.');
-        }
-
         try {
-            DB::transaction(function () use ($project, $proposal, $wallet, $requiredAmount) {
+            $proposal = Proposal::findOrFail($proposalId);
+            $requiredAmount = $proposal->amount ?? $proposal->price;
+
+            return DB::transaction(function () use ($project, $proposal, $requiredAmount) {
+                // قفل سجل المحفظة لمنع الـ Race Condition
+                $wallet = Wallet::where('user_id', Auth::id())->lockForUpdate()->first();
+
+                if (!$wallet || $wallet->balance < $requiredAmount) {
+                    throw new Exception('رصيدك غير كافٍ لإتمام التوظيف.');
+                }
+
                 // تنفيذ العملية المالية
                 $this->processEmploymentPayment($wallet, $requiredAmount, $project->title);
 
@@ -97,17 +118,17 @@ class ProjectController extends Controller
                 ]);
 
                 $proposal->update(['status' => 'accepted']);
-            });
 
-            return back()->with('success', 'تم التوظيف بنجاح! المبلغ في أمان الآن.');
-        } catch (\Exception $e) {
+                return back()->with('success', 'تم التوظيف بنجاح! المبلغ في أمان الآن.');
+            });
+        } catch (Exception $e) {
             Log::error('Assign Freelancer Error: ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ تقني أثناء التوظيف.');
+            return back()->with('error', $e->getMessage() ?: 'حدث خطأ تقني أثناء التوظيف.');
         }
     }
 
     /**
-     * 4. استلام المشروع وتقييمه (Refactored)
+     * 4. استلام المشروع وتقييمه مع توزيع الأرباح
      */
     public function completeProject(Request $request, Project $project)
     {
@@ -127,7 +148,7 @@ class ProjectController extends Controller
                 // 1. تحويل الأرباح للمستقل
                 $this->payoutToFreelancer($project->freelancer_id, $amount, $project->title);
 
-                // 2. تسجيل التقييم
+                // 2. تسجيل التقييم (بشكل آمن)
                 Review::create([
                     'project_id'    => $project->id,
                     'freelancer_id' => $project->freelancer_id,
@@ -142,13 +163,13 @@ class ProjectController extends Controller
             });
 
             return redirect()->route('projects.show', $project->id)->with('success', 'تم الاستلام والتقييم بنجاح.');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Complete Project Error: ' . $e->getMessage());
             return back()->with('error', 'فشل في إتمام عملية الاستلام.');
         }
     }
 
-    // --- Private Helper Methods (The SRP Solution) ---
+    // --- Private Helper Methods (SRP & Clean Code) ---
 
     private function uploadProjectCover(Request $request)
     {

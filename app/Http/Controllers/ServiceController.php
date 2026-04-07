@@ -8,17 +8,17 @@ use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Exception;
 
 /**
  * Class ServiceController
- * * هذا الكنترولر مسؤول عن إدارة "الخدمات المصغرة" (Micro-services) التي يقدمها المستقلون،
- * وتشمل عمليات الإنشاء، العرض، وعمليات الدفع وتسليم الطلبات المرتبطة بها.
+ * مسؤول عن إدارة "الخدمات المصغرة" (Micro-services) التي يقدمها المستقلون.
+ * تم تحديثه لإزالة التكرار البرمجي (Code Smell) وتحسين قابلية الصيانة.
  */
 class ServiceController extends Controller
 {
     /**
      * عرض صفحة إضافة خدمة جديدة.
-     * * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -26,25 +26,18 @@ class ServiceController extends Controller
     }
 
     /**
-     * التحقق من صحة بيانات الخدمة وحفظها في قاعدة البيانات مع تأمين رفع الصورة.
-     * * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * حفظ الخدمة في قاعدة البيانات (Refactored لإزالة الـ Code Smell).
      */
     public function store(Request $request)
     {
-        // 1. تحقق صارم من المدخلات (حل مشكلة أمنية محتملة)
-        $validated = $request->validate([
-            'title'       => 'required|string|max:255|trim',
-            'description' => 'required|string|min:10',
-            'price'       => 'required|numeric|min:1',
-            'image'       => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ]);
+        // 1. استخدام دالة التحقق الموحدة
+        $validated = $this->validateServiceRequest($request);
 
         try {
-            // 2. رفع الصورة باستخدام Storage (أكثر أماناً من الـ public_path المباشر)
-            $imagePath = $request->file('image')->store('services', 'public');
+            // 2. استخدام دالة رفع الصور الموحدة
+            $imagePath = $this->uploadServiceImage($request);
 
-            // 3. إنشاء السجل برمجياً مع حماية XSS
+            // 3. إنشاء السجل باستخدام البيانات المعالجة
             Service::create([
                 'user_id'     => Auth::id(),
                 'title'       => strip_tags($validated['title']),
@@ -55,23 +48,25 @@ class ServiceController extends Controller
 
             return redirect()->route('freelancer.dashboard')->with('success', 'تم نشر خدمتك بنجاح!');
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Service Store Error: ' . $e->getMessage());
+
+            // تنظيف السيرفر في حالة فشل قاعدة البيانات (Good Practice)
+            if (isset($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
+
             return back()->with('error', 'حدث خطأ أثناء حفظ الخدمة.')->withInput();
         }
     }
 
     /**
-     * عرض صفحة تأكيد الدفع لخدمة معينة (Checkout).
-     * * @param  int  $id معرف الخدمة
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     * عرض صفحة تأكيد الدفع (Checkout).
      */
     public function checkout($id)
     {
-        // تحميل الخدمة مع بيانات صاحبها (Eager Loading) لتحسين الأداء
         $service = Service::with('user')->findOrFail($id);
 
-        // التحقق من تسجيل الدخول (يمكن نقل هذا لـ Middleware)
         if (!Auth::check()) {
             return redirect()->route('login');
         }
@@ -80,29 +75,47 @@ class ServiceController extends Controller
     }
 
     /**
-     * معالجة طلب تسليم العمل من قبل المستقل (البائع).
-     * * @param  \App\Models\Order  $order كائن الطلب المراد تسليمه
-     * @return \Illuminate\Http\RedirectResponse
+     * معالجة طلب تسليم العمل.
      */
     public function requestDelivery(Order $order)
     {
-        // التأكد أن المستخدم الحالي هو البائع (المستقل) صاحب الطلب الفعلي
         if (Auth::id() !== $order->seller_id) {
-            Log::warning("محاولة وصول غير مصرح بها لتسليم طلب رقم: {$order->id} من قبل مستخدم رقم: " . Auth::id());
+            Log::warning("Unauthorized delivery attempt for Order ID: {$order->id}");
             return back()->with('error', 'عذراً، لا تملك صلاحية تسليم هذا الطلب.');
         }
 
         try {
-            // تحديث حالة الطلب إلى "تم التسليم"
-            $order->update([
-                'status' => 'delivered'
-            ]);
-
+            $order->update(['status' => 'delivered']);
             return back()->with('success', 'تم إرسال طلب تسليم الخدمة للعميل بنجاح.');
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Delivery Request Error: ' . $e->getMessage());
             return back()->with('error', 'حدث خطأ تقني أثناء تحديث حالة الطلب.');
         }
+    }
+
+    // --- Private/Protected Helpers لإزالة التكرار (The Anti-Code Smell Solution) ---
+
+    /**
+     * توحيد منطق التحقق من البيانات (Validation).
+     */
+    protected function validateServiceRequest(Request $request)
+    {
+        return $request->validate([
+            'title'       => 'required|string|max:255|trim',
+            'description' => 'required|string|min:10',
+            'price'       => 'required|numeric|min:1',
+            'image'       => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+    }
+
+    /**
+     * توحيد منطق معالجة ورفع الصور.
+     */
+    protected function uploadServiceImage(Request $request)
+    {
+        if ($request->hasFile('image')) {
+            return $request->file('image')->store('services', 'public');
+        }
+        return null;
     }
 }

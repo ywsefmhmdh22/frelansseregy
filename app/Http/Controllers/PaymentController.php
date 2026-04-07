@@ -12,13 +12,19 @@ use App\Models\Wallet;
 use App\Models\User;
 use Exception;
 
+/**
+ * Class PaymentController
+ * مسؤول عن بوابة الدفع (Paymob)، تحويل العملات، وشحن أرصدة المحافظ.
+ * تم تحصين الكود ضد هجمات SQL Injection و Race Conditions مع توثيق كامل للعمليات المالية.
+ */
 class PaymentController extends Controller
 {
     // نسبة عمولة المنصة (9%)
     protected $platformFee = 0.09;
 
     /**
-     * جلب سعر الصرف اللحظي (USD to EGP) من الـ API وتخزينه ساعة في الكاش
+     * جلب سعر الصرف اللحظي (USD to EGP) مع التخزين المؤقت لتقليل استهلاك الـ API.
+     * * @return float
      */
     protected function getExchangeRate()
     {
@@ -26,7 +32,6 @@ class PaymentController extends Controller
             try {
                 $apiKey = config('services.paymob.exchange_rate_api_key');
 
-                // التأكد من وجود المفتاح قبل إرسال الطلب
                 if (!$apiKey) {
                     return (float) config('services.paymob.exchange_rate', 50.0);
                 }
@@ -35,7 +40,7 @@ class PaymentController extends Controller
 
                 if ($response->successful()) {
                     $data = $response->json();
-                    return (float) $data['conversion_rates']['EGP'];
+                    return (float) ($data['conversion_rates']['EGP'] ?? config('services.paymob.exchange_rate', 50.0));
                 }
 
                 return (float) config('services.paymob.exchange_rate', 50.0);
@@ -47,7 +52,7 @@ class PaymentController extends Controller
     }
 
     /**
-     * عرض صفحة شحن الرصيد
+     * عرض صفحة شحن الرصيد للمستخدم.
      */
     public function showDepositForm()
     {
@@ -58,44 +63,46 @@ class PaymentController extends Controller
     }
 
     /**
-     * بدء عملية الدفع - معالجة مشفرة وآمنة تماماً
+     * بدء عملية الدفع الرقمي وتوليد تصاريح الدفع من Paymob.
+     * * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function initiatePayment(Request $request)
     {
-        // 1. التحقق الصارم من المدخلات
-        $request->validate([
-            'amount' => 'required|numeric|min:1|max:100000',
-            'currency' => 'required|in:EGP,USD',
+        // 1. التحقق الصارم من المدخلات (يمنع أي محاولة حقن بيانات خبيثة)
+        $validated = $request->validate([
+            'amount'         => 'required|numeric|min:1|max:100000',
+            'currency'       => 'required|in:EGP,USD',
             'payment_method' => 'required|in:card,wallet',
-            'phone_number' => 'required_if:payment_method,wallet|nullable|regex:/^01[0125][0-9]{8}$/',
+            'phone_number'   => 'required_if:payment_method,wallet|nullable|regex:/^01[0125][0-9]{8}$/',
         ]);
 
         try {
             $user = auth()->user();
             $exchangeRate = $this->getExchangeRate();
 
-            // تحويل العملة للسعر المحلي (EGP) بناءً على سعر السوق اللحظي
-            $paymobAmount = ($request->currency === 'USD')
-                ? ($request->amount * $exchangeRate)
-                : $request->amount;
+            // تحويل المبلغ بناءً على العملة المختارة
+            $paymobAmount = ($validated['currency'] === 'USD')
+                ? ($validated['amount'] * $exchangeRate)
+                : $validated['amount'];
 
-            // 2. الحصول على Token التوثيق
+            // 2. التوثيق مع بوابة الدفع
             $authResponse = Http::post('https://accept.paymob.com/api/auth/tokens', [
                 'api_key' => config('services.paymob.api_key'),
             ]);
 
             if (!$authResponse->successful()) {
-                throw new Exception('فشل التوثيق مع بوابة الدفع. يرجى مراجعة الإعدادات.');
+                throw new Exception('فشل التوثيق مع بوابة الدفع.');
             }
 
             $token = $authResponse->json()['token'];
 
-            // 3. تسجيل الطلب
+            // 3. تسجيل الطلب في Paymob
             $orderResponse = Http::withToken($token)->post('https://accept.paymob.com/api/ecommerce/orders', [
                 'delivery_needed' => 'false',
-                'amount_cents' => (int) round($paymobAmount * 100),
-                'currency' => 'EGP',
-                'items' => [],
+                'amount_cents'    => (int) round($paymobAmount * 100),
+                'currency'        => 'EGP',
+                'items'           => [],
             ]);
 
             if (!$orderResponse->successful()) {
@@ -104,51 +111,51 @@ class PaymentController extends Controller
 
             $orderId = $orderResponse->json()['id'];
 
-            // 4. الحصول على مفتاح الدفع (Payment Key)
-            $integrationId = ($request->payment_method == 'wallet')
+            // 4. توليد Payment Key
+            $integrationId = ($validated['payment_method'] == 'wallet')
                 ? config('services.paymob.wallet_integration_id')
                 : config('services.paymob.integration_id');
 
             $paymentKeyResponse = Http::withToken($token)->post('https://accept.paymob.com/api/acceptance/payment_keys', [
-                'amount_cents' => (int) round($paymobAmount * 100),
-                'expiration' => 3600,
-                'order_id' => $orderId,
-                'billing_data' => [
-                    'first_name' => e($user->name ?? 'User'),
-                    'last_name'  => 'Client',
-                    'email'      => $user->email,
-                    'phone_number' => $request->phone_number ?? '01000000000',
+                'amount_cents'    => (int) round($paymobAmount * 100),
+                'expiration'      => 3600,
+                'order_id'        => $orderId,
+                'billing_data'    => [
+                    'first_name'   => e($user->name ?? 'User'), // Sanitized Name
+                    'last_name'    => 'Client',
+                    'email'        => $user->email,
+                    'phone_number' => $validated['phone_number'] ?? '01000000000',
                     'apartment' => 'NA', 'floor' => 'NA', 'street' => 'NA', 'building' => 'NA',
                     'shipping_method' => 'NA', 'postal_code' => 'NA', 'city' => 'Cairo',
                     'country' => 'EG', 'state' => 'Cairo',
                 ],
-                'currency' => 'EGP',
+                'currency'       => 'EGP',
                 'integration_id' => $integrationId,
             ]);
 
             if (!$paymentKeyResponse->successful()) {
-                throw new Exception('فشل الحصول على مفتاح تصريح الدفع.');
+                throw new Exception('فشل الحصول على تصريح الدفع.');
             }
 
             $paymentToken = $paymentKeyResponse->json()['token'];
 
-            // 5. تسجيل العملية في الداتابيز
+            // 5. تسجيل العملية في قاعدة البيانات باستخدام Eloquent (مؤمن ضد SQL Injection)
             Transaction::create([
-                'user_id' => $user->id,
-                'amount' => (float) $request->amount,
-                'currency' => $request->currency,
-                'type' => 'deposit',
-                'payment_id' => (string) $orderId,
-                'payment_method' => $request->payment_method,
-                'status' => 'pending',
+                'user_id'        => $user->id,
+                'amount'         => (float) $validated['amount'],
+                'currency'       => $validated['currency'],
+                'type'           => 'deposit',
+                'payment_id'     => (string) $orderId,
+                'payment_method' => $validated['payment_method'],
+                'status'         => 'pending',
             ]);
 
-            // 6. التوجيه الآمن لبوابة الدفع
-            if ($request->payment_method == 'wallet') {
+            // 6. التوجيه لبوابة الدفع بناءً على الطريقة المختارة
+            if ($validated['payment_method'] == 'wallet') {
                 $walletPayResponse = Http::post('https://accept.paymob.com/api/acceptance/payments/pay', [
                     'source' => [
-                        'identifier' => $request->phone_number,
-                        'subtype' => 'WALLET'
+                        'identifier' => $validated['phone_number'],
+                        'subtype'    => 'WALLET'
                     ],
                     'payment_token' => $paymentToken
                 ]);
@@ -165,66 +172,71 @@ class PaymentController extends Controller
             }
 
         } catch (Exception $e) {
-            Log::error('Secure Payment Error: ' . $e->getMessage());
-
-            // بدلاً من dd، نعود للخلف برسالة خطأ آمنة للمستخدم
+            Log::error('Secure Payment Initiation Error: ' . $e->getMessage());
             return back()->with('error', 'حدث خطأ أثناء معالجة الطلب: ' . $e->getMessage());
         }
     }
 
     /**
-     * الـ Callback: التحقق من صحة البيانات (HMAC)
+     * استقبال نتيجة الدفع (Callback) والتحقق من التوقيع الرقمي (HMAC).
      */
     public function callback(Request $request)
     {
+        // 1. التحقق من أمان التوقيع (HMAC) لمنع التلاعب بالنتائج
         if (!$this->verifySecureSignature($request)) {
-            Log::critical('تحذير: محاولة تلاعب ببيانات الدفع من IP: ' . $request->ip());
-            return redirect()->route('wallet.index')->with('error', 'فشل التحقق من أمان العملية.');
+            Log::critical('SECURITY ALERT: Tampered payment attempt from IP: ' . $request->ip());
+            return redirect()->route('wallet.index')->with('error', 'فشل التحقق الأمني من العملية.');
         }
 
         $success = $request->query('success');
-        $orderId = $request->query('order');
+        $orderId = (string) $request->query('order'); // تأمين النوع
 
         if ($success === 'true' && $orderId) {
             try {
+                // 2. استخدام Transaction و Row Locking لضمان الدقة المالية ومنع الـ Race Conditions
                 return DB::transaction(function () use ($orderId) {
-                    $transaction = Transaction::where('payment_id', (string)$orderId)
+                    $transaction = Transaction::where('payment_id', $orderId)
                         ->where('status', 'pending')
-                        ->lockForUpdate()
+                        ->lockForUpdate() // منع أي عملية أخرى من لمس هذا السجل حالياً
                         ->first();
 
                     if ($transaction) {
                         $exchangeRate = $this->getExchangeRate();
 
+                        // حساب المبلغ الصافي بالدولار للمحفظة
                         $amountInUsd = ($transaction->currency == 'USD')
                             ? $transaction->amount
                             : ($transaction->amount / $exchangeRate);
 
                         $finalNetUsd = $amountInUsd * (1 - $this->platformFee);
 
+                        // تحديث السجل
                         $transaction->update([
-                            'status' => 'success',
+                            'status'           => 'success',
                             'converted_amount' => $finalNetUsd
                         ]);
 
+                        // تحديث رصيد المحفظة بأمان
                         $wallet = Wallet::firstOrCreate(['user_id' => $transaction->user_id], ['balance' => 0]);
                         $wallet->increment('balance', $finalNetUsd);
 
-                        return redirect()->route('wallet.index')->with('success', 'تم شحن الرصيد بنجاح!');
+                        return redirect()->route('wallet.index')->with('success', 'تم شحن رصيد محفظتك بنجاح!');
                     }
                     return redirect()->route('wallet.index');
                 });
             } catch (Exception $e) {
-                Log::error('Callback DB Error: ' . $e->getMessage());
-                return redirect()->route('wallet.index')->with('error', 'حدث خطأ أثناء تحديث المحفظة.');
+                Log::error('Secure Callback Transaction Error: ' . $e->getMessage());
+                return redirect()->route('wallet.index')->with('error', 'خطأ في معالجة تحديث الرصيد.');
             }
         }
 
-        return redirect()->route('wallet.index')->with('error', 'فشلت عملية الدفع أو تم إلغاؤها.');
+        return redirect()->route('wallet.index')->with('error', 'تم إلغاء عملية الدفع أو فشلت.');
     }
 
     /**
-     * التحقق من التوقيع الرقمي (HMAC Validation)
+     * التحقق من الـ HMAC المرسل من Paymob لضمان عدم تزوير الـ Callback.
+     * * @param  Request $request
+     * @return bool
      */
     protected function verifySecureSignature(Request $request): bool
     {
