@@ -94,17 +94,11 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // --- [تعديل هاني] نظام المحفظة والمدفوعات المطور ---
+    // --- نظام المحفظة والمدفوعات ---
     Route::prefix('wallet')->group(function () {
         Route::get('/', [ClientDashboardController::class, 'wallet'])->name('wallet.index');
-
-        // تم التعديل: ربط الروت بالكنترولر وتصحيح الاسم لحل مشكلة الـ RouteNotFoundException
         Route::get('/deposit', [PaymentController::class, 'showDepositForm'])->name('wallet.deposit');
-
-        // روت POST لبدء العملية مع Paymob
         Route::post('/payment/initiate', [PaymentController::class, 'initiatePayment'])->name('pay.initiate');
-
-        // روت Callback الخاص بـ Paymob
         Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('pay.callback');
     });
 
@@ -125,7 +119,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/{id}/portfolio', [UserController::class, 'showPortfolio'])->name('profile.portfolio');
     Route::post('/profile/orders/{id}/submit-delivery', [OrderController::class, 'submitDelivery'])->name('orders.submitDelivery');
 
-    // استكمال البروفايل
     Route::get('/complete-profile', [ProfileCompletionController::class, 'index'])->name('profile.complete');
     Route::post('/complete-profile', [ProfileCompletionController::class, 'store'])->name('profile.store');
 
@@ -182,38 +175,46 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | 4. لوحة تحكم الأدمن (داخل الـ Auth)
+    | 4. لوحة تحكم الأدمن (تم تحديث المسارات لتعمل مع الداشبورد)
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin')->name('admin.')->middleware('can:admin-access')->group(function () {
 
+        // المسؤول عن الإحصائيات والأزرار والداشبورد الرئيسي
         Route::controller(AdminDashboardController::class)->group(function () {
             Route::get('/dashboard', 'index')->name('dashboard');
+
+            // تعديل: ترتيب الـ ID والكلمات هنا هو اللي بيسمح للـ JS يشتغل صح
+            Route::post('/user/{id}/approve', 'approveUser')->name('user.approve');
+            Route::post('/user/{id}/ban', 'banUser')->name('user.ban');
             Route::post('/user/{id}/reset-wallet', 'resetWallet')->name('user.reset-wallet');
+
+            Route::get('/users/edit/{id}', 'editUser')->name('user.edit');
         });
 
+        // المسؤول عن المنازعات والماليات
+        Route::controller(FinanceAdminController::class)->group(function () {
+            Route::get('/financial/disputes', 'disputesIndex')->name('disputes.index');
+            Route::get('/financial/user/{user}', 'userTransactions')->name('user.transactions');
+            Route::get('/financial/radar', 'financeRadar')->name('finance.radar');
+            Route::post('/financial/reject/{user}', 'rejectVerification')->name('reject');
+        });
+
+        // المسؤول عن مراجعة المشاريع
         Route::controller(App\Http\Controllers\Admin\ProjectController::class)->group(function () {
+            Route::get('/projects/all', 'index')->name('projects.index');
             Route::get('/projects/pending', 'pendingProjects')->name('projects.pending');
             Route::post('/projects/{id}/approve', 'approve')->name('projects.approve');
             Route::post('/projects/{id}/reject', 'reject')->name('projects.reject');
             Route::delete('/projects/delete/{id}', 'deleteProject')->name('projects.delete');
         });
 
+        // المسؤول عن إدارة المستخدمين
         Route::controller(UserManagementController::class)->group(function () {
             Route::get('/users/view/{user}', 'show')->name('user.details');
-            Route::get('/users/edit/{user}', 'edit')->name('user.edit');
             Route::put('/users/update/{user}', 'update')->name('user.update');
             Route::get('/users/impersonate/{user}', 'impersonate')->name('user.impersonate');
-            Route::post('/user/{user}/approve', 'approveUser')->name('user.approve');
-            Route::post('/user/{user}/ban', 'ban')->name('user.ban');
             Route::post('/users/verify-action/{user}', 'verify')->name('verify');
-        });
-
-        Route::controller(FinanceAdminController::class)->group(function () {
-            Route::get('/financial/user/{user}', 'userTransactions')->name('user.transactions');
-            Route::get('/financial/disputes', 'disputesIndex')->name('disputes.index');
-            Route::get('/financial/radar', 'financeRadar')->name('finance.radar');
-            Route::post('/financial/reject/{user}', 'rejectVerification')->name('reject');
         });
     });
 });

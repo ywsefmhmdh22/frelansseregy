@@ -102,8 +102,9 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
+            {{-- تعديل عرض صورة المشروع هنا --}}
             @if($project->image_url)
-                <img src="{{ $project->image_url }}" class="project-main-img" alt="{{ $project->title }}">
+                <img src="{{ asset('storage/' . $project->image_url) }}" class="project-main-img" alt="{{ $project->title }}">
             @endif
 
             {{-- كارت "المستقل المختار" --}}
@@ -138,7 +139,6 @@
                     @elseif($project->status == 'pending_delivery' && auth()->id() == $project->user_id)
                         <div class="d-flex align-items-center justify-content-between bg-warning bg-opacity-10 p-3 rounded-4 border border-warning">
                             <span>قام المستقل بطلب التسليم.</span>
-                            {{-- تم تعديل الرابط هنا ليفتح صفحة منفصلة --}}
                             <a href="{{ route('projects.review', $project->id) }}" class="btn btn-success rounded-pill px-4 shadow-sm">
                                 قبول التسليم والتقييم
                             </a>
@@ -184,7 +184,7 @@
                                     </div>
                                     <div class="flex-grow-1 overflow-hidden">
                                         <p class="mb-0 text-truncate small fw-bold">ملحق رقم {{ $loop->iteration }}</p>
-                                        <a href="{{ $url }}" target="_blank" class="text-decoration-none extra-small text-primary">
+                                        <a href="{{ asset('storage/' . $url) }}" target="_blank" class="text-decoration-none extra-small text-primary">
                                             <i class="fas fa-external-link-alt me-1"></i> عرض أو تحميل
                                         </a>
                                     </div>

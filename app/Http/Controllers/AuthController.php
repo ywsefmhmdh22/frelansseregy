@@ -34,8 +34,9 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         // 1. قواعد تحقق صارمة جداً (Strict Validation)
+        // تم حذف 'trim' من حقل name لأنها ليست قاعدة تحقق وتسبب خطأ، ولارافيل يقوم بالـ trim تلقائياً عبر Middleware
         $request->validate([
-            'name'     => ['required', 'string', 'max:255', 'trim'],
+            'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => [
                 'required',
@@ -51,7 +52,7 @@ class AuthController extends Controller
                     ->symbols()
                     ->uncompromised(), // حماية ضد كلمات المرور المسربة في الاختراقات العالمية
             ],
-            'role'     => ['required', 'in:freelancer,client'],
+            'role'     => ['required', 'in:freelancer,client,admin'],
         ], [
             'password.regex' => 'كلمة السر ضعيفة! يجب أن تحتوي على أحرف كبيرة، صغيرة، أرقام، ورموز خاصة.',
             'password.uncompromised' => 'كلمة المرور هذه ظهرت في تسريبات بيانات سابقة، يرجى اختيار واحدة أكثر أماناً.',

@@ -32,12 +32,14 @@ class ProjectController extends Controller
     }
 
     /**
-     * 2. حفظ المشروع مع نظام معالجة أخطاء شامل (Fixing the BUG)
+     * 2. حفظ المشروع مع نظام معالجة أخطاء شامل
+     * تم إصلاح BUG الـ Validator (إزالة trim) وتأمين المدخلات.
      */
     public function store(Request $request)
     {
+        // تم إزالة 'trim' من هنا لأن لارافيل تقوم بها تلقائياً ووجودها هنا يسبب Error 500
         $request->validate([
-            'title'         => 'required|string|max:255|trim',
+            'title'         => 'required|string|max:255',
             'description'   => 'required|string|min:20',
             'price'         => 'required|numeric|min:1',
             'currency'      => 'required|string|max:10',
@@ -46,38 +48,42 @@ class ProjectController extends Controller
             'attachments.*' => 'nullable|file|mimes:pdf,zip,rar,doc,docx,jpg,png|max:10240',
         ]);
 
-        // متغيرات لتتبع الملفات المرفوعة لحذفها في حالة فشل قاعدة البيانات
+        // متغيرات لتتبع الملفات المرفوعة لحذفها في حالة فشل قاعدة البيانات (Data Integrity)
         $imagePath = null;
         $attachmentsPaths = [];
 
         try {
             return DB::transaction(function () use ($request, &$imagePath, &$attachmentsPaths) {
-                // 1. رفع الملفات أولاً
+                // 1. رفع الملفات أولاً وتخزين مساراتها
                 $imagePath = $this->uploadProjectCover($request);
                 $attachmentsPaths = $this->uploadProjectAttachments($request);
 
-                // 2. إنشاء سجل المشروع
+                // 2. إنشاء سجل المشروع مع تطهير النصوص ضد هجمات XSS
                 $project = Project::create([
                     'user_id'      => Auth::id(),
                     'title'        => strip_tags($request->title),
-                    'description'  => strip_tags($request->description), // تأمين الوصف ضد XSS
+                    'description'  => strip_tags($request->description),
                     'price'        => $request->price,
                     'currency'     => $request->currency,
                     'duration'     => $request->duration,
                     'image_url'    => $imagePath,
-                    'attachments'  => $attachmentsPaths,
+                    'attachments'  => json_encode($attachmentsPaths), // تأكد من عمل Cast لهذه الخانة في الموديل كـ array
                     'type'         => $request->input('type', 'normal'),
                     'status'       => 'open',
                     'admin_status' => 'pending',
                 ]);
 
+                Log::info("Security Audit: New Project Created by User ID " . Auth::id());
+
                 return redirect()->route('client.dashboard')->with('success', 'تم إرسال مشروعك للمراجعة بنجاح!');
             });
         } catch (Exception $e) {
-            // معالجة الخطأ وحذف الملفات التي رُفعت لمنع الـ Orphaned Files
-            Log::error('Project Store Error (Bug Prevention): ' . $e->getMessage());
+            // معالجة الخطأ وحذف الملفات التي رُفعت فوراً لمنع الملفات اليتيمة (Orphaned Files)
+            Log::error('Project Store Failure [Rollback Executed]: ' . $e->getMessage());
 
-            if ($imagePath) Storage::disk('public')->delete($imagePath);
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
             foreach ($attachmentsPaths as $path) {
                 Storage::disk('public')->delete($path);
             }
@@ -87,7 +93,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * 3. توظيف مستقل مع ضمان سلامة المحفظة المالية
+     * 3. توظيف مستقل مع ضمان سلامة المحفظة المالية (Atomic Transaction)
      */
     public function assignFreelancer(Project $project, $proposalId)
     {
@@ -100,7 +106,7 @@ class ProjectController extends Controller
             $requiredAmount = $proposal->amount ?? $proposal->price;
 
             return DB::transaction(function () use ($project, $proposal, $requiredAmount) {
-                // قفل سجل المحفظة لمنع الـ Race Condition
+                // قفل سجل المحفظة لمنع الـ Race Condition (أمان مالي عالٍ)
                 $wallet = Wallet::where('user_id', Auth::id())->lockForUpdate()->first();
 
                 if (!$wallet || $wallet->balance < $requiredAmount) {
@@ -119,10 +125,12 @@ class ProjectController extends Controller
 
                 $proposal->update(['status' => 'accepted']);
 
+                Log::info("Payment Secure: Project ID {$project->id} funded by User ID " . Auth::id());
+
                 return back()->with('success', 'تم التوظيف بنجاح! المبلغ في أمان الآن.');
             });
         } catch (Exception $e) {
-            Log::error('Assign Freelancer Error: ' . $e->getMessage());
+            Log::error('Assign Freelancer Critical Error: ' . $e->getMessage());
             return back()->with('error', $e->getMessage() ?: 'حدث خطأ تقني أثناء التوظيف.');
         }
     }
@@ -148,7 +156,7 @@ class ProjectController extends Controller
                 // 1. تحويل الأرباح للمستقل
                 $this->payoutToFreelancer($project->freelancer_id, $amount, $project->title);
 
-                // 2. تسجيل التقييم (بشكل آمن)
+                // 2. تسجيل التقييم مع تطهير التعليق
                 Review::create([
                     'project_id'    => $project->id,
                     'freelancer_id' => $project->freelancer_id,
@@ -164,12 +172,12 @@ class ProjectController extends Controller
 
             return redirect()->route('projects.show', $project->id)->with('success', 'تم الاستلام والتقييم بنجاح.');
         } catch (Exception $e) {
-            Log::error('Complete Project Error: ' . $e->getMessage());
+            Log::error('Complete Project Finalization Error: ' . $e->getMessage());
             return back()->with('error', 'فشل في إتمام عملية الاستلام.');
         }
     }
 
-    // --- Private Helper Methods (SRP & Clean Code) ---
+    // --- Private Helper Methods (SRP & Security Architecture) ---
 
     private function uploadProjectCover(Request $request)
     {
@@ -197,7 +205,7 @@ class ProjectController extends Controller
             'amount'  => $amount,
             'type'    => 'withdraw',
             'status'  => 'completed',
-            'details' => 'خصم رصيد لتوظيف مستقل لمشروع: ' . $projectTitle,
+            'details' => 'خصم رصيد لتوظيف مستقل لمشروع: ' . strip_tags($projectTitle),
         ]);
     }
 
@@ -211,7 +219,7 @@ class ProjectController extends Controller
             'amount'  => $amount,
             'type'    => 'deposit',
             'status'  => 'completed',
-            'details' => 'أرباح مشروع: ' . $projectTitle,
+            'details' => 'أرباح مشروع: ' . strip_tags($projectTitle),
         ]);
     }
 

@@ -30,14 +30,14 @@ class ProfileCompletionController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. التحقق الصارم مع رسائل خطأ واضحة وسياق محدد
+        // 1. التحقق الصارم (تم تعديل skills لتصبح array بدلاً من string)
         $validatedData = $request->validate([
             'phone'         => 'required|numeric|digits_between:8,15',
-            'skills'        => 'required|string|max:500',
+            'skills'        => 'required|array|min:1', // التعديل هنا
             'bio'           => 'required|string|min:30|max:1000',
             'country'       => 'required|string|max:100',
             'id_number'     => 'required|string|unique:users,id_number,' . Auth::id(),
-            'id_image'      => 'required|image|mimes:jpeg,png,jpg|max:3072', // زيادة الحد لضمان وضوح الهوية
+            'id_image'      => 'required|image|mimes:jpeg,png,jpg|max:3072',
             'id_image_back' => 'required|image|mimes:jpeg,png,jpg|max:3072',
         ]);
 
@@ -45,7 +45,6 @@ class ProfileCompletionController extends Controller
             $authenticatedUser = Auth::user();
 
             // 2. إدارة مستندات الهوية (Identity Document Management)
-            // نستخدم متغيرات بأسماء واضحة تفرق بين الوجه الأمامي والخلفي
             $frontIdentityPath = $authenticatedUser->id_image;
             $backIdentityPath  = $authenticatedUser->id_image_back;
 
@@ -61,20 +60,23 @@ class ProfileCompletionController extends Controller
                 $backIdentityPath = $request->file('id_image_back')->store('identities/back', 'public');
             }
 
-            // 3. تحديث السجل الموحد للمستخدم (Atomic Update)
+            // 3. تحويل مصفوفة التخصصات إلى نص مفصول بفاصلة قبل الحفظ (تجنب خطأ strip_tags)
+            $skillsString = implode(', ', $request->skills);
+
+            // 4. تحديث السجل الموحد للمستخدم (Atomic Update)
             $authenticatedUser->update([
                 'phone'                => $validatedData['phone'],
-                'skills'               => strip_tags($validatedData['skills']),
+                'skills'               => $skillsString, // تم إزالة strip_tags وحفظ النص المدمج
                 'bio'                  => strip_tags($validatedData['bio']),
                 'country'              => $validatedData['country'],
                 'id_number'            => $validatedData['id_number'],
                 'id_image'             => $frontIdentityPath,
                 'id_image_back'        => $backIdentityPath,
                 'is_profile_completed' => true,
-                'verification_status'  => 'pending', // إرسال الملف للمراجعة اليدوية من قبل الإدارة
+                'verification_status'  => 'pending',
             ]);
 
-            // 4. منطق التوجيه الذكي بناءً على نوع الحساب (Dynamic Redirection)
+            // 5. منطق التوجيه الذكي بناءً على نوع الحساب (Dynamic Redirection)
             $targetDashboard = route('home');
 
             if ($authenticatedUser->role === 'freelancer') {

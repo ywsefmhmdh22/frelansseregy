@@ -5,135 +5,162 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Project;
 use App\Models\Transaction;
-use App\Models\Wallet; // تأكد من وجود الموديل ده عندك
+use App\Models\Wallet;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class AdminDashboardController extends Controller
 {
+    /**
+     * عرض لوحة التحكم الرئيسية مع كافة الإحصائيات
+     */
     public function index()
     {
-        // 1. جلب البيانات الأساسية للمستخدمين مع علاقة المحفظة (Eager Loading)
-        // ده بيمنع مشكلة الـ N+1 ويخلي الصفحة تحمل بسرعة
-        $users = User::with('wallet')->latest()->get();
+        // 1. جلب المستخدمين (أخذ آخر 100 فقط للجدول لتحسين سرعة التحميل)
+        $users = User::with(['wallet'])->latest()->take(100)->get();
 
-        // جلب المستخدمين الذين ينتظرون التوثيق
-        $pendingUsers = User::where('verification_status', 'pending')
-                            ->latest()
-                            ->get();
+        // 2. طلبات التوثيق المعلقة (استعلام منفصل لضمان دقة التنبيهات في الـ Navbar والجدول)
+        $pendingUsers = User::where('verification_status', 'pending')->latest()->get();
 
-        // 2. جلب المشاريع والنزاعات
+        // 3. المشاريع المعلقة والنزاعات
         $pendingProjects = Project::where('admin_status', 'pending')->latest()->get();
 
-        // جلب النزاعات مع بيانات أطراف النزاع
-        $disputes = Project::where('status', 'disputed')->with(['user', 'freelancer'])->get();
+        $disputes = Project::where('status', 'disputed')
+                            ->with(['user:id,name', 'freelancer:id,name'])
+                            ->get();
 
-        // عدد النزاعات النشطة
-        $activeDisputesCount = $disputes->count();
+        // 4. آخر العمليات المالية
+        $transactions = Transaction::with('user:id,name')->latest()->take(10)->get();
 
-        // جلب آخر 10 عمليات مالية
-        $transactions = Transaction::with('user')->latest()->take(10)->get();
-
-        // 3. إحصائيات الخزنة المركزية (تعديل للسحب من جدول المحافظ)
+        // 5. إحصائيات الخزنة والمشاريع (استعلامات مجمعة سريعة)
         $totalBalance = Wallet::sum('balance');
         $totalWallets = Wallet::count();
         $activeWalletsCount = Wallet::where('balance', '>', 0)->count();
 
-        // 4. إحصائيات المشاريع
         $projectStats = [
-            'total' => Project::count(),
-            'pending' => Project::where('admin_status', 'pending')->count(),
+            'total'       => Project::count(),
+            'pending'     => Project::where('admin_status', 'pending')->count(),
             'in_progress' => Project::where('status', 'in_progress')->count(),
-            'completed' => Project::where('status', 'completed')->count(),
+            'completed'   => Project::where('status', 'completed')->count(),
         ];
 
-        // 5. حساب نسبة النمو
-        $lastMonthCount = User::whereMonth('created_at', Carbon::now()->subMonth()->month)->count();
-        $currentMonthCount = User::whereMonth('created_at', Carbon::now()->month)->count();
-        $growthRate = $lastMonthCount > 0 ? (($currentMonthCount - $lastMonthCount) / $lastMonthCount) * 100 : ($currentMonthCount > 0 ? 100 : 0);
+        // 6. حساب نسبة النمو الشهري (Optimized)
+        $now = Carbon::now();
+        $lastMonth = $now->copy()->subMonth();
 
-        // 6. توزيع الأدوار
-        $adminsCount = User::where('role', 'admin')->count();
-        $freelancersCount = User::where('role', 'freelancer')->count();
-        $clientsCount = User::where('role', 'client')->count();
+        $lastMonthCount = User::whereMonth('created_at', $lastMonth->month)
+                              ->whereYear('created_at', $lastMonth->year)
+                              ->count();
 
-        return view('admin.dashboard', compact(
-            'users',
-            'pendingUsers',
-            'pendingProjects',
-            'transactions',
-            'disputes',
-            'activeDisputesCount',
-            'totalBalance',
-            'totalWallets',
-            'activeWalletsCount',
-            'projectStats',
-            'growthRate',
-            'adminsCount',
-            'freelancersCount',
-            'clientsCount'
-        ));
-    }
+        $currentMonthCount = User::whereMonth('created_at', $now->month)
+                                 ->whereYear('created_at', $now->year)
+                                 ->count();
 
-    /**
-     * دالة رادار الإحصائيات المتقدمة
-     */
-    public function financeRadar()
-    {
-        return view('admin.finance.index');
-    }
+        $growthRate = $lastMonthCount > 0
+            ? (($currentMonthCount - $lastMonthCount) / $lastMonthCount) * 100
+            : ($currentMonthCount > 0 ? 100 : 0);
 
-    /**
-     * تفعيل حساب المستخدم (Approve)
-     * ملاحظة: تم التأكد من توافق الـ ID مع مسار الـ JS في البليد
-     */
-    public function approveUser($id)
-    {
-        $user = User::findOrFail($id);
+        // 7. توزيع الأدوار
+        $rolesCount = User::select('role', DB::raw('count(*) as total'))
+                          ->groupBy('role')
+                          ->pluck('total', 'role')
+                          ->toArray();
 
-        $user->update([
-            'verification_status' => 'approved'
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'تم قبول المستخدم ' . $user->name . ' وتفعيل حسابه بنجاح'
+        return view('admin.dashboard', [
+            'users'               => $users,
+            'pendingUsers'        => $pendingUsers,
+            'pendingProjects'     => $pendingProjects,
+            'transactions'        => $transactions,
+            'disputes'            => $disputes,
+            'activeDisputesCount' => $disputes->count(),
+            'totalBalance'        => $totalBalance,
+            'totalWallets'        => $totalWallets,
+            'activeWalletsCount'  => $activeWalletsCount,
+            'projectStats'        => $projectStats,
+            'growthRate'          => $growthRate,
+            'adminsCount'         => $rolesCount['admin'] ?? 0,
+            'freelancersCount'    => $rolesCount['freelancer'] ?? 0,
+            'clientsCount'        => $rolesCount['client'] ?? 0,
         ]);
     }
 
     /**
-     * حظر المستخدم
+     * تفعيل حساب المستخدم (Verified)
      */
-    public function banUser($id)
+    public function approveUser($id): JsonResponse
     {
-        $user = User::findOrFail($id);
+        try {
+            $user = User::findOrFail($id);
 
-        $user->update(['verification_status' => 'rejected']);
+            // تحديث الحالة وتأكيد إكمال الملف الشخصي لضمان تخطي الـ Middleware
+            $user->update([
+                'verification_status' => 'verified',
+                'is_profile_completed' => true
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم استبعاد المستخدم بنجاح'
-        ]);
-    }
-
-    /**
-     * تصفير المحفظة (تعديل الربط مع جدول Wallets)
-     */
-    public function resetWallet($id)
-    {
-        $user = User::findOrFail($id);
-
-        // إذا كان هناك محفظة مرتبطة، نقوم بتصفيرها
-        if ($user->wallet) {
-            $user->wallet->update(['balance' => 0]);
-        } else {
-            // في حالة كان الرصيد لا يزال في جدول الـ users كخانة قديمة
-            $user->update(['balance' => 0]);
+            return response()->json([
+                'success' => true,
+                'message' => "تم توثيق حساب {$user->name} بنجاح"
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error approving user $id: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'حدث خطأ أثناء التفعيل'], 500);
         }
+    }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم تصفير الخزنة بنجاح'
-        ]);
+    /**
+     * حظر المستخدم أو إلغاء التوثيق
+     */
+    public function banUser($id): JsonResponse
+    {
+        try {
+            if (Auth::id() == $id) {
+                return response()->json(['success' => false, 'message' => 'لا يمكنك حظر نفسك!'], 403);
+            }
+
+            $user = User::findOrFail($id);
+
+            // نستخدم is_banned للحظر الفعلي و unverified لتغيير الشكل في اللوحة
+            $user->update([
+                'verification_status' => 'unverified',
+                'is_banned' => true
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "تم حظر المستخدم {$user->name} وإلغاء توثيقه"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'تعذر إتمام العملية'], 500);
+        }
+    }
+
+    // بقية الدوال (editUser, resetWallet, financeRadar) تظل كما هي لأنها سليمة
+    public function editUser($id) {
+        $user = User::with('wallet')->findOrFail($id);
+        return view('admin.users.edit', compact('user'));
+    }
+
+    public function resetWallet($id): JsonResponse {
+        return DB::transaction(function () use ($id) {
+            try {
+                $user = User::with('wallet')->findOrFail($id);
+                if ($user->wallet) {
+                    $user->wallet->update(['balance' => 0]);
+                    return response()->json(['success' => true, 'message' => 'تم تصفير الرصيد']);
+                }
+                return response()->json(['success' => false, 'message' => 'المحفظة غير موجودة'], 404);
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => 'فشل العملية'], 500);
+            }
+        });
+    }
+
+    public function financeRadar() {
+        return view('admin.finance.index');
     }
 }

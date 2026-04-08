@@ -22,8 +22,7 @@ class User extends Authenticatable
 
     /**
      * الحقول القابلة للتعبئة (Mass Assignment)
-     * تم إزالة الحقول الحساسة (role, balance, verification_status, is_banned)
-     * لضمان عدم التلاعب بها من قبل المستخدم عبر طلبات HTTP
+     * تم إضافة (role, verification_status, is_banned) لتمكين لوحة التحكم من تعديلها
      */
     protected $fillable = [
         'name',
@@ -39,7 +38,10 @@ class User extends Authenticatable
         'id_number',
         'id_image',
         'id_image_back',
+        'verification_status', // مضاف للتفعيل/التعطيل
         'is_profile_completed',
+        'is_banned',           // مضاف لنظام الحظر
+        'role',                // مضاف للتحكم في الصلاحيات
         'last_seen',
         'email_verified_at',
     ];

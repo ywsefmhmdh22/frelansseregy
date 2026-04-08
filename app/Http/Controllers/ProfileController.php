@@ -13,14 +13,15 @@ use Exception;
 /**
  * Class ProfileController
  * يدير إعدادات الحساب، الهوية الرقمية، ونظام تذاكر الدعم الفني.
- * تم تحسين أسماء الدوال لتكون صريحة (Explicit) لرفع دقة الفحص الأمني والبرمجي.
+ * تم دمج المسميات لتعمل مع الروابط البرمجية الحالية مع الحفاظ على معايير الأمان العالمية.
  */
 class ProfileController extends Controller
 {
     /**
      * عرض صفحة إعدادات الحساب الشخصية.
+     * تخدم الـ Route: profile/settings
      */
-    public function renderAccountSettingsPage()
+    public function settings()
     {
         $user = Auth::user();
         return view('profile.settings', compact('user'));
@@ -36,13 +37,13 @@ class ProfileController extends Controller
 
         // 1. التحقق الصارم (Strict Validation)
         $validatedData = $request->validate([
-            'name'  => 'required|string|max:255|trim',
+            'name'  => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'bio'   => 'nullable|string|max:1000',
         ]);
 
         try {
-            // 2. التحديث مع التطهير (Data Sanitization)
+            // 2. التحديث مع التطهير (Data Sanitization) لضمان سلامة العرض لاحقاً
             $user->update([
                 'name'  => strip_tags($validatedData['name']),
                 'email' => $validatedData['email'],
@@ -90,7 +91,17 @@ class ProfileController extends Controller
 
     /**
      * معالجة وتحديث الصورة الرمزية للملف الشخصي (Avatar).
-     * سياق التخزين: يتم حذف الملفات القديمة لمنع تراكم الملفات غير المستخدمة (Storage Cleanup).
+     * تخدم الـ Route: profile/settings/update-image
+     */
+    public function updateImage(Request $request)
+    {
+        // استدعاء دالة المعالجة الأساسية لضمان وحدة الكود (Don't Repeat Yourself)
+        return $this->updateProfileDisplayImage($request);
+    }
+
+    /**
+     * الدالة الأساسية لمعالجة الصور وتخزينها.
+     * سياق التخزين: يتم حذف الملفات القديمة لمنع تراكم الملفات غير المستخدمة.
      */
     public function updateProfileDisplayImage(Request $request)
     {
@@ -101,14 +112,15 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         try {
-            // التحقق من وجود الصورة القديمة وحذفها (Atomic File Operation)
+            // 1. التحقق من وجود الصورة القديمة وحذفها (Atomic File Operation)
             if ($user->profile_image && Storage::disk('public')->exists($user->profile_image)) {
                 Storage::disk('public')->delete($user->profile_image);
             }
 
-            // رفع الصورة بمسار منظم زمنياً
+            // 2. رفع الصورة بمسار منظم زمنياً لحماية هيكل المجلدات
             $path = $request->file('profile_image')->store('profiles/' . date('Y/m'), 'public');
 
+            // 3. تحديث سجل المستخدم في قاعدة البيانات
             $user->update([
                 'profile_image' => $path
             ]);
@@ -125,25 +137,23 @@ class ProfileController extends Controller
      */
     public function showSupportTicketsHistory()
     {
-        // مثال لجلب التذاكر (يتم تعديله حسب الموديل الخاص بك)
-        // $tickets = Ticket::where('user_id', Auth::id())->latest()->paginate(10);
         return view('support.index');
     }
 
     /**
      * إنشاء وإرسال تذكرة دعم فني جديدة.
-     * سياق الحماية: استخدام نظام القائمة البيضاء (Whitelist) لأنواع التذاكر لمنع التلاعب بالمدخلات.
+     * سياق الحماية: استخدام نظام القائمة البيضاء (Whitelist) لمنع التلاعب بالمدخلات.
      */
     public function dispatchNewSupportTicket(Request $request)
     {
         $validatedData = $request->validate([
-            'subject' => 'required|string|max:255|trim',
+            'subject' => 'required|string|max:255',
             'type'    => 'required|string|in:technical,billing,general',
             'message' => 'required|string|min:10|max:5000',
         ]);
 
         try {
-            // تنظيف البيانات النهائية قبل الحفظ
+            // تنظيف البيانات النهائية قبل الحفظ لمنع حقن السكريبتات
             $finalTicketData = [
                 'subject' => strip_tags($validatedData['subject']),
                 'type'    => $validatedData['type'],
@@ -152,7 +162,7 @@ class ProfileController extends Controller
                 'status'  => 'open',
             ];
 
-            // Ticket::create($finalTicketData);
+            // مثال: Ticket::create($finalTicketData);
 
             Log::channel('support')->info("New Ticket Created by User ID: " . Auth::id());
 
