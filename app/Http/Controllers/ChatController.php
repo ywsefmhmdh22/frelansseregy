@@ -20,24 +20,23 @@ class ChatController extends Controller
 {
     /**
      * عرض صفحة الدردشة والـ Inbox.
-     * تم استخدام Parameterized Queries لضمان عدم تمرير أي نصوص برمجية لقاعدة البيانات.
+     * تم إصلاح خطأ الـ Parameter Binding وتصحيح اسم عمود الصورة الشخصية.
      */
     public function chat(User $user = null)
     {
         $authId = (int) auth()->id(); // Type Casting لضمان الأمان
 
-        // 1. جلب قائمة المحادثات (Inbox) مع حماية SQL Injection كاملة
-        // استخدام placeholders (?) لضمان معاملة المعرف كبيانات فقط وليس كجزء من الأمر
+        // 1. جلب قائمة المحادثات (Inbox) بطريقة متوافقة مع محرك الاستعلامات
         $conversations = Message::where('sender_id', $authId)
             ->orWhere('receiver_id', $authId)
-            ->select(DB::raw('DISTINCT CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as contact_id', [$authId]))
+            ->selectRaw("DISTINCT CASE WHEN sender_id = $authId THEN receiver_id ELSE sender_id END as contact_id")
             ->get();
 
         $contactsIds = $conversations->pluck('contact_id')->filter()->toArray();
 
-        // 2. جلب جهات الاتصال وتحسين الأداء عبر الـ Eager Loading الافتراضي
+        // 2. جلب جهات الاتصال (تم تصحيح image_url إلى profile_image ليتناسب مع جدولك)
         $contacts = User::whereIn('id', $contactsIds)
-            ->select('id', 'name', 'image_url') // جلب ما نحتاجه فقط (Performance)
+            ->select('id', 'name', 'profile_image') // جلب ما نحتاجه فقط (Performance)
             ->get()
             ->map(function($contact) use ($authId) {
                 // جلب آخر رسالة بين الطرفين بأمان
@@ -55,7 +54,7 @@ class ChatController extends Controller
                 return $contact->last_message->created_at ?? 0;
             });
 
-        // توجيه تلقائي ذكي
+        // توجيه تلقائي ذكي إذا لم يتم تحديد مستخدم وكانت هناك محادثات سابقة
         if (!$user && $contacts->isNotEmpty()) {
             return redirect()->route('messages.chat', $contacts->first()->id);
         }

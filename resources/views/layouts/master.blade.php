@@ -4,80 +4,93 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="FreelancerPro Platform">
 
-    <title>FreelancerPro - منصة العمل الحر</title>
+    <title>FreelancerPro - منصة العمل الحر العالمية | إبداع بلا حدود</title>
+    <meta name="description" content="FreelancerPro هي المنصة الرائدة عالمياً للعمل الحر، تجمع بين أفضل المبدعين والشركات. ابدأ رحلتك المهنية الآن.">
+    <meta name="keywords" content="Freelance, العمل الحر, مبرمجين, مصممين, توظيف، FreelancerPro, Remote Work, وظائف عن بعد, Digital Transformation">
+    <meta name="author" content="FreelancerPro Team">
 
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <meta property="og:title" content="FreelancerPro - منصة العمل الحر الأولى">
+    <meta property="og:description" content="وظف أفضل الخبراء في كافة المجالات بضغطة زر.">
+    <meta property="og:type" content="website">
+
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
 
 <style>
     :root {
-        --primary-color: #047857;
-        --secondary-color: #d97706;
-        --bg-soft: #f8fafc;
-        --sidebar-width: 110px;
-        --glass-bg: rgba(255, 255, 255, 0.8);
+        --primary-color: #065f46;
+        --primary-light: #10b981;
+        --secondary-color: #b45309;
+        --bg-body: #f1f5f9;
         --card-bg: #ffffff;
-        --text-main: #1e293b;
-        --text-muted: #64748b;
-        --border-color: rgba(0,0,0,0.05);
-        --nav-hover: #ecfdf5;
+        --text-main: #0f172a;
+        --text-muted: #475569;
+        --sidebar-width: 100px;
+        --border-color: #e2e8f0;
+        --nav-hover: #f0fdf4;
     }
 
-    /* --- Dark Mode Variables --- */
     [data-theme="dark"] {
-        --bg-soft: #0f172a;
-        --glass-bg: rgba(30, 41, 59, 0.8);
-        --card-bg: #1e293b;
-        --text-main: #f1f5f9;
+        --bg-body: #020617;
+        --card-bg: #0f172a;
+        --text-main: #f8fafc;
         --text-muted: #94a3b8;
-        --border-color: rgba(255,255,255,0.1);
-        --nav-hover: rgba(4, 120, 87, 0.2);
+        --border-color: #1e293b;
+        --nav-hover: rgba(16, 185, 129, 0.1);
     }
 
     body {
         margin: 0;
         font-family: 'Cairo', sans-serif;
-        background: var(--bg-soft);
+        background: var(--bg-body);
         color: var(--text-main);
-        min-height: 100vh;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow-x: hidden;
-        transition: background 0.3s, color 0.3s;
     }
 
+    /* خلفية جرافيك خفيفة للأداء */
     #bg-canvas {
         position: fixed;
         top: 0; left: 0;
-        width: 100vw; height: 100vh;
+        width: 100%; height: 100%;
         z-index: -1;
-        opacity: 0.8;
+        opacity: 0.4;
+        pointer-events: none;
     }
 
-    /* --- Sidebar (Desktop) --- */
+    /* --- Sidebar --- */
     .sidebar {
         width: var(--sidebar-width);
         background: var(--card-bg);
         height: 94vh;
         position: fixed;
-        right: 20px;
+        right: 1.5rem;
         top: 3vh;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 30px 0;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-        border-radius: 30px;
-        z-index: 1040;
-        transition: all 0.3s ease;
+        padding: 2rem 0;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        border-radius: 24px;
+        z-index: 1050;
         border: 1px solid var(--border-color);
+        transition: transform 0.3s ease;
     }
 
-    .sidebar-logo { font-size: 30px; color: var(--primary-color); margin-bottom: 30px; cursor: pointer; transition: transform 0.2s; }
-    .sidebar-logo:hover { transform: scale(1.1); }
+    .sidebar-logo {
+        width: 50px; height: 50px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 15px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; margin-bottom: 2.5rem;
+        cursor: pointer; transition: 0.3s;
+    }
+    .sidebar-logo:hover { transform: rotate(15deg); background: var(--primary-light); }
 
-    .nav-item-custom { width: 100%; text-align: center; margin-bottom: 5px; }
+    .nav-item-custom { width: 100%; margin-bottom: 0.5rem; }
 
     .nav-link-custom {
         display: flex;
@@ -85,167 +98,156 @@
         align-items: center;
         text-decoration: none;
         color: var(--text-muted);
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 700;
-        padding: 12px 0;
-        transition: 0.3s;
-        border-radius: 18px;
-        margin: 0 12px;
+        padding: 1rem 0;
+        transition: 0.2s;
+        border-radius: 16px;
+        margin: 0 0.75rem;
     }
 
-    .nav-link-custom i { font-size: 22px; margin-bottom: 4px; }
+    .nav-link-custom i { font-size: 20px; margin-bottom: 6px; }
 
     .nav-link-custom:hover, .nav-link-custom.active {
         color: var(--primary-color);
         background: var(--nav-hover);
     }
 
-    .nav-link-special { color: var(--secondary-color); }
+    /* --- Main Wrapper --- */
+    .main-wrapper {
+        margin-right: calc(var(--sidebar-width) + 3rem);
+        padding: 2rem;
+        max-width: 1600px;
+    }
 
-    /* --- Header & Wrapper --- */
+    /* --- Top Header --- */
     .top-header {
-        background: var(--glass-bg);
-        backdrop-filter: blur(15px);
-        padding: 12px 30px;
+        background: var(--card-bg);
+        padding: 0.75rem 2rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
         border-radius: 20px;
-        margin-bottom: 30px;
+        margin-bottom: 2rem;
         border: 1px solid var(--border-color);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        position: relative;
-        z-index: 1030;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
     }
-
-    .dropdown-menu {
-        z-index: 2000 !important;
-        background-color: var(--card-bg) !important;
-        border: 1px solid var(--border-color) !important;
-    }
-
-    .dropdown-item { color: var(--text-main) !important; }
 
     .search-box {
-        background: rgba(0,0,0,0.05);
+        background: var(--bg-body);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
-        padding: 8px 15px;
+        padding: 0.5rem 1rem;
         display: flex;
         align-items: center;
-        width: 300px;
+        width: 100%;
+        max-width: 400px;
     }
-    [data-theme="dark"] .search-box { background: rgba(255,255,255,0.05); }
+    .search-box input { border: none; background: transparent; color: var(--text-main); width: 100%; outline: none; font-size: 0.9rem; }
 
-    .search-box input { border: none; background: transparent; color: var(--text-main); margin-right: 10px; width: 100%; outline: none; }
-
-    .main-wrapper {
-        margin-right: calc(var(--sidebar-width) + 40px);
-        padding: 20px;
-        transition: all 0.3s ease;
-    }
-
+    /* --- Hero Section (التصميم الأخضر المطور) --- */
     .hero-section-card {
-        background: linear-gradient(135deg, #047857 0%, #065f46 100%);
-        border-radius: 30px;
-        padding: 45px;
+        background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #10b981 100%);
+        border-radius: 40px;
+        padding: 6rem 4rem;
         color: white;
-        margin-bottom: 40px;
-        box-shadow: 0 20px 40px rgba(4, 120, 87, 0.2);
+        margin-bottom: 4rem;
+        box-shadow: 0 30px 60px -12px rgba(6, 95, 70, 0.3);
         position: relative;
         overflow: hidden;
+        min-height: 450px;
+        display: flex;
+        align-items: center;
     }
 
-    .user-profile-img {
-        width: 40px; height: 40px; border-radius: 10px; object-fit: cover;
-        border: 2px solid white;
+    /* تأثيرات جرافيك داخل الكارت الأخضر */
+    .hero-section-card::before {
+        content: ''; position: absolute; top: -10%; right: -10%;
+        width: 400px; height: 400px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+        filter: blur(80px);
     }
 
-    .floating-footer {
-        background: var(--card-bg); padding: 20px 40px; border-radius: 20px;
-        display: flex; justify-content: space-between; align-items: center;
-        margin-top: 50px; border: 1px solid var(--border-color);
+    .hero-section-card::after {
+        content: ''; position: absolute; bottom: -20%; left: -5%;
+        width: 300px; height: 300px;
+        background: var(--primary-light);
+        opacity: 0.2;
+        border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
+        animation: blob 15s infinite alternate;
     }
 
-    /* --- Responsive Fix for Mobile --- */
-    @media (max-width: 992px) {
+    @keyframes blob {
+        0% { border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%; transform: scale(1); }
+        100% { border-radius: 63% 37% 38% 62% / 56% 59% 41% 44%; transform: scale(1.2); }
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 991.98px) {
         .sidebar {
-            width: 90%;
-            height: 70px;
-            bottom: 20px;
-            top: auto;
-            right: 5%;
-            left: 5%;
-            flex-direction: row;
+            width: 100%; height: 75px;
+            bottom: 0; top: auto; right: 0;
+            flex-direction: row; padding: 0;
+            border-radius: 0; border-top: 1px solid var(--border-color);
             justify-content: space-around;
-            padding: 0 10px;
-            border-radius: 20px;
-            box-shadow: 0 -5px 25px rgba(0,0,0,0.15);
-            z-index: 2000;
         }
-        .sidebar-logo, .desktop-theme-toggle { display: none !important; }
-        .mobile-theme-item { display: block !important; }
-        .nav-item-custom { margin-bottom: 0; width: auto; }
-        .nav-link-custom { margin: 0; padding: 8px 5px; font-size: 10px; }
-        .nav-link-custom i { font-size: 20px; margin-bottom: 2px; }
-        .main-wrapper { margin-right: 0; padding-bottom: 100px; }
-        .search-box { width: 140px; }
-    }
-
-    @media (min-width: 993px) {
-        .mobile-theme-item { display: none !important; }
+        .sidebar-logo { display: none !important; }
+        .main-wrapper { margin-right: 0; padding: 1rem; padding-bottom: 90px; }
+        .hero-section-card { padding: 3rem 1.5rem; text-align: center; }
     }
 </style>
 </head>
 <body>
 
-<canvas id="bg-canvas"></canvas>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
 
-<aside class="sidebar shadow">
-    <div class="sidebar-logo" id="adminGate" title="بوابة الإدارة"><i class="fas fa-rocket"></i></div>
+<aside class="sidebar" role="navigation" aria-label="القائمة الرئيسية">
+    <div class="sidebar-logo" id="adminGate" tabindex="0" title="بوابة الإدارة">
+        <i class="fas fa-bolt" aria-hidden="true"></i>
+    </div>
 
     <div class="nav-item-custom">
-        <a href="{{ route('works.index') }}" class="nav-link-custom {{ request()->routeIs('works.index') ? 'active' : '' }}">
-            <i class="fas fa-briefcase"></i>
+        <a href="{{ route('home') }}" class="nav-link-custom active">
+            <i class="fas fa-house" aria-hidden="true"></i>
+            <span>الرئيسية</span>
+        </a>
+    </div>
+
+    <div class="nav-item-custom">
+        <a href="/about" class="nav-link-custom">
+            <i class="fas fa-users-viewfinder" aria-hidden="true"></i>
+            <span>من نحن</span>
+        </a>
+    </div>
+
+    <div class="nav-item-custom">
+        <a href="{{ route('works.index') }}" class="nav-link-custom">
+            <i class="fas fa-layer-group" aria-hidden="true"></i>
             <span>الأعمال</span>
         </a>
     </div>
 
     <div class="nav-item-custom">
-        <a href="/top-rated" class="nav-link-custom nav-link-special">
-            <i class="fas fa-star"></i>
-            <span>النخبة</span>
-        </a>
-    </div>
-
-    <div class="nav-item-custom">
         <a href="/Services" class="nav-link-custom">
-            <i class="fas fa-shapes"></i>
+            <i class="fas fa-cubes" aria-hidden="true"></i>
             <span>الخدمات</span>
         </a>
     </div>
 
     @auth
     <div class="nav-item-custom">
-        @php
-            $dashboardUrl = auth()->user()->role === 'freelancer' ? route('freelancer.dashboard') : route('client.dashboard');
-        @endphp
-        <a href="{{ $dashboardUrl }}" class="nav-link-custom">
-            <i class="fas fa-gauge-high"></i>
-            <span>لوحه التحكم </span>
+        <a href="{{ auth()->user()->role === 'freelancer' ? route('freelancer.dashboard') : route('client.dashboard') }}" class="nav-link-custom">
+            <i class="fas fa-chart-pie" aria-hidden="true"></i>
+            <span>Dashboard</span>
         </a>
     </div>
     @endauth
 
-    <div class="nav-item-custom mobile-theme-item">
-        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn" aria-label="تبديل مظهر الموقع">
-            <i class="fas fa-moon theme-icon"></i>
-            <span>المظهر</span>
-        </button>
-    </div>
-
-    <div class="nav-item-custom mt-auto mb-3 desktop-theme-toggle">
-        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn" aria-label="تبديل مظهر الموقع">
-            <i class="fas fa-moon theme-icon"></i>
+    <div class="nav-item-custom mt-auto mb-3">
+        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn" aria-label="تبديل الوضع الليلي">
+            <i class="fas fa-moon theme-icon" aria-hidden="true"></i>
+            <span class="d-lg-none">المظهر</span>
         </button>
     </div>
 </aside>
@@ -253,88 +255,70 @@
 <main class="main-wrapper">
     <header class="top-header">
         <div class="search-box">
-            <i class="fas fa-search text-muted small"></i>
-            <input type="text" placeholder="ابحث عن مشاريع...">
+            <i class="fas fa-search text-muted me-2" aria-hidden="true"></i>
+            <input type="text" placeholder="ما الذي تبحث عنه اليوم؟" aria-label="بحث في المنصة">
         </div>
 
         <div class="header-actions d-flex align-items-center gap-3">
             @auth
                 <div class="dropdown">
-                    <div class="position-relative cursor-pointer" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fa-regular fa-bell fs-5 text-secondary"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-                    </div>
-                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-3 mt-3">
-                        <li class="small text-muted p-2">لا توجد إشعارات جديدة</li>
-                    </ul>
-                </div>
-
-                <div class="dropdown">
-                    <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="dropdown" aria-expanded="false">
-                        {{-- إضافة alt لصورة المستخدم --}}
-                        <img src="https://ui-avatars.com/api/?name={{ auth()->user()->name }}&background=047857&color=fff"
-                             class="user-profile-img"
-                             alt="الملف الشخصي: {{ auth()->user()->name }}">
+                    <button class="btn p-0 d-flex align-items-center gap-2 border-0" data-bs-toggle="dropdown">
+                        <img src="https://ui-avatars.com/api/?name={{ auth()->user()->name }}&background=065f46&color=fff" class="rounded-circle shadow-sm" width="38" height="38">
                         <i class="fas fa-chevron-down small text-muted d-none d-md-block"></i>
-                    </div>
-                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4">
-                        <li><a class="dropdown-item py-2" href="{{ route('profile.settings') }}"><i class="fas fa-user-gear me-2"></i> الإعدادات</a></li>
-                        <li><hr class="dropdown-divider opacity-50"></li>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 rounded-3">
+                        <li><a class="dropdown-item rounded-2" href="{{ route('profile.settings') }}"><i class="fas fa-cog me-2"></i> الإعدادات</a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
-                                <button class="dropdown-item text-danger py-2"><i class="fas fa-sign-out-alt me-2"></i> خروج</button>
+                                <button class="dropdown-item text-danger rounded-2 w-100 text-start"><i class="fas fa-power-off me-2"></i> خروج</button>
                             </form>
                         </li>
                     </ul>
                 </div>
             @else
-                <a href="/login" class="btn btn-sm text-secondary fw-bold">دخول</a>
-                <a href="/register" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" style="background: var(--primary-color); border:none;">انضم إلينا</a>
+                <a href="/login" class="btn text-muted fw-bold px-3">دخول</a>
+                <a href="/register" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold" style="background: var(--primary-color); border:none;">ابدأ الآن</a>
             @endauth
         </div>
     </header>
 
-    <div class="container-fluid p-0">
-        @if(request()->is('/'))
-        <section class="hero-section-card shadow-lg">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="fw-800 mb-3 display-5">عالم من المبدعين بين يديك</h1>
-                    <p class="opacity-75 mb-4 fs-5">نفذ مشاريعك بأعلى جودة مع أفضل المستقلين في الوطن العربي.</p>
-                    <div class="d-flex gap-3">
-                        <a href="/projects" class="btn btn-light rounded-pill px-4 fw-bold" style="color: var(--primary-color);">ابدأ مشروعك</a>
-                        <a href="/top-rated" class="btn btn-outline-light rounded-pill px-4 border-2">الأعلى تقييماً</a>
-                    </div>
+    @if(request()->is('/'))
+    <section class="hero-section-card">
+        <div class="row align-items-center w-100">
+            <div class="col-lg-8">
+                <h1 class="fw-800 display-3 mb-3">صمم مستقبلك المهني معنا</h1>
+                <p class="lead opacity-90 mb-5 fs-4">نجمع لك أفضل المبدعين العرب والخبراء العالميين في منصة واحدة آمنة وسهلة الاستخدام تماماً.</p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="/top-rated" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-success shadow-lg">المستقلين المتميزين</a>
                 </div>
             </div>
-        </section>
-        @endif
-
-        <div class="page-content">
-            @yield('content')
         </div>
-    </div>
+    </section>
+    @endif
 
-    <footer class="floating-footer">
-        <div class="small text-muted">&copy; 2026 FreelancerPro. صنع بكل حب.</div>
-        <div class="d-flex gap-3 text-muted">
-            <i class="fab fa-instagram cursor-pointer" title="إنستجرام"></i>
-            <i class="fab fa-linkedin-in cursor-pointer" title="لينكد إن"></i>
-            <i class="fab fa-x-twitter cursor-pointer" title="إكس"></i>
-        </div>
+    <section class="page-content">
+        @yield('content')
+    </section>
+
+    <footer class="d-flex flex-wrap justify-content-between align-items-center py-4 my-5 border-top border-2">
+        <p class="col-md-4 mb-0 text-muted fw-bold">© 2026 FreelancerPro Global. جميع الحقوق محفوظة.</p>
+        <ul class="nav col-md-4 justify-content-end list-unstyled d-flex gap-4 fs-5">
+            <li><a class="text-muted" href="#"><i class="fab fa-x-twitter"></i></a></li>
+            <li><a class="text-muted" href="#"><i class="fab fa-instagram"></i></a></li>
+            <li><a class="text-muted" href="#"><i class="fab fa-linkedin-in"></i></a></li>
+        </ul>
     </footer>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    // نظام جزيئات الخلفية المتطور والخفيف
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let width, height, particles = [];
-    let mouse = { x: null, y: null };
-
-    window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
 
     function resize() {
         width = canvas.width = window.innerWidth;
@@ -348,89 +332,48 @@
         reset() {
             this.x = Math.random() * width;
             this.y = Math.random() * height;
-            this.vx = (Math.random() - 0.5) * 0.5;
-            this.vy = (Math.random() - 0.5) * 0.5;
-            this.size = Math.random() * 2 + 1;
+            this.vx = (Math.random() - 0.5) * 0.4;
+            this.vy = (Math.random() - 0.5) * 0.4;
+            this.size = Math.random() * 2 + 0.5;
         }
         update() {
             this.x += this.vx; this.y += this.vy;
             if(this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.reset();
-            let dx = mouse.x - this.x;
-            let dy = mouse.y - this.y;
-            let distance = Math.sqrt(dx*dx + dy*dy);
-            if (distance < 100) { this.x -= dx/20; this.y -= dy/20; }
         }
         draw() {
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
-            ctx.fillStyle = document.documentElement.getAttribute('data-theme') === 'dark' ? `rgba(4, 120, 87, 0.2)` : `rgba(4, 120, 87, 0.2)`;
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary-light') + '22';
             ctx.fill();
         }
     }
 
-    for(let i=0; i<80; i++) particles.push(new Particle());
+    for(let i=0; i<50; i++) particles.push(new Particle());
 
     function animate() {
         ctx.clearRect(0,0,width,height);
-        particles.forEach((p, i) => {
-            p.update(); p.draw();
-            for(let j=i+1; j<particles.length; j++) {
-                const p2 = particles[j];
-                const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-                if(dist < 120) {
-                    ctx.beginPath();
-                    ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y);
-                    ctx.strokeStyle = document.documentElement.getAttribute('data-theme') === 'dark' ? `rgba(99, 102, 241, 0.05)` : `rgba(4, 120, 87, 0.05)`;
-                    ctx.stroke();
-                }
-            }
-        });
+        particles.forEach(p => { p.update(); p.draw(); });
         requestAnimationFrame(animate);
     }
     animate();
 
+    // تبديل الثيم
     const themeToggles = document.querySelectorAll('.theme-toggle-btn');
-    const themeIcons = document.querySelectorAll('.theme-icon');
-
-    function updateIcons(theme) {
-        themeIcons.forEach(icon => {
-            if (theme === 'dark') {
-                icon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                icon.classList.replace('fa-sun', 'fa-moon');
-            }
-        });
-    }
-
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    if (currentTheme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        updateIcons('dark');
-    }
-
-    themeToggles.forEach(toggle => {
-        toggle.addEventListener('click', () => {
-            let theme = document.documentElement.getAttribute('data-theme');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'light');
-                localStorage.setItem('theme', 'light');
-                updateIcons('light');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                updateIcons('dark');
-            }
+    const updateUI = (theme) => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    };
+    themeToggles.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            updateUI(current === 'dark' ? 'light' : 'dark');
         });
     });
 
-    // --- وظيفة الصاروخ السرية ---
-    document.getElementById('adminGate').addEventListener('click', function() {
-        const pass = prompt("أدخل كلمة مرور الإدارة للدخول:");
-        if (pass === "01025450449") {
-            window.location.href = "/admin/dashboard";
-        } else if (pass !== null) {
-            alert("عذراً، كلمة المرور خاطئة!");
-        }
+    // كود الأدمن السري
+    document.getElementById('adminGate').addEventListener('click', () => {
+        const pass = prompt("الوصول إلى لوحة التحكم العالمية:");
+        if (pass === "01025450449") window.location.href = "/admin/dashboard";
     });
 </script>
 

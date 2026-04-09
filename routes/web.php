@@ -72,6 +72,9 @@ Route::get('/fix-wallets', function () {
     return "مبروك يا هاني.. كل المحافظ جاهزة!";
 });
 
+// --- روت الـ Webhook (مهم: خارج الـ Auth عشان باي موب يوصله) ---
+Route::post('/payment/processed', [PaymentController::class, 'processedCallback'])->name('pay.webhook');
+
 /*
 |--------------------------------------------------------------------------
 | 2. مسارات الزوار (Guest)
@@ -82,7 +85,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/forgot-password', function() { return "قيد الإنشاء"; })->name('password.request');
+
+    // --- مسارات استعادة كلمة المرور ---
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 
 /*
@@ -100,6 +108,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/deposit', [PaymentController::class, 'showDepositForm'])->name('wallet.deposit');
         Route::post('/payment/initiate', [PaymentController::class, 'initiatePayment'])->name('pay.initiate');
         Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('pay.callback');
+
+        // التعديل: ربط مسار السحب بالكنترولر الصحيح والدالة store
+        Route::post('/withdraw', [WithdrawController::class, 'store'])->name('wallet.process_withdraw');
     });
 
     // --- إعدادات الحساب ---
@@ -154,6 +165,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/services/order/{order}/request-delivery', [ServiceController::class, 'requestDelivery'])->name('services.requestDelivery');
         });
 
+        // تم توحيد مسارات السحب هنا لتستخدم WithdrawController
         Route::get('/withdraw', [WithdrawController::class, 'create'])->name('withdraw.create');
         Route::post('/withdraw/process', [WithdrawController::class, 'store'])->name('withdraw.request');
 
@@ -175,24 +187,19 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | 4. لوحة تحكم الأدمن (تم تحديث المسارات لتعمل مع الداشبورد)
+    | 4. لوحة تحكم الأدمن
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin')->name('admin.')->middleware('can:admin-access')->group(function () {
 
-        // المسؤول عن الإحصائيات والأزرار والداشبورد الرئيسي
         Route::controller(AdminDashboardController::class)->group(function () {
             Route::get('/dashboard', 'index')->name('dashboard');
-
-            // تعديل: ترتيب الـ ID والكلمات هنا هو اللي بيسمح للـ JS يشتغل صح
             Route::post('/user/{id}/approve', 'approveUser')->name('user.approve');
             Route::post('/user/{id}/ban', 'banUser')->name('user.ban');
             Route::post('/user/{id}/reset-wallet', 'resetWallet')->name('user.reset-wallet');
-
             Route::get('/users/edit/{id}', 'editUser')->name('user.edit');
         });
 
-        // المسؤول عن المنازعات والماليات
         Route::controller(FinanceAdminController::class)->group(function () {
             Route::get('/financial/disputes', 'disputesIndex')->name('disputes.index');
             Route::get('/financial/user/{user}', 'userTransactions')->name('user.transactions');
@@ -200,7 +207,6 @@ Route::middleware('auth')->group(function () {
             Route::post('/financial/reject/{user}', 'rejectVerification')->name('reject');
         });
 
-        // المسؤول عن مراجعة المشاريع
         Route::controller(App\Http\Controllers\Admin\ProjectController::class)->group(function () {
             Route::get('/projects/all', 'index')->name('projects.index');
             Route::get('/projects/pending', 'pendingProjects')->name('projects.pending');
@@ -209,7 +215,6 @@ Route::middleware('auth')->group(function () {
             Route::delete('/projects/delete/{id}', 'deleteProject')->name('projects.delete');
         });
 
-        // المسؤول عن إدارة المستخدمين
         Route::controller(UserManagementController::class)->group(function () {
             Route::get('/users/view/{user}', 'show')->name('user.details');
             Route::put('/users/update/{user}', 'update')->name('user.update');

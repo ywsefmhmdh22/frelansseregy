@@ -6,17 +6,14 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule; // تغيير الاسم لتجنب التعارض
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password; // مهم جداً لاستعادة كلمة السر
+use Illuminate\Auth\Events\PasswordReset;
 use Exception;
 
-/**
- * Class AuthController
- * نظام مصادقة متطور يعتمد معايير NIST و OWASP للأمن السيبراني.
- * يتضمن حماية ضد Brute Force، Session Fixation، وكلمات المرور الضعيفة.
- */
 class AuthController extends Controller
 {
     /**
@@ -28,13 +25,10 @@ class AuthController extends Controller
     }
 
     /**
-     * معالجة بيانات التسجيل بحماية "عسكرية" ضد التخمين.
-     * تم دمج الـ Regex المعقد مع Laravel Password Rule لضمان أعلى Entropy.
+     * معالجة بيانات التسجيل.
      */
     public function register(Request $request)
     {
-        // 1. قواعد تحقق صارمة جداً (Strict Validation)
-        // تم حذف 'trim' من حقل name لأنها ليست قاعدة تحقق وتسبب خطأ، ولارافيل يقوم بالـ trim تلقائياً عبر Middleware
         $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
@@ -42,15 +36,8 @@ class AuthController extends Controller
                 'required',
                 'confirmed',
                 'min:12',
-                // حل المشكلة الجذري: الـ Regex الذي يفرض (كبير، صغير، رقم، رمز خاص)
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/',
-                // ميزات لارافيل الإضافية للأمان القصوى
-                Password::min(12)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols()
-                    ->uncompromised(), // حماية ضد كلمات المرور المسربة في الاختراقات العالمية
+                PasswordRule::min(12)->letters()->mixedCase()->numbers()->symbols()->uncompromised(),
             ],
             'role'     => ['required', 'in:freelancer,client,admin'],
         ], [
@@ -59,7 +46,6 @@ class AuthController extends Controller
         ]);
 
         try {
-            // 2. إنشاء المستخدم وتشفير كلمة المرور
             $user = User::create([
                 'name'                => strip_tags($request->name),
                 'email'               => $request->email,
@@ -69,9 +55,8 @@ class AuthController extends Controller
                 'is_banned'           => false,
             ]);
 
-            // 3. تأمين الجلسة فوراً
             Auth::login($user);
-            $request->session()->regenerate(); // منع Session Fixation
+            $request->session()->regenerate();
 
             return $this->redirectBasedOnRole($user);
 
@@ -90,7 +75,7 @@ class AuthController extends Controller
     }
 
     /**
-     * معالجة تسجيل الدخول مع حماية متقدمة (Rate Limiting).
+     * معالجة تسجيل الدخول.
      */
     public function login(Request $request)
     {
@@ -99,36 +84,78 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        // تحديد الهوية لمحاصرة هجمات Brute Force
         $throttleKey = Str::lower($request->input('email')) . '|' . $request->ip();
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
-            return back()->withErrors([
-                'email' => "تم حظر محاولات الدخول مؤقتاً. يرجى الانتظار $seconds ثانية.",
-            ]);
+            return back()->withErrors(['email' => "تم حظر محاولات الدخول مؤقتاً. يرجى الانتظار $seconds ثانية."]);
         }
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            // تنظيف سجل المحاولات عند النجاح
             RateLimiter::clear($throttleKey);
-
-            // تأمين الجلسة الجديدة
             $request->session()->regenerate();
-
             return $this->redirectBasedOnRole(Auth::user(), true);
         }
 
-        // تسجيل محاولة فاشلة وزيادة العداد
-        RateLimiter::hit($throttleKey, 600); // حظر 10 دقائق بعد الفشل المتكرر
+        RateLimiter::hit($throttleKey, 600);
+        return back()->withErrors(['email' => 'خطأ في بيانات الدخول، يرجى التأكد والمحاولة مرة أخرى.'])->onlyInput('email');
+    }
 
-        return back()->withErrors([
-            'email' => 'خطأ في بيانات الدخول، يرجى التأكد والمحاولة مرة أخرى.',
-        ])->onlyInput('email');
+    /*
+    |--------------------------------------------------------------------------
+    | ميزات استعادة كلمة المرور (الجديدة)
+    |--------------------------------------------------------------------------
+    */
+
+    public function showForgotPasswordForm()
+    {
+        return view('auth.forgot-password');
+    }
+
+    public function sendResetLinkEmail(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with(['status' => __($status)])
+            : back()->withErrors(['email' => __($status)]);
+    }
+
+    public function showResetForm($token)
+    {
+        return view('auth.reset-password', ['token' => $token]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => ['required', 'confirmed', PasswordRule::min(12)->letters()->mixedCase()->numbers()->symbols()],
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password)
+                ])->setRememberToken(Str::random(60));
+
+                $user->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login')->with('status', __($status))
+            : back()->withErrors(['email' => [__($status)]]);
     }
 
     /**
-     * توجيه آمن بناءً على صلاحيات المستخدم (Role-Based Access Control).
+     * توجيه آمن بناءً على الصلاحيات.
      */
     protected function redirectBasedOnRole($user, $intended = false)
     {
@@ -139,21 +166,17 @@ class AuthController extends Controller
         ];
 
         $target = $redirectPaths[$user->role] ?? '/';
-
         return $intended ? redirect()->intended($target) : redirect($target);
     }
 
     /**
-     * تسجيل الخروج وتطهير الجلسة بالكامل (Total Session Purge).
+     * تسجيل الخروج.
      */
     public function logout(Request $request)
     {
         Auth::logout();
-
-        // تدمير الجلسة الحالية وتوليد Token جديد لمنع أي استغلال لاحق
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
         return redirect('/');
     }
 }

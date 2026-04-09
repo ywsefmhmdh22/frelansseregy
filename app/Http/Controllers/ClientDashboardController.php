@@ -17,7 +17,7 @@ use Exception;
 /**
  * Class ClientDashboardController
  * مسؤول عن لوحة تحكم العميل مع دعم تعدد العملات (EGP/USD)
- * تم الإصلاح: جعل العملة ديناميكية بالكامل بناءً على بيانات قاعدة البيانات.
+ * تم الإصلاح: جعل البيانات تظهر فوراً (Real-time) وتحسين أداء الإحصائيات.
  */
 class ClientDashboardController extends Controller
 {
@@ -28,43 +28,46 @@ class ClientDashboardController extends Controller
     {
         $userId = (int) Auth::id();
 
-        // 1. استخدام الكاش لتقليل الضغط على قاعدة البيانات (أداء عالٍ)
-        $dashboardData = Cache::remember("client_dashboard_cache_{$userId}", 300, function () use ($userId) {
+        // 1. جلب أحدث 5 مشاريع (Real-time) لضمان ظهور المشروع الجديد فوراً
+        $projects = Project::where('user_id', $userId)
+            ->select('id', 'title', 'status', 'admin_status', 'created_at', 'price', 'currency', 'final_price')
+            ->withCount('proposals')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($project) {
+                $project->formatted_price = $this->formatCurrency($project->final_price ?? $project->price, $project->currency);
+                return $project;
+            });
 
-            $projects = Project::where('user_id', $userId)
-                ->select('id', 'title', 'status', 'admin_status', 'created_at', 'price', 'currency', 'final_price')
-                ->withCount('proposals')
-                ->latest()
-                ->limit(5)
-                ->get()
-                ->map(function ($project) {
-                    // الإصلاح: تمرير العملة المخزنة في قاعدة البيانات بدلاً من فرض EGP
-                    $project->formatted_price = $this->formatCurrency($project->final_price ?? $project->price, $project->currency);
-                    return $project;
-                });
+        // 2. الإحصائيات: استخدام Cache للإحصائيات الثقيلة فقط مع تحسين الاستعلام
+        // ملاحظة: يتم مسح هذا الكاش عند إضافة مشروع جديد لضمان الدقة
+        $stats = Cache::remember("client_stats_summary_{$userId}", 600, function () use ($userId) {
+            $rawStats = Project::where('user_id', $userId)
+                ->selectRaw("
+                    COUNT(*) as total_projects,
+                    SUM(CASE WHEN admin_status = 'pending' THEN 1 ELSE 0 END) as pending_projects,
+                    SUM(CASE WHEN admin_status = 'approved' THEN 1 ELSE 0 END) as active_projects,
+                    SUM(CASE WHEN status = 'completed' THEN final_price ELSE 0 END) as total_spent
+                ")
+                ->first();
 
-            $stats = [
-                'total_projects'   => Project::where('user_id', $userId)->count(),
-                'pending_projects' => Project::where('user_id', $userId)->where('admin_status', 'pending')->count(),
-                'active_projects'  => Project::where('user_id', $userId)->where('admin_status', 'approved')->count(),
-                // تنبيه: Sum هنا يجمع أرقام مجردة، يفضل مستقبلاً توحيد العملة في جدول منفصل للإحصائيات
-                'total_spent'      => (float) Project::where('user_id', $userId)->where('status', 'completed')->sum('final_price'),
+            return [
+                'total_projects'   => (int) $rawStats->total_projects,
+                'pending_projects' => (int) $rawStats->pending_projects,
+                'active_projects'  => (int) $rawStats->active_projects,
+                'total_spent'      => (float) $rawStats->total_spent,
             ];
-
-            return compact('projects', 'stats');
         });
 
-        // 2. المحفظة (Real-time) لضمان الدقة المالية
+        // 3. المحفظة (دائماً Real-time)
         $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0]);
-
-        // الإصلاح الجذري: سحب العملة من إعدادات المحفظة أو المشروع، وعدم تثبيت 'EGP'
-        // إذا كان جدول المحفظة لا يحتوي على عمود currency، سنعتمد على العملة الافتراضية للنظام
         $walletCurrency = $wallet->currency ?? 'EGP';
         $formattedWalletBalance = $this->formatCurrency($wallet->balance, $walletCurrency);
 
         return view('dashboards.Client Dashboard', [
-            'myProjects'       => $dashboardData['projects'],
-            'stats'            => $dashboardData['stats'],
+            'myProjects'       => $projects,
+            'stats'            => $stats,
             'walletBalance'    => $wallet->balance,
             'formattedBalance' => $formattedWalletBalance
         ]);
@@ -92,12 +95,10 @@ class ClientDashboardController extends Controller
 
     /**
      * ميثود مساعدة (Private Helper) لتنسيق العملة.
-     * الإصلاح: معالجة العملة المكتوبة بحروف صغيرة أو القيم الفارغة.
      */
     private function formatCurrency($amount, $currency)
     {
         $amount = number_format((float)$amount, 2);
-        // تأمين: تحويل العملة لحروف كبيرة وحذف أي مسافات زائدة
         $currency = strtoupper(trim($currency ?? 'EGP'));
 
         switch ($currency) {
@@ -106,7 +107,6 @@ class ClientDashboardController extends Controller
             case 'EGP':
                 return $amount . " ج.م";
             default:
-                // في حال وجود عملة غير معروفة، نعرض الكود الخاص بها بجانب المبلغ
                 return $amount . " " . $currency;
         }
     }
@@ -199,7 +199,6 @@ class ClientDashboardController extends Controller
 
         try {
             return DB::transaction(function () use ($userId, $request) {
-                // استخدام lockForUpdate لمنع الـ Double Spending
                 $wallet = Wallet::where('user_id', $userId)->lockForUpdate()->first();
 
                 if (!$wallet || $wallet->balance < (float) $request->amount) {
@@ -217,8 +216,8 @@ class ClientDashboardController extends Controller
                     'details'         => 'طلب سحب رصيد: ' . strip_tags($request->account_info)
                 ]);
 
-                // مسح الكاش لتحديث البيانات فوراً للعميل
-                Cache::forget("client_dashboard_cache_{$userId}");
+                // مسح الكاش عند حدوث معاملة مالية لتحديث الـ Total Spent في الإحصائيات
+                Cache::forget("client_stats_summary_{$userId}");
 
                 return redirect()->route('client.dashboard')->with('success', 'تم تسجيل طلب السحب بنجاح وهو قيد المراجعة.');
             });

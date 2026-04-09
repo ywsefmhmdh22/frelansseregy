@@ -18,7 +18,7 @@ use Exception;
 /**
  * Class ProjectController
  * المسؤول عن إدارة دورة حياة المشاريع من الإضافة والتوظيف حتى الاستلام والتقييم.
- * تم تحسين معالجة الأخطاء لضمان عدم وجود ملفات يتيمة أو عمليات مالية معلقة في حالة الفشل.
+ * تم تحسين معالجة الأخطاء لضمان سلامة البيانات والعمليات المالية.
  */
 class ProjectController extends Controller
 {
@@ -33,11 +33,9 @@ class ProjectController extends Controller
 
     /**
      * 2. حفظ المشروع مع نظام معالجة أخطاء شامل
-     * تم إصلاح BUG الـ Validator (إزالة trim) وتأمين المدخلات.
      */
     public function store(Request $request)
     {
-        // تم إزالة 'trim' من هنا لأن لارافيل تقوم بها تلقائياً ووجودها هنا يسبب Error 500
         $request->validate([
             'title'         => 'required|string|max:255',
             'description'   => 'required|string|min:20',
@@ -48,17 +46,14 @@ class ProjectController extends Controller
             'attachments.*' => 'nullable|file|mimes:pdf,zip,rar,doc,docx,jpg,png|max:10240',
         ]);
 
-        // متغيرات لتتبع الملفات المرفوعة لحذفها في حالة فشل قاعدة البيانات (Data Integrity)
         $imagePath = null;
         $attachmentsPaths = [];
 
         try {
             return DB::transaction(function () use ($request, &$imagePath, &$attachmentsPaths) {
-                // 1. رفع الملفات أولاً وتخزين مساراتها
                 $imagePath = $this->uploadProjectCover($request);
                 $attachmentsPaths = $this->uploadProjectAttachments($request);
 
-                // 2. إنشاء سجل المشروع مع تطهير النصوص ضد هجمات XSS
                 $project = Project::create([
                     'user_id'      => Auth::id(),
                     'title'        => strip_tags($request->title),
@@ -67,7 +62,7 @@ class ProjectController extends Controller
                     'currency'     => $request->currency,
                     'duration'     => $request->duration,
                     'image_url'    => $imagePath,
-                    'attachments'  => json_encode($attachmentsPaths), // تأكد من عمل Cast لهذه الخانة في الموديل كـ array
+                    'attachments'  => json_encode($attachmentsPaths),
                     'type'         => $request->input('type', 'normal'),
                     'status'       => 'open',
                     'admin_status' => 'pending',
@@ -78,22 +73,17 @@ class ProjectController extends Controller
                 return redirect()->route('client.dashboard')->with('success', 'تم إرسال مشروعك للمراجعة بنجاح!');
             });
         } catch (Exception $e) {
-            // معالجة الخطأ وحذف الملفات التي رُفعت فوراً لمنع الملفات اليتيمة (Orphaned Files)
-            Log::error('Project Store Failure [Rollback Executed]: ' . $e->getMessage());
+            Log::error('Project Store Failure: ' . $e->getMessage());
 
-            if ($imagePath) {
-                Storage::disk('public')->delete($imagePath);
-            }
-            foreach ($attachmentsPaths as $path) {
-                Storage::disk('public')->delete($path);
-            }
+            if ($imagePath) Storage::disk('public')->delete($imagePath);
+            foreach ($attachmentsPaths as $path) Storage::disk('public')->delete($path);
 
-            return back()->with('error', 'حدث خطأ أثناء حفظ المشروع، يرجى المحاولة مرة أخرى.')->withInput();
+            return back()->with('error', 'حدث خطأ أثناء حفظ المشروع.')->withInput();
         }
     }
 
     /**
-     * 3. توظيف مستقل مع ضمان سلامة المحفظة المالية (Atomic Transaction)
+     * 3. توظيف مستقل مع ضمان سلامة المحفظة المالية
      */
     public function assignFreelancer(Project $project, $proposalId)
     {
@@ -106,17 +96,14 @@ class ProjectController extends Controller
             $requiredAmount = $proposal->amount ?? $proposal->price;
 
             return DB::transaction(function () use ($project, $proposal, $requiredAmount) {
-                // قفل سجل المحفظة لمنع الـ Race Condition (أمان مالي عالٍ)
                 $wallet = Wallet::where('user_id', Auth::id())->lockForUpdate()->first();
 
                 if (!$wallet || $wallet->balance < $requiredAmount) {
                     throw new Exception('رصيدك غير كافٍ لإتمام التوظيف.');
                 }
 
-                // تنفيذ العملية المالية
                 $this->processEmploymentPayment($wallet, $requiredAmount, $project->title);
 
-                // تحديث حالة المشروع والطلب
                 $project->update([
                     'freelancer_id' => $proposal->user_id,
                     'status'        => 'in_progress',
@@ -125,18 +112,33 @@ class ProjectController extends Controller
 
                 $proposal->update(['status' => 'accepted']);
 
-                Log::info("Payment Secure: Project ID {$project->id} funded by User ID " . Auth::id());
+                Log::info("Payment Secure: Project ID {$project->id} funded.");
 
                 return back()->with('success', 'تم التوظيف بنجاح! المبلغ في أمان الآن.');
             });
         } catch (Exception $e) {
-            Log::error('Assign Freelancer Critical Error: ' . $e->getMessage());
-            return back()->with('error', $e->getMessage() ?: 'حدث خطأ تقني أثناء التوظيف.');
+            Log::error('Assign Freelancer Error: ' . $e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
     }
 
     /**
-     * 4. استلام المشروع وتقييمه مع توزيع الأرباح
+     * 4. [جديد] عرض صفحة مراجعة وتقييم المشروع (حل الخطأ)
+     */
+    public function reviewPage($id)
+    {
+        $project = Project::with('freelancer')->findOrFail($id);
+
+        // تأمين: فقط صاحب المشروع هو من يقيّم
+        if (Auth::id() !== $project->user_id) {
+            abort(403, 'غير مصرح لك بالدخول لهذه الصفحة.');
+        }
+
+        return view('projects.review', compact('project'));
+    }
+
+    /**
+     * 5. استلام المشروع وتقييمه مع توزيع الأرباح
      */
     public function completeProject(Request $request, Project $project)
     {
@@ -156,7 +158,7 @@ class ProjectController extends Controller
                 // 1. تحويل الأرباح للمستقل
                 $this->payoutToFreelancer($project->freelancer_id, $amount, $project->title);
 
-                // 2. تسجيل التقييم مع تطهير التعليق
+                // 2. تسجيل التقييم
                 Review::create([
                     'project_id'    => $project->id,
                     'freelancer_id' => $project->freelancer_id,
@@ -165,19 +167,22 @@ class ProjectController extends Controller
                     'comment'       => strip_tags($request->review_comment),
                 ]);
 
-                // 3. تحديث حالة المشروع والمستقل
+                // 3. تحديث الحالة
                 $project->update(['status' => 'completed']);
-                User::where('id', $project->freelancer_id)->update(['freelancer_rating' => $avgRating]);
+
+                // تحديث تقييم المستقل الإجمالي في جدول المستخدمين
+                $freelancer = User::find($project->freelancer_id);
+                $freelancer->update(['freelancer_rating' => $avgRating]);
             });
 
             return redirect()->route('projects.show', $project->id)->with('success', 'تم الاستلام والتقييم بنجاح.');
         } catch (Exception $e) {
-            Log::error('Complete Project Finalization Error: ' . $e->getMessage());
+            Log::error('Complete Project Error: ' . $e->getMessage());
             return back()->with('error', 'فشل في إتمام عملية الاستلام.');
         }
     }
 
-    // --- Private Helper Methods (SRP & Security Architecture) ---
+    // --- Private Helper Methods ---
 
     private function uploadProjectCover(Request $request)
     {

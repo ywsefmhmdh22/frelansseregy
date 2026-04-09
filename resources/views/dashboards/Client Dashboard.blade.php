@@ -2,30 +2,23 @@
 
 @section('content')
 @php
-    // تعريف المستخدم والبيانات الأساسية
     $user = auth()->user();
     $walletBalance = $walletBalance ?? 0;
     $orders = $orders ?? collect();
     $myProjects = $myProjects ?? collect();
-
-    /** * ديناميكية العملة:
-     * نعتمد الآن على walletCurrency المرسل من الكنترولر
-     * وإذا لم يوجد، نستخدم القيمة الافتراضية
-     */
     $currency = $walletCurrency ?? 'ج.م';
 
-    // منطق جلب الصورة
     $profilePhoto = $user->profile_image
         ? asset('storage/'.$user->profile_image)
         : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=10b981&color=fff';
 @endphp
 
-<div class="dashboard-container py-5 px-lg-5" dir="rtl">
+<div class="dashboard-container py-4 py-lg-5 px-2 px-lg-5" dir="rtl">
     <div class="container-fluid">
         <div class="row g-4">
             {{-- Sidebar Area --}}
             <div class="col-lg-3">
-                <aside class="sidebar-glass p-4 sticky-top" style="top: 20px; z-index: 100;">
+                <aside class="sidebar-glass p-4 sticky-top shadow-sm" style="top: 20px; z-index: 100;">
                     <div class="text-center mb-4">
                         <div class="position-relative d-inline-block profile-ring">
                             <form id="profileImageForm" action="{{ route('profile.update_image') }}" method="POST" enctype="multipart/form-data">
@@ -45,65 +38,66 @@
                             <div class="status-pulse" data-bs-toggle="tooltip" title="متصل الآن"></div>
                         </div>
                         <h5 class="fw-bold mt-3 mb-0 text-dark">{{ $user->name }}</h5>
-                        <div class="badge bg-soft-success text-success px-3 rounded-pill mt-2">
+                        <div class="badge bg-soft-success text-success px-3 rounded-pill mt-2 fw-bold">
                             عضو بلاتيني <i class="fas fa-crown ms-1"></i>
                         </div>
                     </div>
 
                     <nav class="nav-menu mt-4">
                         <a href="{{ route('client.dashboard') }}" class="nav-link-custom {{ request()->routeIs('client.dashboard') ? 'active' : '' }}">
-                            <div class="nav-icon"><i class="fas fa-rocket"></i></div>
+                            <div class="nav-icon"><i class="fas fa-th-large"></i></div>
                             <span>الرئيسية</span>
                         </a>
 
                         <a href="{{ route('purchased.services') }}" class="nav-link-custom {{ request()->routeIs('purchased.services') ? 'active' : '' }}">
-                            <div class="nav-icon"><i class="fas fa-shopping-bag"></i></div>
+                            <div class="nav-icon"><i class="fas fa-shopping-cart"></i></div>
                             <span>الخدمات المشتراة</span>
                         </a>
 
                         <a href="{{ route('wallet.index') }}" class="nav-link-custom {{ request()->routeIs('wallet.*') ? 'active' : '' }}">
                             <div class="nav-icon"><i class="fas fa-wallet"></i></div>
-                            <span>المحفظة</span>
+                            <span>المحفظة الرقمية</span>
                         </a>
 
                         <hr class="my-3 opacity-10">
 
                         <a href="{{ route('profile.settings') }}" class="nav-link-custom {{ request()->routeIs('profile.settings') ? 'active' : '' }}">
-                            <div class="nav-icon"><i class="fas fa-cog"></i></div>
-                            <span>الإعدادات</span>
+                            <div class="nav-icon"><i class="fas fa-user-cog"></i></div>
+                            <span>إعدادات الحساب</span>
                         </a>
                     </nav>
 
-                    {{-- تم التعديل: المحفظة تستخدم الآن التنسيق القادم من الكنترولر --}}
-                    <div class="wallet-widget mt-5 p-3 text-center text-white shadow-lg">
-                        <p class="small opacity-75 mb-1">الرصيد المتاح</p>
-                        <h3 class="fw-bold mb-3">{{ $formattedBalance ?? number_format($walletBalance, 2) . ' ' . $currency }}</h3>
-                        <a href="{{ route('wallet.deposit') }}" class="btn btn-glass-white btn-sm w-100 rounded-pill fw-bold">شحن الرصيد</a>
+                    <div class="wallet-widget mt-5 p-4 text-center text-white shadow-lg position-relative overflow-hidden">
+                        <div class="wallet-bg-icon"><i class="fas fa-wallet"></i></div>
+                        <p class="small opacity-75 mb-1 position-relative">الرصيد المتاح</p>
+                        <h3 class="fw-bold mb-3 position-relative">{{ $formattedBalance ?? number_format($walletBalance, 2) . ' ' . $currency }}</h3>
+                        <a href="{{ route('wallet.deposit') }}" class="btn btn-glass-white btn-sm w-100 rounded-pill fw-bold position-relative">شحن الرصيد</a>
                     </div>
                 </aside>
             </div>
 
             {{-- Main Content Area --}}
             <div class="col-lg-9">
-                <header class="top-header-bar d-flex justify-content-between align-items-center mb-4 p-3 glass-card shadow-sm">
+                <header class="top-header-bar d-flex justify-content-between align-items-center mb-4 p-3 glass-card shadow-sm border-0">
                     <div class="welcome-text">
-                        <h4 class="fw-bold text-dark mb-0">أهلاً، {{ explode(' ', $user->name)[0] }} ✨</h4>
-                        <p class="text-muted small mb-0">لديك بعض التحديثات الجديدة اليوم.</p>
+                        <h4 class="fw-bold text-dark mb-0">أهلاً، {{ explode(' ', $user->name)[0] }} <span class="wave">👋</span></h4>
+                        <p class="text-muted small mb-0 d-none d-sm-block">إليك ملخص سريع لنشاطك اليوم.</p>
                     </div>
 
-                    <div class="header-actions d-flex align-items-center gap-3">
-                        <a href="{{ route('messages.chat', ['user' => $user->id]) }}" class="btn btn-white shadow-sm rounded-pill px-3 fw-bold position-relative border border-light" style="height: 42px; display: flex; align-items: center;">
-                            <i class="far fa-envelope text-dark me-1"></i>
-                            <span class="text-dark d-none d-md-inline small">الرسائل</span>
-                            <span id="unread-messages-count-global"
-                                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none border border-2 border-white animate__animated animate__bounceIn"
-                                  style="font-size: 0.65rem; padding: 0.4em 0.6em; z-index: 5;">
-                                0
-                            </span>
+                    <div class="header-actions d-flex align-items-center gap-2 gap-md-3">
+                        {{-- زر إضافة مشروع (تم تعديله ليظهر في الموبايل) --}}
+                        <a href="{{ route('projects.create') }}" class="btn btn-success rounded-pill px-3 px-md-4 fw-bold shadow-sm transition-hover btn-add-project">
+                            <i class="fas fa-plus me-md-1"></i> <span class="d-none d-md-inline">أضف مشروعاً</span>
+                        </a>
+
+                        <a href="{{ route('messages.chat', ['user' => $user->id]) }}" class="btn btn-white shadow-sm rounded-circle rounded-md-pill px-md-3 fw-bold position-relative border border-light action-btn-head">
+                            <i class="far fa-envelope text-dark"></i>
+                            <span class="text-dark d-none d-md-inline ms-1 small">الرسائل</span>
+                            <span id="unread-messages-count-global" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none border border-2 border-white animate__animated animate__bounceIn" style="font-size: 0.65rem;">0</span>
                         </a>
 
                         <div class="dropdown">
-                            <button class="notification-trigger position-relative border-0 bg-white shadow-sm rounded-circle p-2" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="width: 42px; height: 42px;">
+                            <button class="notification-trigger position-relative border-0 bg-white shadow-sm rounded-circle p-2 action-btn-head" type="button" data-bs-toggle="dropdown">
                                 <i class="far fa-bell text-dark"></i>
                                 @if($user->unreadNotifications->count() > 0)
                                     <span class="notif-count">{{ $user->unreadNotifications->count() }}</span>
@@ -129,113 +123,31 @@
                                         </div>
                                     @empty
                                         <div class="p-4 text-center">
-                                            <p class="text-muted small">لا توجد إشعارات</p>
+                                            <p class="text-muted small">لا توجد إشعارات حالياً</p>
                                         </div>
                                     @endforelse
                                 </div>
                                 <a href="{{ route('notifications.index') }}" class="notif-footer text-center p-2 d-block bg-light text-muted small text-decoration-none border-top rounded-bottom-4">عرض الكل</a>
                             </div>
                         </div>
-
-                        <a href="{{ route('projects.create') }}" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm d-none d-md-block transition-hover">
-                            <i class="fas fa-plus me-1"></i> أضف مشروعاً
-                        </a>
                     </div>
                 </header>
 
-                {{-- الخدمات المشتراة --}}
-                <section class="glass-card mb-4 overflow-hidden border-0 shadow-sm">
-                    <div class="p-4 d-flex justify-content-between align-items-center border-bottom bg-light-soft">
-                        <h5 class="fw-bold mb-0 text-dark">الخدمات التي اشتريتها <span class="badge bg-white text-dark fw-normal ms-2 small border shadow-sm">متابعة الطلبات</span></h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table custom-table align-middle mb-0 text-end">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4">الخدمة / المستقل</th>
-                                    <th>تاريخ الشراء</th>
-                                    <th>السعر</th>
-                                    <th>حالة الطلب</th>
-                                    <th class="text-center pe-4">التحكم</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($orders as $order)
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="project-icon-box ms-3">
-                                                <i class="fas fa-shopping-cart text-primary"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold text-dark mb-0">{{ Str::limit($order->service->title ?? 'خدمة رقم ' . $order->service_id, 30) }}</div>
-                                                <small class="text-muted extra-small">المستقل: {{ $order->seller->name ?? 'مستقل' }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>{{ $order->created_at->format('Y/m/d') }}</td>
-                                    <td>
-                                        <div class="price-tag fw-bold text-primary">
-                                            {{-- تم التعديل: إذا كان لديك دالة فورمات في موديل الطلبات يفضل استخدامها --}}
-                                            <span class="amount">{{ number_format($order->price, 2) }}</span>
-                                            <span class="currency">{{ $order->currency ?? $currency }}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        @php
-                                            $statusMap = [
-                                                'processing' => ['warning', 'قيد التنفيذ', ''],
-                                                'pending'    => ['secondary', 'بانتظار التأكيد', ''],
-                                                'delivered'  => ['info', 'تم التسليم', 'animate-pulse'],
-                                                'completed'  => ['success', 'مكتمل', '']
-                                            ];
-                                            $currentStatus = $statusMap[$order->status] ?? ['light', $order->status, ''];
-                                        @endphp
-                                        <span class="badge bg-{{$currentStatus[0]}}-soft text-{{$currentStatus[0]}} rounded-pill px-3 py-2 {{$currentStatus[2]}}">
-                                            {{$currentStatus[1]}}
-                                        </span>
-                                    </td>
-                                    <td class="text-center pe-4">
-                                        @if($order->status == 'delivered')
-                                            <a href="{{ route('orders.complete.view', $order->id) }}" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm">
-                                                قبول <i class="fas fa-check-double ms-1"></i>
-                                            </a>
-                                        @else
-                                            <a href="{{ route('orders.show', $order->id) }}" class="btn-action-view" data-bs-toggle="tooltip" title="عرض تفاصيل الطلب">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-5">
-                                        <div class="empty-state">
-                                            <i class="fas fa-box-open fa-3x opacity-20 mb-3"></i>
-                                            <p class="text-muted small">لم تقم بشراء أي خدمات بعد.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                {{-- الإحصائيات --}}
-                <div class="row g-3 mb-4 text-center">
+                {{-- الإحصائيات - تصميم جديد --}}
+                <div class="row g-3 mb-4">
                     @php
                         $stats_items = [
-                            ['label' => 'المشاريع', 'val' => $stats['total_projects'] ?? $myProjects->count(), 'icon' => 'fas fa-layer-group', 'color' => '#3b82f6', 'bg' => 'rgba(59, 130, 246, 0.1)'],
-                            ['label' => 'قيد المراجعة', 'val' => $stats['pending_projects'] ?? $myProjects->where('admin_status', 'pending')->count(), 'icon' => 'fas fa-hourglass-half', 'color' => '#f59e0b', 'bg' => 'rgba(245, 158, 11, 0.1)'],
-                            ['label' => 'مكتملة', 'val' => $myProjects->where('status', 'completed')->count(), 'icon' => 'fas fa-check-circle', 'color' => '#10b981', 'bg' => 'rgba(16, 185, 129, 0.1)'],
-                            ['label' => 'العروض', 'val' => $myProjects->sum('proposals_count'), 'icon' => 'fas fa-paper-plane', 'color' => '#8b5cf6', 'bg' => 'rgba(139, 92, 246, 0.1)']
+                            ['label' => 'المشاريع', 'val' => $stats['total_projects'] ?? $myProjects->count(), 'icon' => 'fas fa-briefcase', 'color' => '#3b82f6', 'gradient' => 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'],
+                            ['label' => 'تحت المراجعة', 'val' => $stats['pending_projects'] ?? $myProjects->where('admin_status', 'pending')->count(), 'icon' => 'fas fa-clock', 'color' => '#f59e0b', 'gradient' => 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'],
+                            ['label' => 'مكتملة', 'val' => $myProjects->where('status', 'completed')->count(), 'icon' => 'fas fa-check-double', 'color' => '#10b981', 'gradient' => 'linear-gradient(135deg, #10b981 0%, #059669 100%)'],
+                            ['label' => 'العروض المستلمة', 'val' => $myProjects->sum('proposals_count'), 'icon' => 'fas fa-paper-plane', 'color' => '#8b5cf6', 'gradient' => 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)']
                         ];
                     @endphp
                     @foreach($stats_items as $stat)
                     <div class="col-6 col-md-3">
-                        <div class="stat-glass-card p-3 h-100 shadow-sm border-0">
-                            <div class="stat-icon mx-auto mb-2 shadow-sm" style="color: {{ $stat['color'] }}; background: {{ $stat['bg'] }}">
+                        <div class="stat-glass-card p-3 h-100 shadow-sm border-0 position-relative overflow-hidden">
+                            <div class="stat-viz-bg" style="background: {{ $stat['color'] }}"></div>
+                            <div class="stat-icon-new shadow-sm mb-2" style="background: {{ $stat['gradient'] }}">
                                 <i class="{{ $stat['icon'] }}"></i>
                             </div>
                             <h4 class="fw-bold mb-0 text-dark">{{ $stat['val'] }}</h4>
@@ -245,20 +157,92 @@
                     @endforeach
                 </div>
 
-                {{-- المشاريع الحالية بالميزانية الديناميكية --}}
+                {{-- الخدمات المشتراة --}}
                 <section class="glass-card mb-4 overflow-hidden border-0 shadow-sm">
                     <div class="p-4 d-flex justify-content-between align-items-center border-bottom bg-light-soft">
-                        <h5 class="fw-bold mb-0 text-dark">مشاريعك الحالية <span class="badge bg-white text-dark fw-normal ms-2 small border shadow-sm">آخر 5</span></h5>
-                        <a href="{{ route('projects.my_projects') }}" class="btn btn-sm btn-outline-success rounded-pill px-3 text-decoration-none fw-bold">كل المشاريع</a>
+                        <h5 class="fw-bold mb-0 text-dark px-2">الخدمات المشتراة <i class="fas fa-shopping-bag ms-2 text-success opacity-50"></i></h5>
                     </div>
                     <div class="table-responsive">
                         <table class="table custom-table align-middle mb-0 text-end">
                             <thead>
                                 <tr>
-                                    <th class="ps-4">المشروع</th>
+                                    <th class="ps-4">الخدمة</th>
+                                    <th class="d-none d-md-table-cell">تاريخ الشراء</th>
+                                    <th>السعر</th>
+                                    <th>حالة الطلب</th>
+                                    <th class="text-center pe-4">إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($orders as $order)
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="project-icon-box ms-3 d-none d-sm-flex">
+                                                <i class="fas fa-cart-plus text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark mb-0">{{ Str::limit($order->service->title ?? 'خدمة رقم ' . $order->service_id, 25) }}</div>
+                                                <small class="text-muted extra-small">بواسطة: {{ $order->seller->name ?? 'مستقل' }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="d-none d-md-table-cell text-muted small">{{ $order->created_at->format('Y/m/d') }}</td>
+                                    <td>
+                                        <div class="price-tag-modern">
+                                            <span class="amount">{{ number_format($order->price, 0) }}</span>
+                                            <span class="currency">{{ $order->currency ?? $currency }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @php
+                                            $statusMap = [
+                                                'processing' => ['warning', 'جاري العمل'],
+                                                'pending'    => ['secondary', 'معلق'],
+                                                'delivered'  => ['info', 'تم التسليم'],
+                                                'completed'  => ['success', 'مكتمل']
+                                            ];
+                                            $currentStatus = $statusMap[$order->status] ?? ['light', $order->status];
+                                        @endphp
+                                        <span class="badge-status bg-{{$currentStatus[0]}}">
+                                            <span class="dot"></span> {{$currentStatus[1]}}
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        @if($order->status == 'delivered')
+                                            <a href="{{ route('orders.complete.view', $order->id) }}" class="btn btn-xs btn-success rounded-pill px-3 fw-bold">قبول</a>
+                                        @else
+                                            <a href="{{ route('orders.show', $order->id) }}" class="btn-action-view" title="عرض"><i class="fas fa-eye"></i></a>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <img src="https://cdn-icons-png.flaticon.com/512/11329/11329061.png" width="60" class="opacity-25 mb-3" alt="">
+                                        <p class="text-muted small">لا توجد طلبات شراء حتى الآن.</p>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                {{-- المشاريع الحالية --}}
+                <section class="glass-card mb-4 overflow-hidden border-0 shadow-sm">
+                    <div class="p-4 d-flex justify-content-between align-items-center border-bottom bg-light-soft">
+                        <h5 class="fw-bold mb-0 text-dark px-2">مشاريعك المفتوحة <i class="fas fa-laptop-code ms-2 text-primary opacity-50"></i></h5>
+                        <a href="{{ route('projects.my_projects') }}" class="btn btn-sm btn-link text-success fw-bold text-decoration-none">مشاهدة الكل <i class="fas fa-chevron-left small ms-1"></i></a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table custom-table align-middle mb-0 text-end">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">عنوان المشروع</th>
                                     <th>العروض</th>
-                                    <th>الميزانية</th>
-                                    <th>حالة الخدمة</th>
+                                    <th class="d-none d-md-table-cell">الميزانية</th>
+                                    <th>الحالة</th>
                                     <th class="text-center pe-4">إجراء</th>
                                 </tr>
                             </thead>
@@ -266,50 +250,36 @@
                                 @forelse($myProjects->take(5) as $project)
                                 <tr>
                                     <td class="ps-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="project-icon-box ms-3">
-                                                <i class="fas fa-briefcase text-success"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold text-dark mb-0">{{ Str::limit($project->title, 35) }}</div>
-                                                <small class="text-muted extra-small"><i class="far fa-calendar-alt me-1"></i> {{ $project->created_at->diffForHumans() }}</small>
-                                            </div>
-                                        </div>
+                                        <div class="fw-bold text-dark mb-0">{{ Str::limit($project->title, 30) }}</div>
+                                        <small class="text-muted extra-small d-block mt-1"><i class="far fa-clock me-1"></i> منذ {{ $project->created_at->diffForHumans() }}</small>
                                     </td>
                                     <td>
-                                        <div class="offer-badge shadow-sm">
-                                            <span class="num">{{ $project->proposals_count ?? 0 }}</span>
-                                            <span class="lab">عرض</span>
+                                        <div class="proposal-count">
+                                            <span class="count">{{ $project->proposals_count ?? 0 }}</span>
+                                            <span class="label">عرض</span>
                                         </div>
                                     </td>
-                                    <td>
-                                        {{-- تم التعديل: استخدام formatted_price القادم من الكنترولر --}}
-                                        <div class="price-tag fw-bold">
-                                            <span class="amount">{{ $project->formatted_price }}</span>
-                                        </div>
+                                    <td class="d-none d-md-table-cell">
+                                        <span class="fw-bold text-dark small">{{ $project->formatted_price }}</span>
                                     </td>
                                     <td>
                                         @php
-                                            if($project->admin_status == 'pending') { $sClass = 'warning'; $sText = 'تحت المراجعة'; $sIcon = 'fa-clock'; }
-                                            elseif($project->status == 'open') { $sClass = 'success'; $sText = 'نشط'; $sIcon = 'fa-bolt'; }
-                                            elseif($project->status == 'in_progress') { $sClass = 'primary'; $sText = 'قيد التنفيذ'; $sIcon = 'fa-spinner fa-spin'; }
-                                            else { $sClass = 'secondary'; $sText = 'مكتمل/مغلق'; $sIcon = 'fa-check'; }
+                                            if($project->admin_status == 'pending') { $sClass = 'warning'; $sText = 'مراجعة'; }
+                                            elseif($project->status == 'open') { $sClass = 'success'; $sText = 'نشط'; }
+                                            else { $sClass = 'secondary'; $sText = 'مغلق'; }
                                         @endphp
-                                        <div class="status-indicator d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-{{$sClass}}-soft text-{{$sClass}} border border-{{$sClass}} border-opacity-10">
-                                            <i class="fas {{$sIcon}} extra-small"></i>
-                                            <span class="extra-small fw-bold">{{ $sText }}</span>
-                                        </div>
+                                        <span class="badge-status bg-{{$sClass}}">{{ $sText }}</span>
                                     </td>
                                     <td class="text-center pe-4">
-                                        <a href="{{ route('projects.show', $project->id) }}" class="btn-action-view" data-bs-toggle="tooltip" title="عرض التفاصيل">
-                                            <i class="fas fa-arrow-left"></i>
+                                        <a href="{{ route('projects.show', $project->id) }}" class="btn-action-view text-success border-success border-opacity-25" title="عرض">
+                                            <i class="fas fa-chevron-left"></i>
                                         </a>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
                                     <td colspan="5" class="text-center py-5">
-                                        <p class="text-muted small">لا توجد مشاريع مضافة حالياً.</p>
+                                        <p class="text-muted small">ابدأ الآن وأضف أول مشروع لك!</p>
                                     </td>
                                 </tr>
                                 @endforelse
@@ -323,122 +293,205 @@
 </div>
 
 <style>
-/* (نفس الستايل الخاص بك مع إضافة بسيطة للعملة) */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+
 :root {
-    --primary-main: #10b981;
-    --primary-hover: #059669;
-    --primary-soft: #ecfdf5;
-    --navy-main: #0f172a;
-    --slate-text: #64748b;
-    --border-light: rgba(226, 232, 240, 0.8);
-    --glass-bg: rgba(255, 255, 255, 0.95);
+    --primary: #10b981;
+    --primary-dark: #059669;
+    --primary-light: #d1fae5;
+    --secondary: #6366f1;
+    --dark: #1e293b;
+    --slate: #64748b;
+    --glass: rgba(255, 255, 255, 0.9);
+    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
 }
 
-body { background: #f8fafc; font-family: 'Cairo', sans-serif; overflow-x: hidden; }
+body {
+    background-color: #f1f5f9;
+    font-family: 'Cairo', sans-serif;
+    color: var(--dark);
+}
 
-/* تصميم الهيكل */
+/* Glassmorphism Sidebar */
 .sidebar-glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(15px);
-    border-radius: 25px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .glass-card {
-    background: #fff;
+    background: white;
     border-radius: 20px;
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    transition: all 0.3s ease;
 }
 
-.profile-img-wrapper { width: 110px; height: 110px; margin: 0 auto; position: relative; }
+/* Profile Area */
+.profile-img-wrapper { width: 100px; height: 100px; margin: 0 auto; position: relative; }
 .profile-main-img {
     width: 100%; height: 100%; object-fit: cover;
-    border-radius: 30px; border: 4px solid #fff;
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 28px; border: 4px solid #fff;
 }
-.profile-img-wrapper:hover .profile-main-img { transform: scale(1.05); }
-
 .edit-overlay {
     position: absolute; bottom: -2px; left: -2px;
-    background: var(--primary-main); color: white;
-    width: 32px; height: 32px; border-radius: 12px;
+    background: var(--primary); color: white;
+    width: 30px; height: 30px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; border: 3px solid #fff; transition: 0.3s;
+    cursor: pointer; border: 2px solid #fff;
 }
 
+/* Improved Navigation */
 .nav-link-custom {
-    display: flex; align-items: center; padding: 12px 18px;
-    color: var(--slate-text); text-decoration: none;
-    border-radius: 14px; margin-bottom: 8px;
-    transition: all 0.3s ease; font-weight: 600;
+    display: flex; align-items: center; padding: 12px 16px;
+    color: var(--slate); text-decoration: none;
+    border-radius: 14px; margin-bottom: 6px;
+    transition: 0.3s; font-weight: 600; font-size: 0.95rem;
 }
+.nav-link-custom .nav-icon {
+    width: 32px; height: 32px; display: flex; align-items: center;
+    justify-content: center; margin-left: 10px; border-radius: 8px;
+    background: #f8fafc; transition: 0.3s;
+}
+.nav-link-custom:hover { background: #f1f5f9; color: var(--primary); }
 .nav-link-custom.active {
-    background: var(--primary-main); color: white !important;
-    box-shadow: 0 8px 15px rgba(16, 185, 129, 0.2);
+    background: var(--primary); color: white !important;
 }
+.nav-link-custom.active .nav-icon { background: rgba(255,255,255,0.2); color: white; }
 
+/* Wallet Widget */
 .wallet-widget {
-    background: linear-gradient(135deg, var(--primary-main) 0%, var(--primary-hover) 100%);
-    border-radius: 22px; transition: 0.4s;
+    background: linear-gradient(135deg, #064e3b 0%, #10b981 100%);
+    border-radius: 24px; color: white;
 }
-.btn-glass-white { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: white; backdrop-filter: blur(5px); }
+.wallet-bg-icon {
+    position: absolute; right: -10px; bottom: -10px;
+    font-size: 4rem; opacity: 0.1; transform: rotate(-15deg);
+}
+.btn-glass-white {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: white; backdrop-filter: blur(4px);
+}
+.btn-glass-white:hover { background: white; color: var(--primary-dark); }
 
-.custom-table thead th {
-    background: #fcfdfe; color: var(--slate-text);
-    font-size: 0.85rem; text-transform: uppercase;
-    border-bottom: 1px solid #f1f5f9; padding: 15px 10px;
+/* Stats Cards */
+.stat-glass-card {
+    background: white; border-radius: 20px;
+    border: 1px solid rgba(0,0,0,0.02);
 }
-.btn-action-view {
-    width: 38px; height: 38px; background: #fff;
-    border-radius: 12px; display: inline-flex;
+.stat-viz-bg {
+    position: absolute; width: 100%; height: 4px; top: 0; right: 0; opacity: 0.1;
+}
+.stat-icon-new {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1.1rem;
+}
+
+/* Header UI */
+.action-btn-head {
+    width: 42px; height: 42px; display: flex;
     align-items: center; justify-content: center;
-    color: var(--slate-text); border: 1px solid var(--border-light);
+}
+.notif-count {
+    position: absolute; top: -5px; right: -5px;
+    background: #ef4444; color: white; font-size: 0.6rem;
+    width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid white;
 }
 
-.status-pulse {
-    position: absolute; bottom: 8px; right: 8px;
-    width: 14px; height: 14px; background: var(--primary-main);
-    border-radius: 50%; border: 2px solid white;
-    animation: pulse 2s infinite;
+/* Table Customization */
+.custom-table thead th {
+    background: #f8fafc; color: var(--slate);
+    font-size: 0.75rem; font-weight: 700;
+    text-transform: uppercase; border: none; padding: 15px;
 }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+.custom-table tbody td { border-bottom: 1px solid #f1f5f9; padding: 16px 15px; }
 
-.stat-glass-card { background: white; border-radius: 18px; transition: transform 0.3s ease; }
-.stat-icon { width: 45px; height: 45px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+/* Badges & Indicators */
+.badge-status {
+    padding: 5px 12px; border-radius: 50px; font-size: 0.7rem;
+    font-weight: 700; display: inline-flex; align-items: center; gap: 5px;
+}
+.badge-status.bg-success { background: #d1fae5 !important; color: #065f46; }
+.badge-status.bg-warning { background: #fef3c7 !important; color: #92400e; }
+.badge-status.bg-info { background: #e0f2fe !important; color: #075985; }
+.badge-status .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-.price-tag .amount { font-size: 1rem; color: inherit; }
+.price-tag-modern { font-weight: 800; color: var(--primary-dark); }
+.price-tag-modern .currency { font-size: 0.65rem; opacity: 0.8; }
+
+.proposal-count {
+    background: #f1f5f9; padding: 4px 10px; border-radius: 10px;
+    display: inline-flex; flex-direction: column; align-items: center;
+}
+.proposal-count .count { font-weight: 800; font-size: 0.9rem; line-height: 1; color: var(--dark); }
+.proposal-count .label { font-size: 0.6rem; color: var(--slate); }
+
+.btn-action-view {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid #e2e8f0; color: var(--slate); transition: 0.3s;
+}
+.btn-action-view:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+.bg-light-soft { background-color: rgba(248, 250, 252, 0.8); }
+.extra-small { font-size: 0.7rem; }
+.wave { display: inline-block; animation: wave-animation 2.5s infinite; transform-origin: 70% 70%; }
+
+@keyframes wave-animation {
+    0% { transform: rotate( 0.0deg) }
+    10% { transform: rotate(14.0deg) }
+    20% { transform: rotate(-8.0deg) }
+    30% { transform: rotate(14.0deg) }
+    40% { transform: rotate(-4.0deg) }
+    50% { transform: rotate(10.0deg) }
+    60% { transform: rotate( 0.0deg) }
+    100% { transform: rotate( 0.0deg) }
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .dashboard-container { padding-top: 1rem !important; }
+    .top-header-bar { flex-direction: row; padding: 10px !important; }
+    .welcome-text h4 { font-size: 1.1rem; }
+    .btn-add-project { padding: 8px 12px !important; }
+    .stat-glass-card h4 { font-size: 1.2rem; }
+    .sidebar-glass { margin-bottom: 20px; }
+}
 </style>
 
-{{-- السكريبت الخاص بك كما هو --}}
 <script>
     const DashboardManager = (() => {
-        let lastMessagesCount = -1;
-
         const updateMessagesCount = async () => {
             try {
                 const response = await fetch('/messages/unread-count');
                 if (!response.ok) throw new Error('Network error');
                 const data = await response.json();
-
                 const badge = document.getElementById('unread-messages-count-global');
                 if (!badge) return;
 
-                const count = data.count;
-                if (count > 0) {
-                    badge.innerText = count > 99 ? '99+' : count;
+                if (data.count > 0) {
+                    badge.innerText = data.count > 99 ? '99+' : data.count;
                     badge.classList.remove('d-none');
                 } else {
                     badge.classList.add('d-none');
                 }
-                lastMessagesCount = count;
             } catch (error) { console.warn('Messages update failed.'); }
         };
 
         return {
             init: () => {
                 updateMessagesCount();
-                setInterval(updateMessagesCount, 15000);
+                setInterval(updateMessagesCount, 20000);
+
+                // تفعيل Tooltips
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl)
+                });
             }
         };
     })();

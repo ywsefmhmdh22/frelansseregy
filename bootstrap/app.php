@@ -23,6 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'profile.completed' => \App\Http\Middleware\EnsureProfileIsCompleted::class,
         ]);
 
+        // 3. استثناء روابط الـ Webhook من حماية CSRF (مهم جداً لبوابة الدفع)
+        $middleware->validateCsrfTokens(except: [
+            '/payment/processed', // الرابط الذي يستقبل تأكيد الدفع من Paymob
+        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
