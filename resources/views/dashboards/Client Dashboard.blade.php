@@ -3,10 +3,11 @@
 @section('content')
 @php
     $user = auth()->user();
+    // جعل الرصيد دائماً منسوباً للدولار وإلغاء الاعتماد على متغير العملة القادم من الكونترولر
     $walletBalance = $walletBalance ?? 0;
     $orders = $orders ?? collect();
     $myProjects = $myProjects ?? collect();
-    $currency = $walletCurrency ?? 'ج.م';
+    $currency = '$'; // تثبيت العملة دولار
 
     $profilePhoto = $user->profile_image
         ? asset('storage/'.$user->profile_image)
@@ -70,7 +71,7 @@
                     <div class="wallet-widget mt-5 p-4 text-center text-white shadow-lg position-relative overflow-hidden">
                         <div class="wallet-bg-icon"><i class="fas fa-wallet"></i></div>
                         <p class="small opacity-75 mb-1 position-relative">الرصيد المتاح</p>
-                        <h3 class="fw-bold mb-3 position-relative">{{ $formattedBalance ?? number_format($walletBalance, 2) . ' ' . $currency }}</h3>
+                        <h3 class="fw-bold mb-3 position-relative">{{ number_format($walletBalance, 2) . ' ' . $currency }}</h3>
                         <a href="{{ route('wallet.deposit') }}" class="btn btn-glass-white btn-sm w-100 rounded-pill fw-bold position-relative">شحن الرصيد</a>
                     </div>
                 </aside>
@@ -85,7 +86,6 @@
                     </div>
 
                     <div class="header-actions d-flex align-items-center gap-2 gap-md-3">
-                        {{-- زر إضافة مشروع (تم تعديله ليظهر في الموبايل) --}}
                         <a href="{{ route('projects.create') }}" class="btn btn-success rounded-pill px-3 px-md-4 fw-bold shadow-sm transition-hover btn-add-project">
                             <i class="fas fa-plus me-md-1"></i> <span class="d-none d-md-inline">أضف مشروعاً</span>
                         </a>
@@ -133,7 +133,7 @@
                     </div>
                 </header>
 
-                {{-- الإحصائيات - تصميم جديد --}}
+                {{-- الإحصائيات --}}
                 <div class="row g-3 mb-4">
                     @php
                         $stats_items = [
@@ -190,8 +190,8 @@
                                     <td class="d-none d-md-table-cell text-muted small">{{ $order->created_at->format('Y/m/d') }}</td>
                                     <td>
                                         <div class="price-tag-modern">
-                                            <span class="amount">{{ number_format($order->price, 0) }}</span>
-                                            <span class="currency">{{ $order->currency ?? $currency }}</span>
+                                            <span class="amount">{{ number_format($order->price, 2) }}</span>
+                                            <span class="currency">{{ $currency }}</span>
                                         </div>
                                     </td>
                                     <td>
@@ -200,20 +200,39 @@
                                                 'processing' => ['warning', 'جاري العمل'],
                                                 'pending'    => ['secondary', 'معلق'],
                                                 'delivered'  => ['info', 'تم التسليم'],
-                                                'completed'  => ['success', 'مكتمل']
+                                                'completed'  => ['success', 'مكتمل'],
+                                                'disputed'   => ['danger', 'تحت التحكيم']
                                             ];
                                             $currentStatus = $statusMap[$order->status] ?? ['light', $order->status];
+
+                                            // تحسين عرض حالة الإلغاء نتيجه نزاع
+                                            if ($order->status == 'cancelled' && $order->admin_status == 'rejected') {
+                                                $currentStatus = ['horror', 'ملغى بقرار الإدارة'];
+                                            }
                                         @endphp
                                         <span class="badge-status bg-{{$currentStatus[0]}}">
-                                            <span class="dot"></span> {{$currentStatus[1]}}
+                                            <span class="dot"></span>
+                                            @if($currentStatus[0] == 'horror') <i class="fas fa-gavel me-1 extra-small"></i> @endif
+                                            {{$currentStatus[1]}}
                                         </span>
                                     </td>
                                     <td class="text-center pe-4">
-                                        @if($order->status == 'delivered')
-                                            <a href="{{ route('orders.complete.view', $order->id) }}" class="btn btn-xs btn-success rounded-pill px-3 fw-bold">قبول</a>
-                                        @else
+                                        <div class="d-flex justify-content-center gap-2">
+                                            @if($order->status == 'delivered')
+                                                <a href="{{ route('orders.complete.view', $order->id) }}" class="btn btn-xs btn-success rounded-pill px-3 fw-bold">قبول</a>
+                                            @endif
+
+                                            {{-- زر تحكيم الإدارة للخدمات --}}
+                                            @if(!in_array($order->status, ['completed', 'disputed', 'cancelled']))
+                                            <button type="button"
+                                                    class="btn btn-xs btn-outline-danger rounded-pill px-2 fw-bold"
+                                                    onclick="openDisputeModal('{{ $order->id }}', 'service')">
+                                                <i class="fas fa-gavel"></i> تحكيم
+                                            </button>
+                                            @endif
+
                                             <a href="{{ route('orders.show', $order->id) }}" class="btn-action-view" title="عرض"><i class="fas fa-eye"></i></a>
-                                        @endif
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
@@ -241,7 +260,6 @@
                                 <tr>
                                     <th class="ps-4">عنوان المشروع</th>
                                     <th>العروض</th>
-                                    <th class="d-none d-md-table-cell">الميزانية</th>
                                     <th>الحالة</th>
                                     <th class="text-center pe-4">إجراء</th>
                                 </tr>
@@ -259,26 +277,40 @@
                                             <span class="label">عرض</span>
                                         </div>
                                     </td>
-                                    <td class="d-none d-md-table-cell">
-                                        <span class="fw-bold text-dark small">{{ $project->formatted_price }}</span>
-                                    </td>
                                     <td>
                                         @php
+                                            $sIcon = '';
                                             if($project->admin_status == 'pending') { $sClass = 'warning'; $sText = 'مراجعة'; }
                                             elseif($project->status == 'open') { $sClass = 'success'; $sText = 'نشط'; }
+                                            elseif($project->status == 'disputed') { $sClass = 'danger'; $sText = 'تحكيم'; }
+                                            // تحسين عرض حالة المشروع الملغى نتيجه نزاع وبقرار إداري
+                                            elseif($project->status == 'cancelled' && $project->admin_status == 'rejected') {
+                                                $sClass = 'horror'; $sText = 'مغلق (نزاع)'; $sIcon = '<i class="fas fa-gavel me-1 extra-small"></i>';
+                                            }
                                             else { $sClass = 'secondary'; $sText = 'مغلق'; }
                                         @endphp
-                                        <span class="badge-status bg-{{$sClass}}">{{ $sText }}</span>
+                                        <span class="badge-status bg-{{$sClass}}">{!! $sIcon !!}{{ $sText }}</span>
                                     </td>
                                     <td class="text-center pe-4">
-                                        <a href="{{ route('projects.show', $project->id) }}" class="btn-action-view text-success border-success border-opacity-25" title="عرض">
-                                            <i class="fas fa-chevron-left"></i>
-                                        </a>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            {{-- زر تحكيم الإدارة للمشاريع --}}
+                                            @if(!in_array($project->status, ['completed', 'disputed', 'cancelled']))
+                                            <button type="button"
+                                                    class="btn btn-xs btn-outline-danger rounded-pill px-3 fw-bold"
+                                                    onclick="openDisputeModal('{{ $project->id }}', 'project')">
+                                                <i class="fas fa-balance-scale"></i> تحكيم الإدارة
+                                            </button>
+                                            @endif
+
+                                            <a href="{{ route('projects.show', $project->id) }}" class="btn-action-view text-success border-success border-opacity-25" title="عرض">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-5">
+                                    <td colspan="4" class="text-center py-5">
                                         <p class="text-muted small">ابدأ الآن وأضف أول مشروع لك!</p>
                                     </td>
                                 </tr>
@@ -292,9 +324,44 @@
     </div>
 </div>
 
+{{-- Modal التحكيم --}}
+<div class="modal fade" id="disputeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4 pt-0">
+                <div class="icon-box-dispute mb-3 mx-auto">
+                    <i class="fas fa-gavel text-danger fa-3x"></i>
+                </div>
+                <h4 class="fw-bold mb-3">طلب تحكيم الإدارة</h4>
+                <div class="alert alert-warning border-0 small text-end" style="background: #fffbeb;">
+                    <ul class="mb-0">
+                        <li>بمجرد الإرسال، ستتدخل الإدارة لمراجعة كافة المحادثات والملفات.</li>
+                        <li>سيتم التواصل مع الطرفين هاتفياً أو عبر الرسائل للتحقق.</li>
+                        <li>سيتم الحكم بشفافية مطلقة (إنهاء الصفقة أو إلغاؤها كلياً).</li>
+                        <li>تضمن الإدارة عودة المستحقات لصاحب الحق بناءً على تقييم الموقف.</li>
+                    </ul>
+                </div>
+                <p class="fw-bold text-dark mt-3">هل أنت متأكد من رغبتك في تصعيد النزاع للتحكيم؟</p>
+
+                <form id="disputeForm" action="{{ route('dispute.store') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="item_id" id="dispute_item_id">
+                    <input type="hidden" name="type" id="dispute_type">
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-danger rounded-pill py-2 fw-bold">نعم، أوافق على تحكيم الإدارة</button>
+                        <button type="button" class="btn btn-light rounded-pill py-2 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
-
 :root {
     --primary: #10b981;
     --primary-dark: #059669;
@@ -303,199 +370,72 @@
     --dark: #1e293b;
     --slate: #64748b;
     --glass: rgba(255, 255, 255, 0.9);
-    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    --horror-red: #4c0505; /* لون أحمر داكن جداً ومرعب */
+    --horror-light: #fecaca;
 }
-
-body {
-    background-color: #f1f5f9;
-    font-family: 'Cairo', sans-serif;
-    color: var(--dark);
-}
-
-/* Glassmorphism Sidebar */
-.sidebar-glass {
-    background: var(--glass);
-    backdrop-filter: blur(12px);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-}
-
-.glass-card {
-    background: white;
-    border-radius: 20px;
-    border: 1px solid rgba(226, 232, 240, 0.7);
-    transition: all 0.3s ease;
-}
-
-/* Profile Area */
+body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(--dark); }
+.sidebar-glass { background: var(--glass); backdrop-filter: blur(12px); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.6); }
+.glass-card { background: white; border-radius: 20px; border: 1px solid rgba(226, 232, 240, 0.7); }
 .profile-img-wrapper { width: 100px; height: 100px; margin: 0 auto; position: relative; }
-.profile-main-img {
-    width: 100%; height: 100%; object-fit: cover;
-    border-radius: 28px; border: 4px solid #fff;
-}
-.edit-overlay {
-    position: absolute; bottom: -2px; left: -2px;
-    background: var(--primary); color: white;
-    width: 30px; height: 30px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; border: 2px solid #fff;
-}
-
-/* Improved Navigation */
-.nav-link-custom {
-    display: flex; align-items: center; padding: 12px 16px;
-    color: var(--slate); text-decoration: none;
-    border-radius: 14px; margin-bottom: 6px;
-    transition: 0.3s; font-weight: 600; font-size: 0.95rem;
-}
-.nav-link-custom .nav-icon {
-    width: 32px; height: 32px; display: flex; align-items: center;
-    justify-content: center; margin-left: 10px; border-radius: 8px;
-    background: #f8fafc; transition: 0.3s;
-}
+.profile-main-img { width: 100%; height: 100%; object-fit: cover; border-radius: 28px; border: 4px solid #fff; }
+.edit-overlay { position: absolute; bottom: -2px; left: -2px; background: var(--primary); color: white; width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #fff; }
+.nav-link-custom { display: flex; align-items: center; padding: 12px 16px; color: var(--slate); text-decoration: none; border-radius: 14px; margin-bottom: 6px; transition: 0.3s; font-weight: 600; }
 .nav-link-custom:hover { background: #f1f5f9; color: var(--primary); }
-.nav-link-custom.active {
-    background: var(--primary); color: white !important;
-}
-.nav-link-custom.active .nav-icon { background: rgba(255,255,255,0.2); color: white; }
-
-/* Wallet Widget */
-.wallet-widget {
-    background: linear-gradient(135deg, #064e3b 0%, #10b981 100%);
-    border-radius: 24px; color: white;
-}
-.wallet-bg-icon {
-    position: absolute; right: -10px; bottom: -10px;
-    font-size: 4rem; opacity: 0.1; transform: rotate(-15deg);
-}
-.btn-glass-white {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: white; backdrop-filter: blur(4px);
-}
-.btn-glass-white:hover { background: white; color: var(--primary-dark); }
-
-/* Stats Cards */
-.stat-glass-card {
-    background: white; border-radius: 20px;
-    border: 1px solid rgba(0,0,0,0.02);
-}
-.stat-viz-bg {
-    position: absolute; width: 100%; height: 4px; top: 0; right: 0; opacity: 0.1;
-}
-.stat-icon-new {
-    width: 42px; height: 42px; border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 1.1rem;
-}
-
-/* Header UI */
-.action-btn-head {
-    width: 42px; height: 42px; display: flex;
-    align-items: center; justify-content: center;
-}
-.notif-count {
-    position: absolute; top: -5px; right: -5px;
-    background: #ef4444; color: white; font-size: 0.6rem;
-    width: 18px; height: 18px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    border: 2px solid white;
-}
-
-/* Table Customization */
-.custom-table thead th {
-    background: #f8fafc; color: var(--slate);
-    font-size: 0.75rem; font-weight: 700;
-    text-transform: uppercase; border: none; padding: 15px;
-}
-.custom-table tbody td { border-bottom: 1px solid #f1f5f9; padding: 16px 15px; }
-
-/* Badges & Indicators */
-.badge-status {
-    padding: 5px 12px; border-radius: 50px; font-size: 0.7rem;
-    font-weight: 700; display: inline-flex; align-items: center; gap: 5px;
-}
+.nav-link-custom.active { background: var(--primary); color: white !important; }
+.wallet-widget { background: linear-gradient(135deg, #064e3b 0%, #10b981 100%); border-radius: 24px; color: white; }
+.wallet-bg-icon { position: absolute; right: -10px; bottom: -10px; font-size: 4rem; opacity: 0.1; transform: rotate(-15deg); }
+.btn-glass-white { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; }
+.stat-glass-card { background: white; border-radius: 20px; position: relative; }
+.stat-icon-new { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; }
+.custom-table thead th { background: #f8fafc; font-size: 0.75rem; padding: 15px; }
+.badge-status { padding: 5px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
 .badge-status.bg-success { background: #d1fae5 !important; color: #065f46; }
 .badge-status.bg-warning { background: #fef3c7 !important; color: #92400e; }
-.badge-status.bg-info { background: #e0f2fe !important; color: #075985; }
-.badge-status .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.badge-status.bg-danger { background: #fee2e2 !important; color: #b91c1c; }
+/* ستايل الرعب الجديد لحكم الإدارة القاطع */
+.badge-status.bg-horror { background: var(--horror-red) !important; color: white; border: 1px solid #b91c1c; box-shadow: 0 0 5px rgba(185, 28, 28, 0.5); }
+.badge-status.bg-horror .dot { background-color: #fee2e2; animation: pulse-red 1.5s infinite; }
 
 .price-tag-modern { font-weight: 800; color: var(--primary-dark); }
-.price-tag-modern .currency { font-size: 0.65rem; opacity: 0.8; }
-
-.proposal-count {
-    background: #f1f5f9; padding: 4px 10px; border-radius: 10px;
-    display: inline-flex; flex-direction: column; align-items: center;
-}
-.proposal-count .count { font-weight: 800; font-size: 0.9rem; line-height: 1; color: var(--dark); }
-.proposal-count .label { font-size: 0.6rem; color: var(--slate); }
-
-.btn-action-view {
-    width: 32px; height: 32px; border-radius: 8px;
-    display: inline-flex; align-items: center; justify-content: center;
-    border: 1px solid #e2e8f0; color: var(--slate); transition: 0.3s;
-}
-.btn-action-view:hover { background: var(--primary); color: white; border-color: var(--primary); }
-
-.bg-light-soft { background-color: rgba(248, 250, 252, 0.8); }
-.extra-small { font-size: 0.7rem; }
 .wave { display: inline-block; animation: wave-animation 2.5s infinite; transform-origin: 70% 70%; }
+.btn-xs { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+.icon-box-dispute { width: 80px; height: 80px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-@keyframes wave-animation {
-    0% { transform: rotate( 0.0deg) }
-    10% { transform: rotate(14.0deg) }
-    20% { transform: rotate(-8.0deg) }
-    30% { transform: rotate(14.0deg) }
-    40% { transform: rotate(-4.0deg) }
-    50% { transform: rotate(10.0deg) }
-    60% { transform: rotate( 0.0deg) }
-    100% { transform: rotate( 0.0deg) }
-}
+@keyframes wave-animation { 0%, 100%, 60% { transform: rotate(0deg) } 10%, 30% { transform: rotate(14deg) } 20% { transform: rotate(-8deg) } 40% { transform: rotate(-4deg) } 50% { transform: rotate(10deg) } }
+@keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(254, 226, 226, 0.7); } 70% { box-shadow: 0 0 0 5px rgba(254, 226, 226, 0); } 100% { box-shadow: 0 0 0 0 rgba(254, 226, 226, 0); } }
 
-/* Mobile Adjustments */
-@media (max-width: 768px) {
-    .dashboard-container { padding-top: 1rem !important; }
-    .top-header-bar { flex-direction: row; padding: 10px !important; }
-    .welcome-text h4 { font-size: 1.1rem; }
-    .btn-add-project { padding: 8px 12px !important; }
-    .stat-glass-card h4 { font-size: 1.2rem; }
-    .sidebar-glass { margin-bottom: 20px; }
-}
+@media (max-width: 768px) { .welcome-text h4 { font-size: 1.1rem; } .sidebar-glass { margin-bottom: 20px; } }
 </style>
 
 <script>
+    function openDisputeModal(id, type) {
+        document.getElementById('dispute_item_id').value = id;
+        document.getElementById('dispute_type').value = type;
+        var myModal = new bootstrap.Modal(document.getElementById('disputeModal'));
+        myModal.show();
+    }
+
     const DashboardManager = (() => {
         const updateMessagesCount = async () => {
             try {
                 const response = await fetch('/messages/unread-count');
-                if (!response.ok) throw new Error('Network error');
                 const data = await response.json();
                 const badge = document.getElementById('unread-messages-count-global');
-                if (!badge) return;
-
-                if (data.count > 0) {
+                if (badge && data.count > 0) {
                     badge.innerText = data.count > 99 ? '99+' : data.count;
                     badge.classList.remove('d-none');
-                } else {
-                    badge.classList.add('d-none');
                 }
             } catch (error) { console.warn('Messages update failed.'); }
         };
-
         return {
             init: () => {
                 updateMessagesCount();
                 setInterval(updateMessagesCount, 20000);
-
-                // تفعيل Tooltips
                 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                    return new bootstrap.Tooltip(tooltipTriggerEl)
-                });
+                tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el) });
             }
         };
     })();
-
     document.addEventListener('DOMContentLoaded', DashboardManager.init);
 </script>
 @endsection

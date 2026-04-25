@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\Project;
 use App\Models\Transaction;
 use App\Models\Wallet;
+use App\Models\WithdrawRequest;
+use App\Models\Dispute; // تم إضافة موديل النزاعات الجديد
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
@@ -29,11 +31,27 @@ class AdminDashboardController extends Controller
         // 3. المشاريع المعلقة والنزاعات
         $pendingProjects = Project::where('admin_status', 'pending')->latest()->get();
 
-        $disputes = Project::where('status', 'disputed')
-                            ->with(['user:id,name', 'freelancer:id,name'])
-                            ->get();
+        // تعديل: جلب النزاعات من جدول النزاعات الموحد (Polymorphic) ليدعم المشاريع والخدمات
+        $allDisputes = Dispute::with(['user:id,name', 'disputable'])
+                                ->latest()
+                                ->get();
 
-        // 4. آخر العمليات المالية
+        // 4. العمليات المالية
+
+        // عمليات الشحن (تظل من جدول المعاملات العام)
+        $deposits = Transaction::where('type', 'deposit')
+                                ->with('user:id,name')
+                                ->latest()
+                                ->take(10)
+                                ->get();
+
+        // تعديل: جلب طلبات السحب من جدول withdraw_requests لضمان بيانات أوضح (الحالة، وسيلة السحب، إلخ)
+        $withdrawals = WithdrawRequest::with('user:id,name')
+                                ->latest()
+                                ->take(10)
+                                ->get();
+
+        // إبقاء المتغير الأصلي لضمان عدم كسر أي جزء آخر يعتمد عليه (اختياري)
         $transactions = Transaction::with('user:id,name')->latest()->take(10)->get();
 
         // 5. إحصائيات الخزنة والمشاريع (استعلامات مجمعة سريعة)
@@ -75,8 +93,10 @@ class AdminDashboardController extends Controller
             'pendingUsers'        => $pendingUsers,
             'pendingProjects'     => $pendingProjects,
             'transactions'        => $transactions,
-            'disputes'            => $disputes,
-            'activeDisputesCount' => $disputes->count(),
+            'deposits'            => $deposits,         // لجدول الشحن
+            'withdrawals'         => $withdrawals,      // لجدول السحب (الآن من withdraw_requests)
+            'disputes'            => $allDisputes,      // تم تغيير المسمى ليتناسب مع الجدول الموحد
+            'activeDisputesCount' => $allDisputes->where('status', 'pending')->count(),
             'totalBalance'        => $totalBalance,
             'totalWallets'        => $totalWallets,
             'activeWalletsCount'  => $activeWalletsCount,
@@ -89,6 +109,52 @@ class AdminDashboardController extends Controller
     }
 
     /**
+     * معالجة طلب السحب (موافقة/رفض)
+     * تم التعديل ليتناسب مع حقول الـ Blade (decision, notification) وحالات الـ Database (approved, rejected)
+     */
+    public function processWithdrawal(Request $request, $id): JsonResponse
+    {
+        try {
+            // 1. التحقق من البيانات المرسلة من الـ JS
+            $request->validate([
+                'decision'     => 'required|in:approve,reject',
+                'notification' => 'required|string|min:3'
+            ]);
+
+            $withdraw = WithdrawRequest::findOrFail($id);
+
+            // 2. تحويل القرار القادم من الـ Blade إلى الحالة المسجلة في الميجريشن
+            $newStatus = ($request->decision === 'approve') ? 'approved' : 'rejected';
+
+            // 3. تحديث حالة الطلب
+            $withdraw->update([
+                'status' => $newStatus,
+                // يمكنك إضافة حقل ملاحظات في الداتا بيز لتخزين الـ notification إذا أردت
+            ]);
+
+            // 4. إذا تم الرفض، يتم إعادة المبلغ لمحفظة المستخدم تلقائياً
+            if ($newStatus === 'rejected') {
+                $userWallet = Wallet::where('user_id', $withdraw->user_id)->first();
+                if ($userWallet) {
+                    $userWallet->increment('balance', $withdraw->amount);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $newStatus === 'approved' ? 'تمت الموافقة على السحب بنجاح' : 'تم رفض طلب السحب وإعادة المبلغ للمحفظة'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error processing withdrawal $id: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء معالجة الطلب: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * تفعيل حساب المستخدم (Verified)
      */
     public function approveUser($id): JsonResponse
@@ -96,7 +162,6 @@ class AdminDashboardController extends Controller
         try {
             $user = User::findOrFail($id);
 
-            // تحديث الحالة وتأكيد إكمال الملف الشخصي لضمان تخطي الـ Middleware
             $user->update([
                 'verification_status' => 'verified',
                 'is_profile_completed' => true
@@ -124,7 +189,6 @@ class AdminDashboardController extends Controller
 
             $user = User::findOrFail($id);
 
-            // نستخدم is_banned للحظر الفعلي و unverified لتغيير الشكل في اللوحة
             $user->update([
                 'verification_status' => 'unverified',
                 'is_banned' => true
@@ -139,7 +203,6 @@ class AdminDashboardController extends Controller
         }
     }
 
-    // بقية الدوال (editUser, resetWallet, financeRadar) تظل كما هي لأنها سليمة
     public function editUser($id) {
         $user = User::with('wallet')->findOrFail($id);
         return view('admin.users.edit', compact('user'));

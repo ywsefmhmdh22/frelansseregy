@@ -18,7 +18,6 @@ use Exception;
 /**
  * Class ProjectController
  * المسؤول عن إدارة دورة حياة المشاريع من الإضافة والتوظيف حتى الاستلام والتقييم.
- * تم تحسين معالجة الأخطاء لضمان سلامة البيانات والعمليات المالية.
  */
 class ProjectController extends Controller
 {
@@ -106,7 +105,7 @@ class ProjectController extends Controller
 
                 $project->update([
                     'freelancer_id' => $proposal->user_id,
-                    'status'        => 'in_progress',
+                    'status'         => 'in_progress',
                     'final_price'   => $requiredAmount,
                 ]);
 
@@ -123,13 +122,12 @@ class ProjectController extends Controller
     }
 
     /**
-     * 4. [جديد] عرض صفحة مراجعة وتقييم المشروع (حل الخطأ)
+     * 4. عرض صفحة مراجعة وتقييم المشروع
      */
     public function reviewPage($id)
     {
         $project = Project::with('freelancer')->findOrFail($id);
 
-        // تأمين: فقط صاحب المشروع هو من يقيّم
         if (Auth::id() !== $project->user_id) {
             abort(403, 'غير مصرح لك بالدخول لهذه الصفحة.');
         }
@@ -138,16 +136,20 @@ class ProjectController extends Controller
     }
 
     /**
-     * 5. استلام المشروع وتقييمه مع توزيع الأرباح
+     * 5. استلام المشروع وتقييمه مع تحويل الأرباح لحالة "معلق"
      */
     public function completeProject(Request $request, Project $project)
     {
+        // التحقق من الملكية
         if (Auth::id() !== $project->user_id) return back()->with('error', 'غير مسموح لك.');
 
+        // التحقق من البيانات
         $request->validate([
-            'rating_quality' => 'required|integer|min:1|max:5',
-            'rating_time'    => 'required|integer|min:1|max:5',
-            'review_comment' => 'required|string|min:10|max:1000',
+            'rating_quality'       => 'required|integer|min:1|max:5',
+            'rating_time'          => 'required|integer|min:1|max:5',
+            'rating_behavior'      => 'required|integer|min:1|max:5',
+            'rating_communication' => 'required|integer|min:1|max:5',
+            'review_comment'       => 'required|string|min:10|max:1000',
         ]);
 
         try {
@@ -155,30 +157,52 @@ class ProjectController extends Controller
                 $amount = $project->final_price ?? $project->price;
                 $avgRating = $this->calculateAverageRating($request);
 
-                // 1. تحويل الأرباح للمستقل
-                $this->payoutToFreelancer($project->freelancer_id, $amount, $project->title);
+                // 1. تسجيل الأرباح كـ "معلقة" للمستقل (تأكد من وجود ID المستقل)
+                if (!$project->freelancer_id) {
+                    throw new Exception("لا يوجد مستقل مرتبط بهذا المشروع لإرسال الأرباح إليه.");
+                }
+
+                $this->payoutToFreelancer($project, $amount);
 
                 // 2. تسجيل التقييم
                 Review::create([
-                    'project_id'    => $project->id,
-                    'freelancer_id' => $project->freelancer_id,
-                    'user_id'       => Auth::id(),
-                    'rating'        => $avgRating,
-                    'comment'       => strip_tags($request->review_comment),
+                    'project_id'           => $project->id,
+                    'freelancer_id'        => $project->freelancer_id,
+                    'user_id'              => Auth::id(),
+                    'rating_quality'       => $request->rating_quality,
+                    'rating_time'          => $request->rating_time,
+                    'rating_behavior'      => $request->rating_behavior,
+                    'rating_communication' => $request->rating_communication,
+                    'rating'               => $avgRating,
+                    'comment'              => strip_tags($request->review_comment),
                 ]);
 
-                // 3. تحديث الحالة
-                $project->update(['status' => 'completed']);
+                // 3. تحديث حالة المشروع
+                $project->update([
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                ]);
 
-                // تحديث تقييم المستقل الإجمالي في جدول المستخدمين
+                // 4. تحديث التقييم العام للمستقل
                 $freelancer = User::find($project->freelancer_id);
-                $freelancer->update(['freelancer_rating' => $avgRating]);
+                if ($freelancer) {
+                    $newAvg = Review::where('freelancer_id', $freelancer->id)->avg('rating');
+                    $freelancer->update(['freelancer_rating' => $newAvg]);
+                }
             });
 
-            return redirect()->route('projects.show', $project->id)->with('success', 'تم الاستلام والتقييم بنجاح.');
+            return redirect()->route('projects.show', $project->id)->with('success', 'تم الاستلام بنجاح، الأرباح الآن في مرحلة التعليق لضمان جودة العمل.');
+
         } catch (Exception $e) {
+            // التعديل الجوهري: إظهار الخطأ فوراً وعدم الرجوع للخلف
             Log::error('Complete Project Error: ' . $e->getMessage());
-            return back()->with('error', 'فشل في إتمام عملية الاستلام.');
+            dd([
+                'error_message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'freelancer_id' => $project->freelancer_id,
+                'project_id' => $project->id
+            ]);
         }
     }
 
@@ -214,27 +238,36 @@ class ProjectController extends Controller
         ]);
     }
 
-    private function payoutToFreelancer($freelancerId, $amount, $projectTitle)
+    private function payoutToFreelancer(Project $project, $amount)
     {
-        $fWallet = Wallet::firstOrCreate(['user_id' => $freelancerId], ['balance' => 0]);
-        $fWallet->increment('balance', $amount);
+        // استخدام updateOrCreate لضمان وجود المحفظة وسهولة التعامل
+        $fWallet = Wallet::firstOrCreate(
+            ['user_id' => $project->freelancer_id],
+            ['balance' => 0, 'pending_balance' => 0]
+        );
+
+        $fWallet->increment('pending_balance', $amount);
 
         Transaction::create([
-            'user_id' => $freelancerId,
-            'amount'  => $amount,
-            'type'    => 'deposit',
-            'status'  => 'completed',
-            'details' => 'أرباح مشروع: ' . strip_tags($projectTitle),
+            'user_id'         => $project->freelancer_id,
+            'amount'          => $amount,
+            'currency'        => $project->currency ?? 'USD',
+            'type'            => 'receive',
+            'status'          => 'pending',
+            'unlock_at'       => now()->addDays(7),
+            'source_id'       => $project->id,
+            'source_type'     => Project::class,
+            'details'         => 'أرباح معلقة لمشروع: ' . strip_tags($project->title),
         ]);
     }
 
     private function calculateAverageRating(Request $request)
     {
         $ratings = [
-            $request->rating_quality,
-            $request->rating_time,
-            $request->rating_behavior ?? 5,
-            $request->rating_communication ?? 5
+            (int)$request->rating_quality,
+            (int)$request->rating_time,
+            (int)$request->rating_behavior,
+            (int)$request->rating_communication
         ];
         return array_sum($ratings) / count($ratings);
     }

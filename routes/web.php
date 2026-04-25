@@ -21,7 +21,9 @@ use App\Http\Controllers\{
     OrderController,
     ProfileController,
     UserController,
-    PortfolioController
+    PortfolioController,
+    NotificationController,
+    DisputeController // أضفنا الكنترولر هنا
 };
 use App\Http\Controllers\Freelancer\DashboardController;
 use Illuminate\Support\Facades\Broadcast;
@@ -72,7 +74,7 @@ Route::get('/fix-wallets', function () {
     return "مبروك يا هاني.. كل المحافظ جاهزة!";
 });
 
-// --- روت الـ Webhook (مهم: خارج الـ Auth عشان باي موب يوصله) ---
+// --- روت الـ Webhook ---
 Route::post('/payment/processed', [PaymentController::class, 'processedCallback'])->name('pay.webhook');
 
 /*
@@ -86,7 +88,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 
-    // --- مسارات استعادة كلمة المرور ---
     Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
@@ -102,14 +103,15 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // --- روت نظام النزاعات الجديد ---
+    Route::post('/dispute/store', [DisputeController::class, 'store'])->name('dispute.store');
+
     // --- نظام المحفظة والمدفوعات ---
     Route::prefix('wallet')->group(function () {
         Route::get('/', [ClientDashboardController::class, 'wallet'])->name('wallet.index');
         Route::get('/deposit', [PaymentController::class, 'showDepositForm'])->name('wallet.deposit');
         Route::post('/payment/initiate', [PaymentController::class, 'initiatePayment'])->name('pay.initiate');
         Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('pay.callback');
-
-        // التعديل: ربط مسار السحب بالكنترولر الصحيح والدالة store
         Route::post('/withdraw', [WithdrawController::class, 'store'])->name('wallet.process_withdraw');
     });
 
@@ -121,14 +123,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings/update-image', [ProfileController::class, 'updateImage'])->name('profile.update_image');
         Route::get('/portfolio/create', [PortfolioController::class, 'create'])->name('portfolio.create');
         Route::post('/portfolio/store', [PortfolioController::class, 'store'])->name('portfolio.store');
-        Route::post('/orders/{order}/submit-delivery', [OrderController::class, 'submitDelivery'])->name('orders.submit_delivery');
+
+        Route::get('/orders/{order}/deliver', [OrderController::class, 'showDeliverPage'])->name('orders.deliver_page');
+        Route::post('/orders/{order}/deliver', [OrderController::class, 'submitDelivery'])->name('orders.deliver');
+
         Route::get('/orders/{order}/dispute', [OrderController::class, 'dispute'])->name('orders.dispute');
     });
 
     Route::get('/profile/{id}', [UserController::class, 'show'])->name('profile.show');
     Route::get('/profile/{id}/reviews', [UserController::class, 'showReviews'])->name('profile.reviews');
     Route::get('/profile/{id}/portfolio', [UserController::class, 'showPortfolio'])->name('profile.portfolio');
-    Route::post('/profile/orders/{id}/submit-delivery', [OrderController::class, 'submitDelivery'])->name('orders.submitDelivery');
 
     Route::get('/complete-profile', [ProfileCompletionController::class, 'index'])->name('profile.complete');
     Route::post('/complete-profile', [ProfileCompletionController::class, 'store'])->name('profile.store');
@@ -163,9 +167,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/orders/{id}/complete', [OrderController::class, 'showCompletePage'])->name('orders.complete.view');
             Route::post('/orders/complete-process', [OrderController::class, 'completeAndRate'])->name('orders.complete.post');
             Route::post('/services/order/{order}/request-delivery', [ServiceController::class, 'requestDelivery'])->name('services.requestDelivery');
+
+            Route::get('/blog', [App\Http\Controllers\BlogController::class, 'index'])->name('blog.index');
+            Route::get('/blog/{id}', [App\Http\Controllers\BlogController::class, 'show'])->name('blog.show');
         });
 
-        // تم توحيد مسارات السحب هنا لتستخدم WithdrawController
         Route::get('/withdraw', [WithdrawController::class, 'create'])->name('withdraw.create');
         Route::post('/withdraw/process', [WithdrawController::class, 'store'])->name('withdraw.request');
 
@@ -180,6 +186,8 @@ Route::middleware('auth')->group(function () {
             auth()->user()->unreadNotifications->markAsRead();
             return back()->with('success', 'تم التحديد كمقروء');
         })->name('notifications.markAllRead');
+
+        Route::get('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
         Route::get('/freelancers/favorites', [ClientDashboardController::class, 'favorites'])->name('freelancers.favorites');
         Route::post('/projects/{project}/proposals', [ProposalController::class, 'store'])->name('proposals.store');
@@ -198,13 +206,22 @@ Route::middleware('auth')->group(function () {
             Route::post('/user/{id}/ban', 'banUser')->name('user.ban');
             Route::post('/user/{id}/reset-wallet', 'resetWallet')->name('user.reset-wallet');
             Route::get('/users/edit/{id}', 'editUser')->name('user.edit');
+            // حل المشكلة بإضافة مسار معالجة السحب هنا 👇
+            Route::post('/withdrawals/{id}/process', 'processWithdrawal')->name('withdrawals.process');
         });
 
         Route::controller(FinanceAdminController::class)->group(function () {
             Route::get('/financial/disputes', 'disputesIndex')->name('disputes.index');
+
+            // 👇 ضع الأفعال (POST) قبل مسار العرض العام 👇
+            Route::post('/financial/disputes/{id}/refund', 'refundToClient')->name('disputes.refund');
+            Route::post('/financial/disputes/{id}/release', 'releaseToFreelancer')->name('disputes.release');
+
+            // 👇 مسار العرض العام يوضع في النهاية 👇
+            Route::get('/financial/disputes/{id}', 'showDispute')->name('disputes.show');
+
             Route::get('/financial/user/{user}', 'userTransactions')->name('user.transactions');
             Route::get('/financial/radar', 'financeRadar')->name('finance.radar');
-            Route::post('/financial/reject/{user}', 'rejectVerification')->name('reject');
         });
 
         Route::controller(App\Http\Controllers\Admin\ProjectController::class)->group(function () {

@@ -5,25 +5,32 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+/**
+ * Class Review
+ * الموديل المسؤول عن تخزين تقييمات المشاريع ومعايير الأداء للمستقلين.
+ */
 class Review extends Model
 {
     use HasFactory;
 
-    // الحقول اللي مسموح نكتب فيها بيانات (ضفنا الأعمدة الجديدة هنا)
+    /**
+     * الحقول القابلة للتعبئة (Mass Assignment)
+     * تم إضافة المعايير التفصيلية لضمان توافقها مع نظام التقييم الجديد.
+     */
     protected $fillable = [
-        'project_id',           // الحقل اللي كان عامل المشكلة
+        'project_id',
         'freelancer_id',
         'user_id',
-        'rating_quality',       // معايير التقييم اللي زودناها في الميجريشن
-        'rating_time',
-        'rating_behavior',
-        'rating_communication',
-        'rating',               // التقييم النهائي
-        'comment',
+        'rating_quality',      // جودة العمل المستلم
+        'rating_time',         // الالتزام بالوقت المحددة
+        'rating_behavior',     // التعامل والاحترافية
+        'rating_communication', // سرعة ووضوح التواصل
+        'rating',              // المتوسط العام المحسوب (التقييم النهائي)
+        'comment',             // النص المكتوب للتقييم
     ];
 
     /**
-     * علاقة التقييم بالمشروع
+     * علاقة التقييم بالمشروع المرتبط به.
      */
     public function project()
     {
@@ -31,7 +38,7 @@ class Review extends Model
     }
 
     /**
-     * علاقة التقييم بالمستقل
+     * علاقة التقييم بالمستقل (المستخدم الذي تم تقييمه).
      */
     public function freelancer()
     {
@@ -39,7 +46,7 @@ class Review extends Model
     }
 
     /**
-     * علاقة التقييم بالعميل الذي قام بالتقييم
+     * علاقة التقييم بالعميل (المستخدم الذي قام بكتابة التقييم).
      */
     public function reviewer()
     {

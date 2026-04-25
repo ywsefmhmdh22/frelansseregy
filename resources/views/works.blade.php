@@ -1,196 +1,243 @@
- @extends('layouts.master')
+@extends('layouts.master')
 
 @section('content')
-<div class="container py-5 text-end" dir="rtl">
-    {{-- Header Section --}}
-    <div class="text-center mb-5 position-relative">
-        <h1 class="display-4 fw-800 text-dark mb-3">إبداعات <span class="text-success">خبير</span></h1>
-        <p class="lead text-muted mx-auto" style="max-width: 600px;">هنا حيث تتحول الأفكار إلى واقع ملموس.. استعرض أفضل ما قدمه مستقلونا بتقييمات استثنائية.</p>
-        <div class="header-line mx-auto"></div>
-    </div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
-    {{-- Advanced Filter --}}
-    <div class="d-flex flex-wrap gap-3 mb-5 justify-content-center">
-        <button class="filter-btn active">الكل</button>
-        <button class="filter-btn">برمجة وتطوير</button>
-        <button class="filter-btn">تصميم وإبداع</button>
-        <button class="filter-btn">تسويق رقمي</button>
-        <button class="filter-btn">كتابة وترجمة</button>
-    </div>
+<div class="works-portfolio-wrapper" dir="rtl">
+    <div class="container py-5">
+        {{-- Header Section --}}
+        <div class="text-center mb-5 animate__animated animate__fadeInDown">
+            <h1 class="display-4 fw-800 text-dark mb-3">إبداعات <span class="gradient-text">خبير</span></h1>
+            <p class="lead text-muted mx-auto mb-4" style="max-width: 650px;">
+                استكشف نخبة المشاريع التي نالت استحسان العملاء بتقييمات استثنائية.
+            </p>
+            <div class="header-line-custom mx-auto"></div>
+        </div>
 
-    <div class="row g-4">
-        @forelse($works as $work)
-        <div class="col-lg-4 col-md-6">
-            <div class="modern-work-card">
-                <div class="card-inner">
-                    {{-- Image Wrapper --}}
-                    <div class="image-wrapper">
-                        {{-- تم التعديل لعرض الصورة من عمود image_url مباشرة --}}
-                        <img src="{{ $work->image_url }}"
-                             class="img-fluid"
-                             alt="{{ $work->title }}"
-                             onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500&auto=format&fit=crop'">
+        {{-- Projects Grid --}}
+        <div class="row g-4 justify-content-center">
+            @forelse($works as $index => $work)
+                {{-- جلب التقييم من علاقة التقييمات، وإذا لم يوجد نفترض 5 نجوم للجمالية --}}
+                @php
+                    $rating = $work->reviews_avg_rating ?? ($work->order?->review?->rating ?? 5.0);
+                @endphp
 
-                        <div class="card-overlay">
-                            <a href="{{ route('projects.show', $work->id) }}" class="view-project-btn">عرض المشروع <i class="fas fa-arrow-left ms-2"></i></a>
-                        </div>
-                        <div class="rating-badge">
-                            <i class="fas fa-star text-warning"></i> {{ number_format($work->freelancer_rating ?? 4.9, 1) }}
-                        </div>
-                    </div>
+                @if($rating >= 4)
+                <div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 animate__animated animate__zoomIn"
+                     style="animation-delay: {{ $index * 0.1 }}s">
+                    <div class="work-card-premium h-100">
+                        <div class="card-inner-content">
+                            {{-- Image Section --}}
+                            <div class="project-media">
+                                {{-- استخدام المسار المخزن في الداتابيز projects/covers/... --}}
+                                <img src="{{ $work->cover_image ? asset('storage/' . $work->cover_image) : 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500' }}"
+                                     class="project-img"
+                                     alt="{{ $work->title }}"
+                                     loading="lazy"
+                                     onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500'">
 
-                    {{-- Content --}}
-                    <div class="content-body p-4">
-                        <div class="d-flex align-items-center mb-3">
-                            {{-- استخدام ? لتجنب الخطأ في حالة عدم وجود freelancer --}}
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($work->freelancer?->name ?? 'User') }}&background=10b981&color=fff" class="author-avatar" alt="freelancer">
-                            <div class="ms-3 me-2 text-start">
-                                {{-- استخدام ? و الـ Null Coalesce لعرض اسم بديل آمن --}}
-                                <h6 class="mb-0 fw-bold text-dark">{{ $work->freelancer?->name ?? 'مستقل متميز' }}</h6>
-                                <small class="text-muted">لصالح: {{ $work->client?->name ?? 'مشروع خاص' }}</small>
+                                <div class="media-overlay">
+                                    <a href="{{ route('projects.show', $work->id) }}" class="btn-explore">
+                                        <span>عرض التفاصيل</span>
+                                        <i class="fas fa-eye ms-2"></i>
+                                    </a>
+                                </div>
+
+                                {{-- التقييم الحقيقي --}}
+                                <div class="rating-float-badge">
+                                    <i class="fas fa-star text-warning me-1"></i>
+                                    <span class="fw-bold">{{ number_format($rating, 1) }}</span>
+                                </div>
+                            </div>
+
+                            {{-- Card Info --}}
+                            <div class="content-info p-4">
+                                <div class="freelancer-strip d-flex align-items-center mb-3">
+                                    @php
+                                        $fName = $work->freelancer?->name ?? 'خبير مستقل';
+                                        $fAvatar = $work->freelancer?->profile_image ? asset('storage/' . $work->freelancer->profile_image) : "https://ui-avatars.com/api/?name=".urlencode($fName)."&background=00d2ff&color=fff";
+                                    @endphp
+                                    <div class="avatar-ring">
+                                        <img src="{{ $fAvatar }}" class="f-avatar" alt="freelancer">
+                                    </div>
+                                    <div class="ms-3 me-2 text-start">
+                                        <h6 class="m-0 fw-bold text-dark small-text">{{ $fName }}</h6>
+                                        <span class="text-muted tiny-text">بواسطة: {{ $work->client?->name ?? 'عميل مميز' }}</span>
+                                    </div>
+                                </div>
+
+                                <h5 class="project-title mb-3 text-start text-truncate-2">{{ $work->title }}</h5>
+
+                                <div class="footer-meta d-flex justify-content-between align-items-center pt-3 border-top">
+                                    <span class="status-pill">
+                                        <i class="fas fa-check-double me-1"></i> تم التسليم
+                                    </span>
+                                    <div class="project-date tiny-text text-muted">
+                                        <i class="far fa-calendar-alt me-1"></i> {{ $work->created_at?->diffForHumans() }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <h5 class="work-title mb-0">{{ $work->title }}</h5>
                     </div>
-
-                    {{-- Bottom Wave or Line --}}
-                    <div class="card-footer-line"></div>
                 </div>
-            </div>
+                @endif
+            @empty
+                <div class="col-12 text-center py-5 animate__animated animate__fadeIn">
+                    <div class="empty-state-card p-5 shadow-sm rounded-4">
+                        <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">لا توجد أعمال مكتملة حالياً</h4>
+                    </div>
+                </div>
+            @endforelse
         </div>
-        @empty
-        <div class="col-12 text-center py-5">
-            <div class="empty-state">
-                <i class="fas fa-rocket fa-4x text-muted mb-4"></i>
-                <h3 class="text-muted">المشاريع الكبرى في طريقها إليك!</h3>
-            </div>
-        </div>
-        @endforelse
     </div>
 </div>
 
 <style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+        --glass-bg: rgba(255, 255, 255, 0.98);
+        --soft-shadow: 0 15px 35px rgba(0,0,0,0.07);
+    }
+
+    /* تحسين الخطوط والتنسيق العام */
     .fw-800 { font-weight: 800; }
-
-    .filter-btn {
-        background: white;
-        border: 2px solid #e2e8f0;
-        padding: 10px 25px;
-        border-radius: 50px;
-        color: #64748b;
-        font-weight: 700;
-        transition: all 0.3s ease;
+    .gradient-text {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
-    .filter-btn:hover, .filter-btn.active {
-        background: #10b981;
-        border-color: #10b981;
-        color: white;
-        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+    .header-line-custom {
+        height: 4px; width: 60px;
+        background: var(--primary-gradient);
+        border-radius: 10px;
     }
 
-    .modern-work-card { perspective: 1000px; height: 100%; }
-
-    .card-inner {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        border-radius: 24px;
+    /* الكارت وتأثير الظهور المفتوح */
+    .work-card-premium {
+        background: var(--glass-bg);
+        border-radius: 20px;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
-        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-        height: 100%;
-        display: flex;
-        flex-direction: column;
+        border: 1px solid rgba(0,0,0,0.03);
+        box-shadow: var(--soft-shadow);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
     }
 
-    .modern-work-card:hover .card-inner {
-        transform: translateY(-15px) rotateX(5deg);
-        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+    /* تأثير تفتيح/فتح الكارت عند التحويم */
+    .work-card-premium:hover {
+        transform: scale(1.03) translateY(-10px);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        z-index: 10;
     }
 
-    .image-wrapper { position: relative; overflow: hidden; height: 240px; }
+    .project-media {
+        position: relative;
+        height: 240px;
+        overflow: hidden;
+        background: #f8f9fa;
+    }
 
-    .image-wrapper img {
-        width: 100%;
-        height: 100%;
+    .project-img {
+        width: 100%; height: 100%;
         object-fit: cover;
-        transition: transform 0.6s ease;
+        transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
     }
 
-    .modern-work-card:hover .image-wrapper img { transform: scale(1.15); }
+    .work-card-premium:hover .project-img {
+        transform: scale(1.15);
+    }
 
-    .card-overlay {
+    /* طبقة العرض فوق الصورة */
+    .media-overlay {
         position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: linear-gradient(to bottom, transparent, rgba(16, 185, 129, 0.9));
+        inset: 0;
+        background: linear-gradient(to top, rgba(58, 123, 213, 0.9), transparent);
         display: flex;
         align-items: center;
         justify-content: center;
         opacity: 0;
-        transition: all 0.4s ease;
+        transition: 0.4s all ease;
     }
 
-    .modern-work-card:hover .card-overlay { opacity: 1; }
+    .work-card-premium:hover .media-overlay {
+        opacity: 1;
+    }
 
-    .view-project-btn {
-        background: white;
-        color: #10b981;
-        padding: 12px 25px;
+    .btn-explore {
+        background: #fff;
+        color: #3a7bd5;
+        padding: 12px 24px;
         border-radius: 50px;
-        text-decoration: none;
-        font-weight: 800;
+        text-decoration: none !important;
+        font-weight: 700;
         transform: translateY(20px);
-        transition: all 0.4s ease;
+        transition: 0.5s all ease;
     }
 
-    .modern-work-card:hover .view-project-btn { transform: translateY(0); }
+    .work-card-premium:hover .btn-explore {
+        transform: translateY(0);
+    }
 
-    .rating-badge {
+    /* التقييم العائم */
+    .rating-float-badge {
         position: absolute;
         top: 15px;
         right: 15px;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 5px 15px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 6px 14px;
         border-radius: 50px;
-        font-weight: 800;
-        font-size: 0.85rem;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        z-index: 2;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        z-index: 5;
+        border: 1px solid #ffc107;
+        backdrop-filter: blur(5px);
     }
 
-    .author-avatar {
-        width: 45px;
-        height: 45px;
-        border-radius: 12px;
+    /* معلومات المستقل */
+    .avatar-ring {
+        width: 45px; height: 45px;
+        border-radius: 50%;
+        padding: 2px;
+        background: var(--primary-gradient);
+    }
+
+    .f-avatar {
+        width: 100%; height: 100%;
+        border-radius: 50%;
         border: 2px solid white;
-        box-shadow: 0 5px 10px rgba(0,0,0,0.1);
-        object-fit: cover;
     }
 
-    .work-title {
-        font-size: 1.15rem;
-        font-weight: 800;
+    .project-title {
+        font-size: 1.1rem;
+        font-weight: 700;
         color: #1e293b;
-        line-height: 1.4;
-        text-align: right;
+        line-height: 1.6;
+        height: 3.2rem;
+        overflow: hidden;
     }
 
-    .card-footer-line {
-        height: 5px;
-        width: 0;
-        background: linear-gradient(90deg, #10b981, #3b82f6);
-        transition: width 0.5s ease;
+    .status-pill {
+        background: #eefdf5;
+        color: #16a34a;
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 700;
     }
 
-    .modern-work-card:hover .card-footer-line { width: 100%; }
+    /* متجاوب مع الموبايل */
+    @media (max-width: 768px) {
+        .project-media { height: 200px; }
+        .display-4 { font-size: 2.2rem; }
+    }
 
-    .header-line {
-        height: 4px;
-        width: 60px;
-        background: #10b981;
-        border-radius: 10px;
-        margin-top: 15px;
+    /* نص مختصر لسطرين */
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 </style>
 @endsection

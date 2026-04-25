@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Message;
+use App\Events\MessageSent; // استدعاء الحدث الجديد
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -14,19 +15,18 @@ use Exception;
 /**
  * Class ChatController
  * نظام مراسلة آمن متوافق مع معايير OWASP.
- * تم تحصين الاستعلامات ضد SQL Injection، وتطهير المرفقات، ومنع ثغرات XSS.
+ * يدعم البث اللحظي (Real-time) عبر Laravel Reverb.
  */
 class ChatController extends Controller
 {
     /**
      * عرض صفحة الدردشة والـ Inbox.
-     * تم إصلاح خطأ الـ Parameter Binding وتصحيح اسم عمود الصورة الشخصية.
      */
     public function chat(User $user = null)
     {
-        $authId = (int) auth()->id(); // Type Casting لضمان الأمان
+        $authId = (int) auth()->id();
 
-        // 1. جلب قائمة المحادثات (Inbox) بطريقة متوافقة مع محرك الاستعلامات
+        // 1. جلب قائمة المحادثات (Inbox)
         $conversations = Message::where('sender_id', $authId)
             ->orWhere('receiver_id', $authId)
             ->selectRaw("DISTINCT CASE WHEN sender_id = $authId THEN receiver_id ELSE sender_id END as contact_id")
@@ -34,12 +34,11 @@ class ChatController extends Controller
 
         $contactsIds = $conversations->pluck('contact_id')->filter()->toArray();
 
-        // 2. جلب جهات الاتصال (تم تصحيح image_url إلى profile_image ليتناسب مع جدولك)
+        // 2. جلب جهات الاتصال
         $contacts = User::whereIn('id', $contactsIds)
-            ->select('id', 'name', 'profile_image') // جلب ما نحتاجه فقط (Performance)
+            ->select('id', 'name', 'profile_image')
             ->get()
             ->map(function($contact) use ($authId) {
-                // جلب آخر رسالة بين الطرفين بأمان
                 $contact->last_message = Message::where(function($query) use ($authId, $contact) {
                         $query->where('sender_id', $authId)->where('receiver_id', (int)$contact->id);
                     })
@@ -54,7 +53,6 @@ class ChatController extends Controller
                 return $contact->last_message->created_at ?? 0;
             });
 
-        // توجيه تلقائي ذكي إذا لم يتم تحديد مستخدم وكانت هناك محادثات سابقة
         if (!$user && $contacts->isNotEmpty()) {
             return redirect()->route('messages.chat', $contacts->first()->id);
         }
@@ -63,7 +61,6 @@ class ChatController extends Controller
         if ($user) {
             $receiverId = (int) $user->id;
 
-            // جلب الرسائل باستخدام Prepared Statements (تلقائي في Eloquent)
             $messages = Message::where(function($q) use ($authId, $receiverId) {
                     $q->where('sender_id', $authId)->where('receiver_id', $receiverId);
                 })
@@ -73,7 +70,6 @@ class ChatController extends Controller
                 ->orderBy('created_at', 'asc')
                 ->get();
 
-            // تحديث حالة القراءة (تحديث آمن)
             Message::where('sender_id', $receiverId)
                    ->where('receiver_id', $authId)
                    ->where('is_read', false)
@@ -84,11 +80,11 @@ class ChatController extends Controller
     }
 
     /**
-     * إرسال رسالة مع نظام تطهير بيانات (Sanitization) متقدم.
+     * إرسال رسالة وبثها لحظياً (Real-time).
      */
     public function sendMessage(Request $request, User $user)
     {
-        // 1. فحص أمني للمدخلات (Validation)
+        // 1. فحص أمني للمدخلات
         $request->validate([
             'message' => 'nullable|string|max:5000',
             'file'    => 'nullable|file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,mp4,zip|max:20480',
@@ -98,11 +94,10 @@ class ChatController extends Controller
         $type = 'text';
         $filePath = null;
 
-        // 2. حماية XSS: تنظيف المحتوى النصي تماماً
+        // 2. حماية XSS: تنظيف المحتوى النصي
         $cleanMessage = $request->message ? trim(strip_tags($request->message)) : null;
 
         try {
-            // معالجة المرفقات بأسماء مشفرة ومسارات معزولة
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
                 $mime = $file->getMimeType();
@@ -128,7 +123,7 @@ class ChatController extends Controller
             return response()->json(['success' => false, 'error' => 'محتوى الرسالة غير صالح'], 400);
         }
 
-        // 3. الحفظ باستخدام Parameterized Insert (Eloquent)
+        // 3. الحفظ باستخدام Eloquent
         $messageInstance = Message::create([
             'sender_id'   => (int) auth()->id(),
             'receiver_id' => (int) $user->id,
@@ -137,26 +132,23 @@ class ChatController extends Controller
             'file_path'   => $filePath,
         ]);
 
-        // 4. تشفير البيانات المرسلة للـ Frontend لمنع ثغرات الـ DOM XSS
-        $notificationPayload = [
-            'sender_id'   => (int) auth()->id(),
-            'user_name'   => e(auth()->user()->name), // HTML Encoding
-            'content'     => $this->getSecureNotifContent($type, $cleanMessage),
-            'receiver_id' => (int) $user->id,
-            'created_at'  => $messageInstance->created_at->format('H:i A'),
-            'type'        => $type,
-            'file_path'   => $filePath ? asset('storage/' . $filePath) : null,
-        ];
+        // 4. البث اللحظي (The Real-time Magic)
+        // نستخدم toOthers لضمان عدم إرسالها للمرسل مرة أخرى عبر السوكيت لأنه سيعرضها عبر AJAX
+        broadcast(new MessageSent($messageInstance))->toOthers();
 
-        // بث الحدث (Real-time)
-        if (class_exists(\App\Events\NewMessageEvent::class)) {
-            event(new \App\Events\NewMessageEvent($notificationPayload));
-        }
-
+        // 5. الرد لمرسل الرسالة (AJAX)
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message_data' => $notificationPayload
+                'message_data' => [
+                    'id'          => $messageInstance->id,
+                    'sender_id'   => (int) auth()->id(),
+                    'user_name'   => auth()->user()->name,
+                    'content'     => $cleanMessage,
+                    'type'        => $type,
+                    'file_path'   => $filePath ? asset('storage/' . $filePath) : null,
+                    'created_at'  => $messageInstance->created_at->format('H:i A'),
+                ]
             ]);
         }
 
@@ -164,7 +156,7 @@ class ChatController extends Controller
     }
 
     /**
-     * دالة مساعدة لتأمين محتوى الإشعارات.
+     * دالة مساعدة لتأمين محتوى الإشعارات (اختياري لو احتجتها في مكان آخر).
      */
     private function getSecureNotifContent(string $type, ?string $message): string
     {

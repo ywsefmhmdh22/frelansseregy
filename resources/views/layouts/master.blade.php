@@ -5,16 +5,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>FreelancerPro - منصة العمل الحر العالمية | إبداع بلا حدود</title>
-    <meta name="description" content="FreelancerPro هي المنصة الرائدة عالمياً للعمل الحر، تجمع بين أفضل المبدعين والشركات. ابدأ رحلتك المهنية الآن.">
-    <meta name="keywords" content="Freelance, العمل الحر, مبرمجين, مصممين, توظيف، FreelancerPro, Remote Work, وظائف عن بعد, Digital Transformation">
-    <meta name="author" content="FreelancerPro Team">
+    <title>Mäheer - منصة العمل الحر العالمية | إبداع بلا حدود</title>
+    <meta name="description" content="Mäheer هي المنصة الرائدة عالمياً للعمل الحر، تجمع بين أفضل المبدعين والشركات. ابدأ رحلتك المهنية الآن.">
+    <meta name="keywords" content="Freelance, العمل الحر, مبرمجين, مصممين, توظيف، Mäheer, Remote Work, وظائف عن بعد, Digital Transformation">
+    <meta name="author" content="Mäheer Team">
 
-    <meta property="og:title" content="FreelancerPro - منصة العمل الحر الأولى">
+    <meta property="og:title" content="Mäheer - منصة العمل الحر الأولى">
     <meta property="og:description" content="وظف أفضل الخبراء في كافة المجالات بضغطة زر.">
     <meta property="og:type" content="website">
 
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
 
@@ -30,6 +30,7 @@
         --sidebar-width: 100px;
         --border-color: #e2e8f0;
         --nav-hover: #f0fdf4;
+        --logo-gradient: linear-gradient(135deg, #065f46 0%, #10b981 100%);
     }
 
     [data-theme="dark"] {
@@ -39,6 +40,7 @@
         --text-muted: #94a3b8;
         --border-color: #1e293b;
         --nav-hover: rgba(16, 185, 129, 0.1);
+        --logo-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
     }
 
     body {
@@ -50,7 +52,6 @@
         overflow-x: hidden;
     }
 
-    /* خلفية جرافيك خفيفة للأداء */
     #bg-canvas {
         position: fixed;
         top: 0; left: 0;
@@ -60,7 +61,30 @@
         pointer-events: none;
     }
 
-    /* --- Sidebar --- */
+    .brand-logo-text {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.2rem;
+        font-weight: 900;
+        background: var(--logo-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -1px;
+        position: relative;
+        text-decoration: none;
+        transition: 0.4s;
+        display: inline-block;
+        filter: drop-shadow(0 2px 10px rgba(16, 185, 129, 0.2));
+    }
+    .brand-logo-text:hover {
+        transform: scale(1.03) translateY(-2px);
+        filter: drop-shadow(0 5px 15px rgba(16, 185, 129, 0.4));
+    }
+    .brand-logo-text::after {
+        content: '.';
+        color: var(--secondary-color);
+        -webkit-text-fill-color: var(--secondary-color);
+    }
+
     .sidebar {
         width: var(--sidebar-width);
         background: var(--card-bg);
@@ -91,6 +115,7 @@
     .sidebar-logo:hover { transform: rotate(15deg); background: var(--primary-light); }
 
     .nav-item-custom { width: 100%; margin-bottom: 0.5rem; }
+    .nav-item-home { z-index: 10; }
 
     .nav-link-custom {
         display: flex;
@@ -106,6 +131,13 @@
         margin: 0 0.75rem;
     }
 
+    .nav-item-home .nav-link-custom {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transform: scale(1.1);
+    }
+
     .nav-link-custom i { font-size: 20px; margin-bottom: 6px; }
 
     .nav-link-custom:hover, .nav-link-custom.active {
@@ -113,14 +145,12 @@
         background: var(--nav-hover);
     }
 
-    /* --- Main Wrapper --- */
     .main-wrapper {
         margin-right: calc(var(--sidebar-width) + 3rem);
         padding: 2rem;
         max-width: 1600px;
     }
 
-    /* --- Top Header --- */
     .top-header {
         background: var(--card-bg);
         padding: 0.75rem 2rem;
@@ -133,68 +163,86 @@
         box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
     }
 
-    .search-box {
-        background: var(--bg-body);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 0.5rem 1rem;
+    .header-logo {
         display: flex;
         align-items: center;
-        width: 100%;
-        max-width: 400px;
+        gap: 20px;
     }
-    .search-box input { border: none; background: transparent; color: var(--text-main); width: 100%; outline: none; font-size: 0.9rem; }
 
-    /* --- Hero Section (التصميم الأخضر المطور) --- */
+    .theme-toggle-header {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        background: var(--bg-body);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .theme-toggle-header:hover {
+        background: var(--nav-hover);
+        color: var(--primary-color);
+    }
+
+    .blog-nav-btn {
+        background: var(--nav-hover);
+        border: 1px solid var(--primary-light);
+        color: var(--primary-color);
+        border-radius: 12px;
+        padding: 0.5rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: 0.3s;
+        margin-right: 30px;
+    }
+    .blog-nav-btn:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+    }
+
     .hero-section-card {
         background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #10b981 100%);
         border-radius: 40px;
-        padding: 6rem 4rem;
+        padding: 7rem 4rem;
         color: white;
         margin-bottom: 4rem;
         box-shadow: 0 30px 60px -12px rgba(6, 95, 70, 0.3);
         position: relative;
         overflow: hidden;
-        min-height: 450px;
-        display: flex;
-        align-items: center;
     }
 
-    /* تأثيرات جرافيك داخل الكارت الأخضر */
-    .hero-section-card::before {
-        content: ''; position: absolute; top: -10%; right: -10%;
-        width: 400px; height: 400px;
-        background: rgba(255,255,255,0.05);
-        border-radius: 50%;
-        filter: blur(80px);
-    }
+    .hero-content { position: relative; z-index: 2; text-align: center; }
 
-    .hero-section-card::after {
-        content: ''; position: absolute; bottom: -20%; left: -5%;
-        width: 300px; height: 300px;
-        background: var(--primary-light);
-        opacity: 0.2;
-        border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
-        animation: blob 15s infinite alternate;
-    }
-
-    @keyframes blob {
-        0% { border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%; transform: scale(1); }
-        100% { border-radius: 63% 37% 38% 62% / 56% 59% 41% 44%; transform: scale(1.2); }
-    }
-
-    /* --- Responsive --- */
     @media (max-width: 991.98px) {
         .sidebar {
             width: 100%; height: 75px;
             bottom: 0; top: auto; right: 0;
             flex-direction: row; padding: 0;
             border-radius: 0; border-top: 1px solid var(--border-color);
-            justify-content: space-around;
+            justify-content: space-between;
+            align-items: center;
+            overflow: visible;
         }
+        .nav-item-custom { width: auto; margin-bottom: 0; flex: 1; display: flex; justify-content: center; }
+        .nav-item-home { position: relative; transform: translateY(-20px); z-index: 100; }
+        .nav-item-home .nav-link-custom {
+            background: var(--card-bg); border-radius: 50%; width: 65px; height: 65px;
+            display: flex; justify-content: center; align-items: center;
+            border: 2px solid var(--primary-color); box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .nav-item-home .nav-link-custom span { display: none; }
         .sidebar-logo { display: none !important; }
         .main-wrapper { margin-right: 0; padding: 1rem; padding-bottom: 90px; }
-        .hero-section-card { padding: 3rem 1.5rem; text-align: center; }
+        .hero-section-card { padding: 5rem 1.5rem; }
+        .blog-nav-btn { display: none; }
+        .brand-logo-text { font-size: 1.7rem; }
     }
 </style>
 </head>
@@ -208,9 +256,9 @@
     </div>
 
     <div class="nav-item-custom">
-        <a href="{{ route('home') }}" class="nav-link-custom active">
-            <i class="fas fa-house" aria-hidden="true"></i>
-            <span>الرئيسية</span>
+        <a href="/top-rated" class="nav-link-custom">
+            <i class="fas fa-award text-warning" aria-hidden="true"></i>
+            <span>النخبة</span>
         </a>
     </div>
 
@@ -222,6 +270,20 @@
     </div>
 
     <div class="nav-item-custom">
+        <a href="/Services" class="nav-link-custom">
+            <i class="fas fa-cubes" aria-hidden="true"></i>
+            <span>الخدمات</span>
+        </a>
+    </div>
+
+    <div class="nav-item-custom nav-item-home">
+        <a href="{{ route('home') }}" class="nav-link-custom active">
+            <i class="fas fa-house" aria-hidden="true"></i>
+            <span>الرئيسية</span>
+        </a>
+    </div>
+
+    <div class="nav-item-custom">
         <a href="{{ route('works.index') }}" class="nav-link-custom">
             <i class="fas fa-layer-group" aria-hidden="true"></i>
             <span>الأعمال</span>
@@ -229,34 +291,40 @@
     </div>
 
     <div class="nav-item-custom">
-        <a href="/Services" class="nav-link-custom">
-            <i class="fas fa-cubes" aria-hidden="true"></i>
-            <span>الخدمات</span>
-        </a>
-    </div>
-
-    @auth
-    <div class="nav-item-custom">
-        <a href="{{ auth()->user()->role === 'freelancer' ? route('freelancer.dashboard') : route('client.dashboard') }}" class="nav-link-custom">
-            <i class="fas fa-chart-pie" aria-hidden="true"></i>
-            <span>Dashboard</span>
-        </a>
-    </div>
-    @endauth
-
-    <div class="nav-item-custom mt-auto mb-3">
-        <button class="nav-link-custom border-0 bg-transparent w-100 theme-toggle-btn" aria-label="تبديل الوضع الليلي">
-            <i class="fas fa-moon theme-icon" aria-hidden="true"></i>
-            <span class="d-lg-none">المظهر</span>
+        <button class="nav-link-custom border-0 bg-transparent w-100" data-bs-toggle="modal" data-bs-target="#supportModal" aria-label="الدعم الفني">
+            <i class="fas fa-headset text-warning" aria-hidden="true"></i>
+            <span>الدعم</span>
         </button>
+    </div>
+
+    <div class="nav-item-custom">
+        @auth
+            <a href="{{ auth()->user()->role === 'freelancer' ? route('freelancer.dashboard') : route('client.dashboard') }}" class="nav-link-custom">
+                <i class="fas fa-chart-pie" aria-hidden="true"></i>
+                <span>لوحة التحكم</span>
+            </a>
+        @else
+            <a href="/login" class="nav-link-custom">
+                <i class="fas fa-user-lock" aria-hidden="true"></i>
+                <span>دخول</span>
+            </a>
+        @endauth
     </div>
 </aside>
 
 <main class="main-wrapper">
     <header class="top-header">
-        <div class="search-box">
-            <i class="fas fa-search text-muted me-2" aria-hidden="true"></i>
-            <input type="text" placeholder="ما الذي تبحث عنه اليوم؟" aria-label="بحث في المنصة">
+        <div class="d-flex align-items-center flex-grow-1">
+            <div class="header-logo">
+                <a href="/" class="brand-logo-text">Mäheer</a>
+                <button class="theme-toggle-header theme-toggle-btn" aria-label="تبديل الوضع الليلي">
+                    <i class="fas fa-moon theme-icon" aria-hidden="true"></i>
+                </button>
+            </div>
+            <a href="{{ route('blog.index') }}" class="blog-nav-btn d-none d-md-flex">
+                <i class="fas fa-feather-pointed"></i>
+                <span>المدونة</span>
+            </a>
         </div>
 
         <div class="header-actions d-flex align-items-center gap-3">
@@ -286,13 +354,12 @@
 
     @if(request()->is('/'))
     <section class="hero-section-card">
-        <div class="row align-items-center w-100">
-            <div class="col-lg-8">
-                <h1 class="fw-800 display-3 mb-3">صمم مستقبلك المهني معنا</h1>
-                <p class="lead opacity-90 mb-5 fs-4">نجمع لك أفضل المبدعين العرب والخبراء العالميين في منصة واحدة آمنة وسهلة الاستخدام تماماً.</p>
-                <div class="d-flex flex-wrap gap-3">
-                    <a href="/top-rated" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-success shadow-lg">المستقلين المتميزين</a>
-                </div>
+        <div class="hero-content">
+            <h1 class="fw-800 display-4 mb-3">صمم مستقبلك المهني معنا</h1>
+            <p class="lead opacity-90 mb-5 fs-5">نجمع لك أفضل المبدعين العرب والخبراء العالميين في منصة واحدة آمنة وسهلة الاستخدام تماماً.</p>
+            <div class="d-flex justify-content-center flex-wrap gap-3">
+                <a href="/top-rated" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-success shadow-lg">تصفح المستقلين</a>
+                <a href="/register" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold">ابدأ رحلتك الآن</a>
             </div>
         </div>
     </section>
@@ -303,7 +370,7 @@
     </section>
 
     <footer class="d-flex flex-wrap justify-content-between align-items-center py-4 my-5 border-top border-2">
-        <p class="col-md-4 mb-0 text-muted fw-bold">© 2026 FreelancerPro Global. جميع الحقوق محفوظة.</p>
+        <p class="col-md-4 mb-0 text-muted fw-bold">© 2026 Mäheer Global. جميع الحقوق محفوظة.</p>
         <ul class="nav col-md-4 justify-content-end list-unstyled d-flex gap-4 fs-5">
             <li><a class="text-muted" href="#"><i class="fab fa-x-twitter"></i></a></li>
             <li><a class="text-muted" href="#"><i class="fab fa-instagram"></i></a></li>
@@ -312,10 +379,38 @@
     </footer>
 </main>
 
+<div class="modal fade" id="supportModal" tabindex="-1" aria-labelledby="supportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="supportModalLabel">الدعم الفني والتواصل</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted mb-4">يسعدنا مساعدتك في أي وقت، اختر الوسيلة المناسبة لك:</p>
+                <a href="https://wa.me/201556332042" target="_blank" class="d-flex align-items-center p-3 mb-3 border rounded-3 text-decoration-none text-dark shadow-sm">
+                   <i class="fab fa-whatsapp fa-2x text-success me-3"></i>
+                    <div>
+                        <h6 class="mb-1 fw-bold">واتساب (WhatsApp)</h6>
+                        <p class="mb-0 text-muted small">رد سريع ومباشر على استفساراتكم</p>
+                    </div>
+                </a>
+                <a href="mailto:ywsfmhmdh22@gmail.com" class="d-flex align-items-center p-3 border rounded-3 text-decoration-none text-dark shadow-sm">
+                    <i class="far fa-envelope fa-2x text-danger me-3"></i>
+                    <div>
+                        <h6 class="mb-1 fw-bold">البريد الإلكتروني (Gmail)</h6>
+                        <p class="mb-0 text-muted small">ywsfmhmdh22@gmail.com</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // نظام جزيئات الخلفية المتطور والخفيف
+    // Particle Background
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let width, height, particles = [];
@@ -347,9 +442,7 @@
             ctx.fill();
         }
     }
-
     for(let i=0; i<50; i++) particles.push(new Particle());
-
     function animate() {
         ctx.clearRect(0,0,width,height);
         particles.forEach(p => { p.update(); p.draw(); });
@@ -357,11 +450,16 @@
     }
     animate();
 
-    // تبديل الثيم
+    // Theme Logic
     const themeToggles = document.querySelectorAll('.theme-toggle-btn');
+    const themeIcons = document.querySelectorAll('.theme-icon');
     const updateUI = (theme) => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
+        themeIcons.forEach(icon => {
+            if(theme === 'dark') icon.classList.replace('fa-moon', 'fa-sun');
+            else icon.classList.replace('fa-sun', 'fa-moon');
+        });
     };
     themeToggles.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -369,12 +467,7 @@
             updateUI(current === 'dark' ? 'light' : 'dark');
         });
     });
-
-    // كود الأدمن السري
-    document.getElementById('adminGate').addEventListener('click', () => {
-        const pass = prompt("الوصول إلى لوحة التحكم العالمية:");
-        if (pass === "01025450449") window.location.href = "/admin/dashboard";
-    });
+    updateUI(localStorage.getItem('theme') || 'light');
 </script>
 
 </body>

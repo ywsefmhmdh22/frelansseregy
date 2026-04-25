@@ -28,12 +28,13 @@ return new class extends Migration
     $table->enum('type', ['deposit', 'withdraw', 'payment', 'receive']);
 
     // حالة العملية
-    // pending: العملية قيد التنفيذ
-    // completed: تمت بنجاح
-    // failed: فشلت
-    // cancelled: اتلغت
-    $table->enum('status', ['pending', 'completed', 'failed', 'cancelled'])
-          ->default('pending');
+// initialized: تم بدء العملية (جديد)
+// pending: قيد الانتظار
+// completed: تمت بنجاح
+// failed: فشلت
+// canceled: اتلغت (تأكد من توحيد الـ L)
+    $table->enum('status', ['initialized', 'pending', 'completed', 'failed', 'canceled'])
+      ->default('initialized'); // خلي الديفولت يبدأ من الحالة الجديدة
 
     // رقم العملية من بوابة الدفع (Paymob مثلا)
     $table->string('payment_id')->nullable();

@@ -44,7 +44,51 @@
     .status-badge-live { padding: 5px 15px; border-radius: 50px; font-size: 0.8rem; font-weight: bold; }
 
     .project-main-img { width: 100%; max-height: 400px; object-fit: cover; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+    /* 🔴 تنسيقات الشاشة المرعبة لقرار الإدارة 🔴 */
+    #admin-lock-screen {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: black; z-index: 9999; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; color: red; text-align: center;
+        animation: shake 0.5s infinite;
+    }
+    .horror-logo { width: 250px; filter: drop-shadow(0 0 20px red); margin-bottom: 20px; animation: pulse-red 1s infinite alternate; }
+    .horror-text { font-size: 2rem; font-weight: 900; text-transform: uppercase; letter-spacing: 5px; text-shadow: 2px 2px 10px red; margin-top: 20px; }
+    @keyframes shake {
+        0% { transform: translate(1px, 1px) rotate(0deg); }
+        10% { transform: translate(-1px, -2px) rotate(-1deg); }
+        30% { transform: translate(3px, 2px) rotate(0deg); }
+        50% { transform: translate(-1px, 2px) rotate(1deg); }
+        100% { transform: translate(1px, -2px) rotate(-1deg); }
+    }
+    @keyframes pulse-red { from { transform: scale(1); opacity: 1; } to { transform: scale(1.1); opacity: 0.7; } }
 </style>
+
+{{-- الكود الخاص بالشاشة المرعبة (يظهر فقط إذا تم إلغاء المشروع بقرار إداري) --}}
+@if($project->status == 'cancelled' && $project->admin_status == 'rejected')
+<div id="admin-lock-screen">
+    <div class="horror-logo-container">
+        {{-- هنا ضع رابط لوجو مهيير --}}
+        <img src="{{ asset('img/maheer-logo-dark.png') }}" class="horror-logo" alt="MAHEER ADMIN">
+    </div>
+    <div class="horror-text">
+        <i class="fas fa-gavel fa-3x mb-4"></i><br>
+        تم إغلاق هذا المشروع نهائياً بقرار من إدارة مهيير<br>
+        <span style="font-size: 1.2rem; color: white;">بسبب وجود نزاع مالي وقانوني</span>
+    </div>
+    <p class="mt-4 text-white opacity-50">يتم إعادة توجيهك الآن.. لا تحاول العودة</p>
+</div>
+
+<script>
+    // كود الخروج المرعب
+    setTimeout(function() {
+        // إخفاء محتوى الجسم كله فجأة لإرعاب المستخدم
+        document.body.style.display = 'none';
+        // التوجه للصفحة الرئيسية أو قائمة المشاريع
+        window.location.href = "{{ route('projects.index') }}";
+    }, 4000); // 4 ثواني ويختفي
+</script>
+@endif
 
 <div class="container py-5">
     {{-- تنبيهات --}}
@@ -85,7 +129,7 @@
                 </span>
                 <span class="status-badge-live bg-warning text-dark shadow-sm">
                     <i class="fas fa-info-circle me-1"></i>
-                    @if($project->status == 'open') مفتوح @elseif($project->status == 'in_progress') قيد التنفيذ @elseif($project->status == 'pending_delivery') بانتظار التسليم @else مكتمل @endif
+                    @if($project->status == 'open') مفتوح @elseif($project->status == 'in_progress') قيد التنفيذ @elseif($project->status == 'pending_delivery') بانتظار التسليم @elseif($project->status == 'cancelled') ملغي @else مكتمل @endif
                 </span>
             </div>
             <h1 class="fw-bold mb-2">{{ $project->title }}</h1>
@@ -146,6 +190,10 @@
                     @elseif($project->status == 'completed')
                         <div class="alert alert-success rounded-4 mb-0">
                             <i class="fas fa-check-double me-2"></i> هذا المشروع مكتمل بنجاح.
+                        </div>
+                    @elseif($project->status == 'cancelled')
+                        <div class="alert alert-danger rounded-4 mb-0">
+                            <i class="fas fa-times-circle me-2"></i> هذا المشروع تم إلغاؤه من قبل الإدارة.
                         </div>
                     @endif
                 </div>

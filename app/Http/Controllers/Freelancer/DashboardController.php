@@ -5,77 +5,114 @@ namespace App\Http\Controllers\Freelancer;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Order;
+use App\Models\Wallet;
+use App\Models\Transaction;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    /**
+     * عرض لوحة تحكم المستقل مع إحصائيات الأرباح المعلقة والعداد التنازلي.
+     */
     public function index()
     {
         $user = Auth::user();
 
-        // 1. البيانات الأساسية (Basic Stats)
+        // 1. حساب الرصيد وتحديث المحفظة
+        // نستخدم firstOrCreate للتأكد من وجود محفظة للمستخدم دائماً
+        $wallet = Wallet::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0, 'pending_balance' => 0]
+        );
+
+        // الرصيد المتاح: يتم جلبه من المحفظة مباشرة
+        $availableBalance = $wallet->balance;
+
+        // الرصيد المعلق: يتم حسابه ديناميكياً من جدول العمليات لضمان الدقة اللحظية
+        $pendingBalance = Transaction::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->sum('amount');
+
+        // إجمالي الرصيد (المتاح + المعلق)
+        $totalBalance = $availableBalance + $pendingBalance;
+
+        // --- التعديل: جلب أقرب موعد لفك الحجز عن رصيد معلق (تم تصحيح اسم العمود إلى unlock_at) ---
+        $nextTransaction = Transaction::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->whereNotNull('unlock_at')
+            ->where('unlock_at', '>', now())
+            ->orderBy('unlock_at', 'asc')
+            ->first();
+
+        // تمرير التاريخ بصيغة ISO لضمان توافقه مع JavaScript في جميع المتصفحات
+        $nextUnlockDate = $nextTransaction ? $nextTransaction->unlock_at->toIso8601String() : null;
+
+        // 2. البيانات الأساسية (Basic Stats)
+        // عدد الخدمات المكتملة
         $completedServicesCount = $user->orders()->where('status', 'completed')->count();
+
+        // عدد المشاريع المكتملة
         $completedProjectsCount = $user->freelancerProjects()->where('status', 'completed')->count();
+
         $totalCompleted = $completedServicesCount + $completedProjectsCount;
 
-        // التقييمات والرصيد
+        // متوسط التقييمات
         $projRating = $user->receivedReviews()->avg('rating') ?? 0;
-        $pendingBalance = $user->wallet->pending_balance ?? 0;
 
-        // حساب إجمالي مبيعات المستقل (لحل مشكلة الخطأ في الـ Blade)
-        $totalSalesInUsd = $user->wallet->balance ?? 0;
+        // 3. المهارات
+        $skills = $user->skills ? explode(',', $user->skills) : [];
 
-        // 2. حساب بيانات مركز القيادة (أرقام حقيقية)
-
-        // نسبة المستوى: لنفترض أن "مستقل محترف" يحتاج 20 مشروع مكتمل
+        // 4. بيانات مركز القيادة (Pro Status)
         $levelTarget = 20;
-        $levelPercentage = min(($totalCompleted / $levelTarget) * 100, 100);
+        $levelPercentage = $levelTarget > 0 ? min(($totalCompleted / $levelTarget) * 100, 100) : 0;
 
-        // الموثوقية: تعتمد على (المشاريع المكتملة / إجمالي المشاريع التي استلمها ولم يلغها)
+        // حساب الموثوقية
         $totalStarted = $user->orders()->where('status', '!=', 'cancelled')->count();
         $reliability = $totalStarted > 0 ? ($totalCompleted / $totalStarted) * 100 : 100;
 
         $proStatus = [
             'levelPercentage' => round($levelPercentage),
             'reliability' => round($reliability),
-            'delivery' => $this->calculateDeliverySpeed($user),
-            'response' => '5 د', // قيمة افتراضية حالياً
-            'deliveryClass' => 'text-info',
-            'responseClass' => 'text-warning'
+            'delivery' => 'سريع',
+            'response' => '5 د'
         ];
 
-        // 3. الأهداف السريعة (Quick Goals)
-        $financialTarget = 5000; // هدف افتراضي بالدولار أو الجنيه
-        $financialPercentage = $financialTarget > 0 ? min(($totalSalesInUsd / $financialTarget) * 100, 100) : 0;
+        // 5. الأهداف السريعة (Quick Goals)
+        $financialTarget = 5000;
+        $financialPercentage = $financialTarget > 0 ? min(($totalBalance / $financialTarget) * 100, 100) : 0;
 
         $quickGoals = [
-            'financial' => [
+            'income' => [
                 'percentage' => round($financialPercentage),
-                'text' => round($financialPercentage) . '%'
+                'text' => '$' . number_format($totalBalance, 0)
             ],
-            'reviews' => [
+            'rating' => [
                 'percentage' => ($projRating / 5) * 100,
                 'text' => number_format($projRating, 1)
             ]
         ];
 
-        // 4. جلب آخر الطلبات مع العلاقات اللازمة
-        $recentOrders = $user->orders()->with(['service', 'buyer'])->latest()->take(5)->get();
+        // 6. جلب آخر الطلبات
+        $recentOrders = $user->orders()
+            ->with(['service', 'buyer'])
+            ->latest()
+            ->take(5)
+            ->get();
 
+        // إرسال كافة المتغيرات المطلوبة للـ Blade
         return view('dashboards.freelancer Dashboard', compact(
             'user',
+            'totalBalance',
+            'availableBalance',
+            'pendingBalance',
+            'nextUnlockDate', // المتغير الجديد للعداد التنازلي
             'completedServicesCount',
             'completedProjectsCount',
             'projRating',
-            'pendingBalance',
             'recentOrders',
             'proStatus',
             'quickGoals',
-            'totalSalesInUsd' // تم إضافته لضمان عدم حدوث الخطأ السابق
+            'skills'
         ));
-    }
-
-    // دالة تقدير سرعة التسليم (بسيطة حالياً)
-    private function calculateDeliverySpeed($user) {
-        return 'سريع';
     }
 }

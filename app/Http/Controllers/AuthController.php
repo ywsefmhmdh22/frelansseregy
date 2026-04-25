@@ -6,11 +6,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password as PasswordRule; // تغيير الاسم لتجنب التعارض
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Password; // مهم جداً لاستعادة كلمة السر
+use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
 use Exception;
 
@@ -25,7 +25,7 @@ class AuthController extends Controller
     }
 
     /**
-     * معالجة بيانات التسجيل.
+     * معالجة بيانات التسجيل مع رسائل خطأ مفصلة للمستخدم.
      */
     public function register(Request $request)
     {
@@ -35,14 +35,24 @@ class AuthController extends Controller
             'password' => [
                 'required',
                 'confirmed',
-                'min:12',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/',
-                PasswordRule::min(12)->letters()->mixedCase()->numbers()->symbols()->uncompromised(),
+                PasswordRule::min(12)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised(),
             ],
             'role'     => ['required', 'in:freelancer,client,admin'],
         ], [
-            'password.regex' => 'كلمة السر ضعيفة! يجب أن تحتوي على أحرف كبيرة، صغيرة، أرقام، ورموز خاصة.',
-            'password.uncompromised' => 'كلمة المرور هذه ظهرت في تسريبات بيانات سابقة، يرجى اختيار واحدة أكثر أماناً.',
+            // رسائل الخطأ المخصصة لتسهيل الأمر على العميل
+            'password.required' => 'يجب إدخال كلمة المرور.',
+            'password.min' => 'يجب أن تكون كلمة المرور 12 حرفاً على الأقل.',
+            'password.letters' => 'كلمة المرور يجب أن تحتوي على حروف.',
+            'password.mixed_case' => 'يجب أن تحتوي كلمة المرور على حروف كبيرة وصغيرة (A, a).',
+            'password.numbers' => 'يجب أن تحتوي كلمة المرور على أرقام على الأقل.',
+            'password.symbols' => 'يجب أن تحتوي كلمة المرور على رموز خاصة مثل (@, $, !, %, *).',
+            'password.uncompromised' => 'كلمة المرور هذه مسربة في اختراقات سابقة، يرجى اختيار كلمة أكثر أماناً.',
+            'password.confirmed' => 'تأكيد كلمة المرور غير متطابق.',
         ]);
 
         try {
@@ -103,7 +113,7 @@ class AuthController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | ميزات استعادة كلمة المرور (الجديدة)
+    | ميزات استعادة كلمة المرور
     |--------------------------------------------------------------------------
     */
 

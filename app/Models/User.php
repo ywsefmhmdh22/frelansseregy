@@ -15,6 +15,7 @@ use App\Models\Service;
 use App\Models\Order;
 use App\Models\Review;
 use App\Models\Portfolio;
+use App\Models\WithdrawRequest; // تم إضافة استدعاء موديل طلبات السحب
 
 class User extends Authenticatable
 {
@@ -22,7 +23,6 @@ class User extends Authenticatable
 
     /**
      * الحقول القابلة للتعبئة (Mass Assignment)
-     * تم إضافة (role, verification_status, is_banned) لتمكين لوحة التحكم من تعديلها
      */
     protected $fillable = [
         'name',
@@ -38,10 +38,10 @@ class User extends Authenticatable
         'id_number',
         'id_image',
         'id_image_back',
-        'verification_status', // مضاف للتفعيل/التعطيل
+        'verification_status',
         'is_profile_completed',
-        'is_banned',           // مضاف لنظام الحظر
-        'role',                // مضاف للتحكم في الصلاحيات
+        'is_banned',
+        'role',
         'last_seen',
         'email_verified_at',
     ];
@@ -72,6 +72,15 @@ class User extends Authenticatable
     }
 
     // ================= العلاقات والوظائف =================
+
+    /**
+     * علاقة طلبات السحب (واحد لمتعدد)
+     * تم إضافتها لحل مشكلة سجل العمليات في صفحة المحفظة
+     */
+    public function withdrawRequests()
+    {
+        return $this->hasMany(WithdrawRequest::class);
+    }
 
     /**
      * علاقة التقييمات المستلمة
@@ -170,7 +179,7 @@ class User extends Authenticatable
     }
 
     /**
-     * دالة مساعدة للتحقق من الأدمن (للأمان الإضافي)
+     * دالة مساعدة للتحقق من الأدمن
      */
     public function isAdmin()
     {

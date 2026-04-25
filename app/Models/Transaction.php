@@ -9,20 +9,25 @@ class Transaction extends Model
 {
     use HasFactory;
 
-    /**
-     * الحقول المسموح بتعبئتها (Mass Assignment)
-     * تم إضافة الحقول اللازمة لعملية التحويل المالي وتتبع العملات
-     */
     protected $fillable = [
         'user_id',
         'amount',
-        'currency',         // أضفنا هذا لتخزين نوع العملة (EGP/USD)
-        'converted_amount', // أضفنا هذا لتخزين المبلغ الصافي الذي دخل المحفظة فعلياً
-        'type',             // deposit, withdraw, payment, receive
-        'status',           // pending, completed, failed, cancelled
-        'payment_id',       // رقم الطلب (Order ID) من Paymob
-        'payment_method',   // card, wallet
-        'details',          // لتخزين الـ Transaction ID الخاص بـ Paymob كمرجع إضافي
+        'currency',
+        'converted_amount',
+        'type',
+        'status',
+        'payment_id',
+        'payment_method',
+        'details',
+        'unlock_at', // تم الإضافة لضمان إمكانية حفظ تاريخ فك الحجز
+    ];
+
+    /**
+     * الـ Casts: ضرورية جداً لتحويل التاريخ من نص إلى كائن Carbon
+     * وبدونها سيعطي الكنترولر خطأ عند استدعاء toIso8601String()
+     */
+    protected $casts = [
+        'unlock_at' => 'datetime',
     ];
 
     /**
@@ -33,8 +38,40 @@ class Transaction extends Model
         return $this->belongsTo(User::class);
     }
 
+    // =========================================================================
+    // الـ Scopes: تصفية البيانات بسهولة في الـ Controller
+    // =========================================================================
+
     /**
-     * دالة لتنسيق المبلغ مع العملة المختارة في العملية
+     * جلب العمليات الناجحة فقط
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    /**
+     * جلب العمليات التي تم إنشاؤها ولم تكتمل بعد (initialized)
+     */
+    public function scopeInitialized($query)
+    {
+        return $query->where('status', 'initialized');
+    }
+
+    /**
+     * جلب العمليات المعلقة
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    // =========================================================================
+    // الـ Accessors: لتنسيق البيانات عند عرضها في الـ Blade
+    // =========================================================================
+
+    /**
+     * تنسيق المبلغ الأصلي مع العملة (EGP/USD)
      */
     public function getFormattedAmountAttribute()
     {
@@ -43,10 +80,38 @@ class Transaction extends Model
     }
 
     /**
-     * دالة لتنسيق المبلغ الصافي المضاف للمحفظة (دائماً بالدولار حسب نظامك)
+     * تنسيق المبلغ الصافي المضاف للمحفظة بالدولار
      */
     public function getFormattedConvertedAmountAttribute()
     {
-        return number_format($this->converted_amount, 2) . ' $';
+        return number_format($this->converted_amount ?? 0, 2) . ' $';
+    }
+
+    /**
+     * إرجاع لون الـ Badge بناءً على الحالة
+     */
+    public function getStatusColorAttribute()
+    {
+        return [
+            'completed'   => 'success',   // أخضر
+            'initialized' => 'info',      // أزرق سماوي
+            'pending'     => 'warning',   // أصفر
+            'failed'      => 'danger',    // أحمر
+            'canceled'    => 'secondary', // رمادي
+        ][$this->status] ?? 'dark';
+    }
+
+    /**
+     * ترجمة حالة العملية للعربية
+     */
+    public function getStatusArabicAttribute()
+    {
+        return [
+            'completed'   => 'مكتملة',
+            'initialized' => 'قيد البدء',
+            'pending'     => 'قيد الانتظار',
+            'failed'      => 'فاشلة',
+            'canceled'    => 'ملغاة',
+        ][$this->status] ?? 'غير معروف';
     }
 }

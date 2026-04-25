@@ -10,12 +10,31 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Transaction;
 use App\Models\Wallet;
 use App\Models\User;
+use App\Models\Service;
+use App\Models\Order;
 use Exception;
 
 class PaymentController extends Controller
 {
     // نسبة عمولة المنصة (9%)
     protected $platformFee = 0.09;
+
+    /**
+     * عرض صفحة المحفظة الرئيسية
+     */
+    public function index()
+    {
+        $user = auth()->user();
+
+        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+
+        $transactions = Transaction::where('user_id', $user->id)
+            ->whereIn('status', ['completed', 'failed', 'canceled'])
+            ->latest()
+            ->paginate(10);
+
+        return view('wallet.index', compact('wallet', 'transactions'));
+    }
 
     /**
      * جلب سعر الصرف اللحظي مع التخزين المؤقت.
@@ -54,6 +73,7 @@ class PaymentController extends Controller
             'currency'       => 'required|in:EGP,USD',
             'payment_method' => 'required|in:card,wallet',
             'phone_number'   => 'required_if:payment_method,wallet|nullable|regex:/^01[0125][0-9]{8}$/',
+            'service_id'     => 'nullable|exists:services,id', // حقل اختياري لربط الدفع بخدمة
         ]);
 
         try {
@@ -108,7 +128,7 @@ class PaymentController extends Controller
             if (!$paymentKeyResponse->successful()) throw new Exception('فشل الحصول على تصريح الدفع.');
             $paymentToken = $paymentKeyResponse->json()['token'];
 
-            // 4. تسجيل العملية كـ "معلقة"
+            // 4. تسجيل العملية
             Transaction::create([
                 'user_id'         => $user->id,
                 'amount'          => (float) $validated['amount'],
@@ -116,7 +136,8 @@ class PaymentController extends Controller
                 'type'            => 'deposit',
                 'payment_id'      => (string) $orderId,
                 'payment_method'  => $validated['payment_method'],
-                'status'          => 'pending',
+                'status'          => 'initialized',
+                'source_id'       => $request->service_id, // ربط الطلب بالخدمة
             ]);
 
             if ($validated['payment_method'] == 'wallet') {
@@ -140,9 +161,6 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * الـ Callback العادي (لتوجيه المستخدم فقط)
-     */
     public function callback(Request $request)
     {
         if (!$this->verifySecureSignature($request)) {
@@ -150,34 +168,37 @@ class PaymentController extends Controller
         }
 
         $success = $request->query('success');
+        $orderId = $request->query('order');
+
         if ($success === 'true') {
-            return redirect()->route('wallet.index')->with('success', 'جاري معالجة طلبك، سيظهر الرصيد فور التأكيد.');
+            return redirect()->route('wallet.index')->with('success', 'تم استلام طلبك بنجاح، سيظهر الرصيد فور التأكيد.');
         }
 
-        return redirect()->route('wallet.index')->with('error', 'فشلت عملية الدفع.');
+        Transaction::where('payment_id', $orderId)
+            ->where('status', 'initialized')
+            ->update(['status' => 'canceled']);
+
+        return redirect()->route('wallet.index')->with('error', 'تم إلغاء عملية الدفع أو فشلت.');
     }
 
     /**
-     * الـ Webhook الاحترافي (تحديث الرصيد الحقيقي)
+     * الـ Webhook الاحترافي لتحديث الرصيد وإنشاء طلبات الخدمات الجاهزة فوراً
      */
     public function processedCallback(Request $request)
     {
-        $data = $request->all();
-        $hmac = $request->query('hmac');
-
-        // ملاحظة: التحقق من HMAC في الـ Webhook يختلف قليلاً في ترتيب البيانات
         if (!$this->verifyWebhookSignature($request)) {
             Log::critical('SECURITY ALERT: Invalid Webhook HMAC');
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+        $data = $request->all();
         $obj = $data['obj'];
         $orderId = (string) $obj['order']['id'];
         $success = $obj['success'];
 
         return DB::transaction(function () use ($orderId, $success, $obj) {
             $transaction = Transaction::where('payment_id', $orderId)
-                ->where('status', 'pending')
+                ->where('status', 'initialized')
                 ->lockForUpdate()
                 ->first();
 
@@ -186,15 +207,42 @@ class PaymentController extends Controller
                 $amountInUsd = ($transaction->currency == 'USD') ? $transaction->amount : ($transaction->amount / $exchangeRate);
                 $finalNetUsd = $amountInUsd * (1 - $this->platformFee);
 
+                // 1. تحديث حالة المعاملة
                 $transaction->update([
                     'status' => 'completed',
-                    'details' => 'Paymob ID: ' . $obj['id']
+                    'converted_amount' => $finalNetUsd,
+                    'details' => 'Paymob Transaction ID: ' . $obj['id']
                 ]);
 
+                // 2. تحديث محفظة المشتري (إذا كان إيداع فقط)
                 $wallet = Wallet::firstOrCreate(['user_id' => $transaction->user_id], ['balance' => 0]);
                 $wallet->increment('balance', $finalNetUsd);
 
-                Log::info("Wallet Credited: Order #{$orderId}");
+                // 3. منطق شراء الخدمة (إذا كانت المعاملة مرتبطة بـ service_id)
+                if ($transaction->source_id) {
+                    $service = Service::find($transaction->source_id);
+                    if ($service) {
+                        // تحديد حالة الطلب: إذا كانت جاهزة تصبح مكتملة فوراً
+                        $isReady = ($service->type === 'ready');
+                        $orderStatus = $isReady ? 'completed' : 'pending';
+
+                        $order = Order::create([
+                            'user_id'      => $transaction->user_id,
+                            'seller_id'    => $service->user_id,
+                            'service_id'   => $service->id,
+                            'price'        => $service->price,
+                            'status'       => $orderStatus,
+                            'completed_at' => $isReady ? now() : null,
+                        ]);
+
+                        // إذا كانت جاهزة، يتم تحويل الربح للمستقل فوراً في الرصيد المعلق
+                        if ($isReady) {
+                            $this->payoutToFreelancerFromPayment($order);
+                        }
+                    }
+                }
+
+                Log::info("Payment Processed: Order #{$orderId}");
                 return response()->json(['status' => 'success']);
             }
 
@@ -204,6 +252,31 @@ class PaymentController extends Controller
 
             return response()->json(['status' => 'processed']);
         });
+    }
+
+    /**
+     * تحويل الأرباح للمستقل عند الشراء الفوري
+     */
+    private function payoutToFreelancerFromPayment(Order $order)
+    {
+        $sellerWallet = Wallet::firstOrCreate(
+            ['user_id' => $order->seller_id],
+            ['balance' => 0, 'pending_balance' => 0]
+        );
+
+        $sellerWallet->increment('pending_balance', $order->price);
+
+        Transaction::create([
+            'user_id'        => $order->seller_id,
+            'amount'         => $order->price,
+            'currency'       => 'USD',
+            'type'           => 'receive',
+            'status'         => 'pending',
+            'release_at'     => now()->addDays(7),
+            'source_id'      => $order->id,
+            'source_type'    => Order::class,
+            'details'        => 'أرباح بيع خدمة جاهزة: ' . strip_tags($order->service->title ?? 'خدمة'),
+        ]);
     }
 
     protected function verifySecureSignature(Request $request): bool
@@ -227,7 +300,6 @@ class PaymentController extends Controller
 
         if (!$hmac || !$secret || !$obj) return false;
 
-        // ترتيب البيانات للـ Webhook (يختلف عن الـ Callback)
         $concatenatedString =
             $obj['amount_cents'] .
             $obj['created_at'] .

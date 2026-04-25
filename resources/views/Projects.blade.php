@@ -13,10 +13,18 @@
         <div class="projects-grid">
             @foreach($allData as $item)
             {{-- فحص حالة المشروع لتطبيق التنسيق المناسب --}}
-            @php $isCompleted = ($item->status === 'completed'); @endphp
+            @php
+                $isCompleted = ($item->status === 'completed');
+
+                /* التعديل الرئيسي هنا:
+                   استخدام proposals_count (في حال استخدمت withCount في الكنترولر)
+                   أو proposals->count() كبديل
+                */
+                $offersCount = $item->proposals_count ?? ($item->proposals ? $item->proposals->count() : 0);
+            @endphp
 
             <div class="project-card-v2 {{ $isCompleted ? 'card-completed-premium' : '' }}">
-                {{-- تم حل المشكلة هنا بإضافة aria-label ليكون الرابط متاحاً لقارئات الشاشة --}}
+                {{-- رابط الكارت بالكامل --}}
                 <a href="{{ route('projects.show', $item->id) }}" class="stretched-link" aria-label="عرض تفاصيل مشروع: {{ $item->title }}"></a>
 
                 {{-- ختم المنصة العالمي للمشاريع المكتملة --}}
@@ -31,7 +39,8 @@
 
                 <div class="card-top-section">
                     <div class="image-container">
-                        <img src="{{ $item->image_url ? asset('storage/' . $item->image_url) : 'https://via.placeholder.com/400x300/f8fafc/10b981?text=Project' }}" alt="{{ $item->title }}">
+                        {{-- استخدام الـ Attribute المحسن من الموديل --}}
+                        <img src="{{ $item->full_image_url }}" alt="{{ $item->title }}">
                         <div class="category-tag">{{ $item->type ?? 'عام' }}</div>
                     </div>
                 </div>
@@ -55,13 +64,27 @@
                     </div>
 
                     <div class="card-footer-v2">
-                        <div class="budget-info">
-                            <span class="label">الميزانية التقديرية</span>
-                            <div class="amount-wrapper">
-                                <span class="currency-symbol">{{ $item->currency }}</span>
-                                <span class="amount-value">{{ number_format($item->price) }}</span>
+                        <div class="footer-left-info d-flex gap-4">
+                            {{-- معلومات الميزانية --}}
+                            <div class="budget-info">
+                                <span class="label">الميزانية</span>
+                                <div class="amount-wrapper">
+                                    <span class="currency-symbol">{{ $item->currency }}</span>
+                                    <span class="amount-value">{{ number_format($item->price) }}</span>
+                                </div>
+                            </div>
+
+                            {{-- معلومات عدد العروض المضافة --}}
+                            <div class="offers-stats-info">
+                                <span class="label">العروض</span>
+                                <div class="stats-wrapper">
+                                    <i class="fas fa-paper-plane me-1"></i>
+                                    <span class="stats-value">{{ $offersCount }}</span>
+                                    <span class="stats-text">عروض</span>
+                                </div>
                             </div>
                         </div>
+
                         <div class="view-details-circle">
                             <i class="fas fa-chevron-left"></i>
                         </div>
@@ -129,22 +152,21 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
-    /* تنسيق الكارت المكتمل الفاخر */
     .card-completed-premium {
-        background: #0a0f1c; /* لون داكن فخم */
+        background: #0a0f1c;
         border: 1.5px solid #bf953f;
     }
 
     .card-completed-premium .project-title-v2 {
-        color: #fcf6ba !important; /* لون ذهبي للنص */
+        color: #fcf6ba !important;
     }
 
     .card-completed-premium .project-description-v2,
-    .card-completed-premium .amount-value {
+    .card-completed-premium .amount-value,
+    .card-completed-premium .stats-value {
         color: #ffffff !important;
     }
 
-    /* الختم العالمي */
     .global-seal {
         position: absolute;
         top: 20px;
@@ -158,23 +180,11 @@
         padding: 5px 0;
     }
 
-    .seal-inner {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-    }
-
     .seal-inner span {
         font-size: 10px;
         font-weight: 900;
         color: #000;
         letter-spacing: 1px;
-    }
-
-    .seal-inner i {
-        font-size: 10px;
-        color: #000;
     }
 
     .project-card-v2:hover {
@@ -243,7 +253,6 @@
         height: 8px;
         background-color: currentColor;
         border-radius: 50%;
-        display: inline-block;
         animation: pulse 2s infinite;
     }
 
@@ -264,30 +273,50 @@
 
     .skill-pill {
         display: inline-block;
-        background: rgba(255,255,255,0.05);
-        color: #94a3b8;
+        background: #f1f5f9;
+        color: #64748b;
         padding: 3px 12px;
         border-radius: 8px;
         font-size: 12px;
         font-weight: 600;
         margin-left: 6px;
-        border: 1px solid rgba(255,255,255,0.1);
     }
 
-    /* Footer with dynamic currency */
+    /* Footer Section */
     .card-footer-v2 {
-        border-top: 1px solid rgba(255,255,255,0.05);
+        border-top: 1px solid #f1f5f9;
         padding-top: 20px;
         display: flex;
         justify-content: space-between;
         align-items: flex-end;
     }
 
-    .budget-info .label {
+    .label {
         display: block;
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-muted);
         margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    /* Offers Info Style */
+    .offers-stats-info .stats-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--primary-color);
+    }
+
+    .stats-value {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--dark-navy);
+    }
+
+    .stats-text {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
     }
 
     .amount-wrapper {
@@ -312,7 +341,7 @@
     .view-details-circle {
         width: 45px;
         height: 45px;
-        background: rgba(255,255,255,0.05);
+        background: var(--soft-gray);
         border-radius: 50%;
         display: flex;
         align-items: center;

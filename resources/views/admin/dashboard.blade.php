@@ -69,27 +69,40 @@
     }
 
     /* Filter UI */
-    .filter-btn-group { background: rgba(0,0,0,0.3); padding: 6px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
-    .filter-btn { border: none; background: transparent; color: var(--text-muted); padding: 8px 18px; border-radius: 12px; font-weight: bold; transition: 0.3s; }
+    .filter-btn-group {
+        background: rgba(0,0,0,0.3);
+        padding: 6px;
+        border-radius: 15px;
+        border: 1px solid rgba(255,255,255,0.05);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .filter-btn { border: none; background: transparent; color: var(--text-muted); padding: 8px 18px; border-radius: 12px; font-weight: bold; transition: 0.3s; font-size: 13px; }
     .filter-btn.active { background: var(--neon-blue); color: white; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4); }
 
-    /* التحكم في ظهور الأقسام */
     .section-content { display: none; }
     .section-active { display: block !important; }
 
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+    /* SweetAlert Custom Styling */
+    .swal2-popup-custom {
+        border-radius: 25px !important;
+        border: 1px solid var(--neon-blue) !important;
+    }
 </style>
 
 <div class="dashboard-wrapper">
     {{-- Navbar --}}
-    <nav class="glass-navbar d-flex justify-content-between align-items-center animate__animated animate__fadeInDown">
+    <nav class="glass-navbar d-flex flex-wrap justify-content-between align-items-center animate__animated animate__fadeInDown gap-3">
         <div class="logo d-flex align-items-center">
             <h4 class="mb-0 fw-900" style="font-family: 'Orbitron'; letter-spacing: 2px;">
                 <i class="fas fa-shield-halved text-info me-2"></i>FOX<span class="text-info">ACCOUNTING</span>
             </h4>
         </div>
 
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex flex-wrap align-items-center gap-3">
             <a href="{{ route('admin.disputes.index') }}" class="btn btn-outline-danger rounded-pill px-4 fw-bold position-relative">
                 <i class="fas fa-gavel me-2"></i>محكمة النزاعات
                 @if($activeDisputesCount > 0)
@@ -166,26 +179,18 @@
 
     {{-- Management Card --}}
     <div class="user-table-card animate__animated animate__fadeInUp">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4 mb-4">
+        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-4 mb-4">
             <div>
-                <h5 class="fw-bold mb-1"><i class="fas fa-users-cog me-2 text-info"></i>إدارة النظام</h5>
-                <p class="text-muted small mb-0">تحكم كامل في الحسابات والمشاريع</p>
+                <h5 class="fw-bold mb-1"><i class="fas fa-users-cog me-2 text-info"></i>إدارة النظام الشاملة</h5>
+                <p class="text-muted small mb-0">تحكم كامل في الحسابات، المالية، والنزاعات</p>
             </div>
 
-            <div class="filter-btn-group d-flex">
+            <div class="filter-btn-group">
                 <button class="filter-btn active" onclick="switchSection('users', this); filterUsers('all')">المستخدمين</button>
-                <button id="btnFilterPending" class="filter-btn" onclick="switchSection('users', this); filterUsers('pending')">
-                    توثيق المعلقين
-                    @if($pendingUsers->count() > 0)
-                    <span class="ms-2 badge bg-warning text-dark">{{ $pendingUsers->count() }}</span>
-                    @endif
-                </button>
-                <button class="filter-btn" onclick="switchSection('projects', this)">
-                    المشاريع المعلقة
-                    @if(isset($pendingProjects) && $pendingProjects->count() > 0)
-                    <span class="ms-2 badge bg-danger">{{ $pendingProjects->count() }}</span>
-                    @endif
-                </button>
+                <button class="filter-btn" onclick="switchSection('projects', this)">مشاريع معلقة</button>
+                <button class="filter-btn" onclick="switchSection('deposits', this)">شحن</button>
+                <button class="filter-btn" onclick="switchSection('withdrawals', this)">سحب</button>
+                <button class="filter-btn" onclick="switchSection('disputes', this)">نزاعات</button>
             </div>
 
             <div class="position-relative">
@@ -240,7 +245,7 @@
                                 <div class="d-flex justify-content-center gap-2">
                                     @if($user->verification_status !== 'verified')
                                         <button onclick="approveUser('{{$user->id}}')" class="btn btn-sm btn-success">
-                                            <i class="fas fa-check"></i> توثيق
+                                            <i class="fas fa-check"></i>
                                         </button>
                                     @endif
                                     <a href="{{ route('admin.user.edit', $user->id) }}" class="btn btn-sm btn-outline-info"><i class="fas fa-eye"></i></a>
@@ -276,17 +281,15 @@
                                 <h6 class="mb-0 small fw-bold">{{ $project->title }}</h6>
                                 <span class="badge bg-warning text-dark" style="font-size: 9px">PENDING REVIEW</span>
                             </td>
-                            <td>{{ $project->user->name ?? 'N/A' }}</td> {{-- تعديل هنا: user بدل client --}}
-
+                            <td>{{ $project->user->name ?? 'N/A' }}</td>
                             <td class="text-info fw-bold">
-                                {{ number_format($project->price, 2) }} {{-- تعديل هنا: price بدل budget --}}
+                                {{ number_format($project->price, 2) }}
                                 <small style="font-size: 10px">{{ $project->currency }}</small>
                             </td>
-
                             <td class="small text-muted">{{ $project->created_at->format('Y-m-d') }}</td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <button onclick="approveProject('{{$project->id}}')" class="btn btn-sm btn-success shadow-sm">
+                                    <button onclick="approveProject('{{$project->id}}')" class="btn btn-sm btn-success">
                                         <i class="fas fa-check-circle me-1"></i> موافقة
                                     </button>
                                     <button onclick="rejectProject('{{$project->id}}')" class="btn btn-sm btn-outline-danger">
@@ -296,12 +299,123 @@
                             </td>
                         </tr>
                         @empty
+                        <tr><td colspan="5" class="text-center py-5 text-muted">لا توجد مشاريع معلقة</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- Deposits Table --}}
+        <div id="depositsSection" class="section-content">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead class="text-muted small border-bottom border-secondary">
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="fas fa-folder-open fs-2 mb-3"></i>
-                                <p>لا توجد مشاريع معلقة حالياً</p>
+                            <th>المستخدم</th>
+                            <th>المبلغ</th>
+                            <th>الوسيلة</th>
+                            <th>الحالة</th>
+                            <th>التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($deposits ?? [] as $deposit)
+                        <tr>
+                            <td>{{ $deposit->user->name }}</td>
+                            <td class="text-success fw-bold">+ {{ number_format($deposit->amount) }}</td>
+                            <td><span class="badge bg-secondary">{{ $deposit->method }}</span></td>
+                            <td><span class="badge bg-{{ $deposit->status == 'completed' ? 'success' : 'warning' }}">{{ $deposit->status }}</span></td>
+                            <td class="small text-muted">{{ $deposit->created_at->diffForHumans() }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="5" class="text-center py-5 text-muted">لا توجد عمليات شحن</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- Withdrawals Table --}}
+        <div id="withdrawalsSection" class="section-content">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead class="text-muted small border-bottom border-secondary">
+                        <tr>
+                            <th>المستخدم</th>
+                            <th>المبلغ المسحوب</th>
+                            <th>بيانات السحب</th>
+                            <th>الحالة</th>
+                            <th class="text-center">التحكم</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($withdrawals ?? [] as $withdraw)
+                        <tr>
+                            <td>{{ $withdraw->user->name }}</td>
+                            <td class="text-danger fw-bold">- {{ number_format($withdraw->amount) }}</td>
+                            <td class="small text-muted">{{ $withdraw->payment_details }}</td>
+                            <td><span class="badge bg-{{ $withdraw->status == 'pending' ? 'warning' : ($withdraw->status == 'completed' ? 'success' : 'danger') }}">{{ $withdraw->status }}</span></td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-info" onclick="processWithdraw('{{$withdraw->id}}', '{{$withdraw->user->name}}', '{{$withdraw->amount}}')">
+                                    <i class="fas fa-cog"></i>
+                                </button>
                             </td>
                         </tr>
+                        @empty
+                        <tr><td colspan="5" class="text-center py-5 text-muted">لا توجد طلبات سحب</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- Disputes Table (MODIFIED SECTION) --}}
+        <div id="disputesSection" class="section-content">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead class="text-muted small border-bottom border-secondary">
+                        <tr>
+                            <th>المشروع</th>
+                            <th>أطراف النزاع (عميل ضد مستقل)</th>
+                            <th>قيمة العقد</th>
+                            <th>الحالة</th>
+                            <th>تاريخ النزاع</th>
+                            <th class="text-center">الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($disputedProjects ?? [] as $dispute)
+                        <tr>
+                            <td class="fw-bold">
+                                {{ $dispute->project->title ?? 'مشروع محذوف' }}
+                                <br><small class="text-muted">ID: #{{ $dispute->id }}</small>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="text-info"><i class="fas fa-user-tie me-1"></i> {{ $dispute->client->name ?? 'N/A' }}</span>
+                                    <span class="text-warning"><i class="fas fa-user-ninja me-1"></i> {{ $dispute->freelancer->name ?? 'N/A' }}</span>
+                                </div>
+                            </td>
+                            <td class="text-success fw-bold">{{ number_format($dispute->amount) }} ج.م</td>
+                            <td>
+                                @if($dispute->status == 'open')
+                                    <span class="badge bg-danger animate__animated animate__pulse animate__infinite">مفتوح</span>
+                                @elseif($dispute->status == 'resolved')
+                                    <span class="badge bg-success">تم الفصل</span>
+                                @else
+                                    <span class="badge bg-secondary">{{ $dispute->status }}</span>
+                                @endif
+                            </td>
+                            <td class="small text-muted">{{ $dispute->created_at->format('Y-m-d') }}</td>
+                            <td class="text-center">
+                                <a href="{{ route('admin.disputes.show', $dispute->id) }}" class="btn btn-sm btn-outline-danger px-3 rounded-pill">
+                                    <i class="fas fa-gavel me-1"></i> دخول المحكمة
+                                </a>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="6" class="text-center py-5 text-muted">لا توجد نزاعات نشطة حالياً</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -316,13 +430,79 @@
         document.querySelectorAll('.section-content').forEach(s => s.classList.remove('section-active'));
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
 
-        if(section === 'users') {
-            document.getElementById('usersSection').classList.add('section-active');
-        } else {
-            document.getElementById('projectsSection').classList.add('section-active');
+        const sectionMap = {
+            'users': 'usersSection',
+            'projects': 'projectsSection',
+            'deposits': 'depositsSection',
+            'withdrawals': 'withdrawalsSection',
+            'disputes': 'disputesSection'
+        };
+
+        if(sectionMap[section]) {
+            document.getElementById(sectionMap[section]).classList.add('section-active');
         }
 
         if(btn) btn.classList.add('active');
+    }
+
+    // --- معالجة طلب السحب ---
+    function processWithdraw(id, userName, amount) {
+        Swal.fire({
+            title: `<span style="color:#0ea5e9">اتخاذ قرار بشأن طلب سحب</span>`,
+            html: `
+                <div class="text-start mb-3" style="font-size:14px">
+                    <p class="mb-1">المستخدم: <b>${userName}</b></p>
+                    <p>المبلغ: <b class="text-success">${amount} ج.م</b></p>
+                </div>
+                <select id="swal-status" class="form-select bg-dark text-white border-secondary mb-3">
+                    <option value="approve">✅ موافقة على السحب</option>
+                    <option value="reject">❌ رفض طلب السحب</option>
+                </select>
+                <textarea id="swal-message" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="اكتب رسالة الإشعار للمستخدم هنا..."></textarea>
+            `,
+            background: '#141923',
+            color: '#fff',
+            showCancelButton: true,
+            confirmButtonText: 'تنفيذ القرار',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#0ea5e9',
+            customClass: { popup: 'swal2-popup-custom' },
+            preConfirm: () => {
+                const status = document.getElementById('swal-status').value;
+                const message = document.getElementById('swal-message').value;
+                if (!message) {
+                    Swal.showValidationMessage('يرجى كتابة رسالة توضيحية للمستخدم');
+                }
+                return { status: status, message: message };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'جاري الإرسال...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                fetch(`/admin/withdrawals/${id}/process`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        decision: result.value.status,
+                        notification: result.value.message
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire('تم!', 'تم تنفيذ قرارك وإرسال الإشعار بنجاح', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        Swal.fire('خطأ', data.message || 'حدث خطأ أثناء المعالجة', 'error');
+                    }
+                })
+                .catch(err => Swal.fire('خطأ', 'فشل الاتصال بالخادم', 'error'));
+            }
+        });
     }
 
     // --- تصفية صفوف المستخدمين ---
@@ -338,7 +518,7 @@
         });
     }
 
-    // --- توثيق المستخدم (Approve) ---
+    // --- توثيق المستخدم ---
     function approveUser(id) {
         Swal.fire({
             title: 'توثيق الحساب؟',
@@ -352,25 +532,16 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({ title: 'جاري المعالجة...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
                 fetch(`/admin/user/${id}/approve`, {
                     method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
                 })
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        Swal.fire({ icon: 'success', title: 'تم التوثيق!', text: data.message, showConfirmButton: false, timer: 1500 });
+                        Swal.fire({ icon: 'success', title: 'تم التوثيق!', showConfirmButton: false, timer: 1500 });
                         setTimeout(() => location.reload(), 1500);
-                    } else {
-                        Swal.fire({ icon: 'error', title: 'خطأ', text: data.message });
                     }
-                }).catch(err => {
-                    Swal.fire({ icon: 'error', title: 'خطأ في الاتصال', text: 'تأكد من وجود الـ Route الصحيح' });
                 });
             }
         });
@@ -380,12 +551,10 @@
     function approveProject(id) {
         Swal.fire({
             title: 'الموافقة على المشروع؟',
-            text: "سيتم نشر المشروع ليتمكن المستقلون من التقديم",
             icon: 'info',
             showCancelButton: true,
             confirmButtonColor: '#10b981',
             confirmButtonText: 'موافقة ونشر',
-            cancelButtonText: 'إلغاء',
             background: '#141923', color: '#fff'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -400,7 +569,7 @@
         });
     }
 
-    // --- حظر المستخدم (Ban) ---
+    // --- حظر المستخدم ---
     function banUser(id) {
         Swal.fire({
             title: 'حظر المستخدم؟',
@@ -409,23 +578,17 @@
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
             confirmButtonText: 'نعم، حظر',
-            cancelButtonText: 'تراجع',
             background: '#141923', color: '#fff'
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire({ title: 'جاري الحظر...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
                 fetch(`/admin/user/${id}/ban`, {
                     method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
                 })
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        Swal.fire({ icon: 'success', title: 'تم الحظر', text: data.message, showConfirmButton: false, timer: 1500 });
+                        Swal.fire({ icon: 'success', title: 'تم الحظر', showConfirmButton: false, timer: 1500 });
                         setTimeout(() => location.reload(), 1500);
                     }
                 });

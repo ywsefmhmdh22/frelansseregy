@@ -13,13 +13,12 @@ use Exception;
 /**
  * Class ProfileController
  * يدير إعدادات الحساب، الهوية الرقمية، ونظام تذاكر الدعم الفني.
- * تم دمج المسميات لتعمل مع الروابط البرمجية الحالية مع الحفاظ على معايير الأمان العالمية.
  */
 class ProfileController extends Controller
 {
     /**
      * عرض صفحة إعدادات الحساب الشخصية.
-     * تخدم الـ Route: profile/settings
+     * تخدم الـ Route: profile.settings
      */
     public function settings()
     {
@@ -28,10 +27,10 @@ class ProfileController extends Controller
     }
 
     /**
-     * تحديث البيانات التعريفية للمستخدم (الاسم، الإيميل، النبذة).
-     * سياق العمل: يتم استخدام strip_tags لمنع هجمات Stored XSS في الحقول النصية.
+     * تحديث البيانات الشخصية (الاسم، الإيميل، النبذة).
+     * تم تعديل الاسم من (updateAccountBasicDiscovery) إلى (updatePersonal) ليتوافق مع الـ Route.
      */
-    public function updateAccountBasicDiscovery(Request $request)
+    public function updatePersonal(Request $request)
     {
         $user = Auth::user();
 
@@ -43,7 +42,7 @@ class ProfileController extends Controller
         ]);
 
         try {
-            // 2. التحديث مع التطهير (Data Sanitization) لضمان سلامة العرض لاحقاً
+            // 2. التحديث مع التطهير (Data Sanitization) لمنع هجمات XSS
             $user->update([
                 'name'  => strip_tags($validatedData['name']),
                 'email' => $validatedData['email'],
@@ -59,14 +58,14 @@ class ProfileController extends Controller
 
     /**
      * تغيير كلمة المرور بنظام التشفير الآمن.
-     * سياق الأمان: يتم التحقق من تطابق كلمة المرور الحالية لضمان ملكية الحساب.
+     * تم تعديل الاسم من (secureUpdateAccountPassword) إلى (updatePassword) ليتوافق مع الـ Route.
      */
-    public function secureUpdateAccountPassword(Request $request)
+    public function updatePassword(Request $request)
     {
-        // استخدام المعايير العالمية لقوة كلمة المرور (Complexity Requirements)
+        // استخدام المعايير العالمية لقوة كلمة المرور
         $request->validate([
             'current_password' => ['required', 'current_password'],
-            'new_password'     => [
+            'password'         => [
                 'required',
                 'confirmed',
                 Password::min(8)
@@ -79,7 +78,7 @@ class ProfileController extends Controller
 
         try {
             Auth::user()->update([
-                'password' => Hash::make($request->new_password)
+                'password' => Hash::make($request->password)
             ]);
 
             Log::info("Security Event: Password changed for User ID " . Auth::id());
@@ -90,20 +89,9 @@ class ProfileController extends Controller
     }
 
     /**
-     * معالجة وتحديث الصورة الرمزية للملف الشخصي (Avatar).
-     * تخدم الـ Route: profile/settings/update-image
+     * تحديث الصورة الرمزية للملف الشخصي (Avatar).
      */
     public function updateImage(Request $request)
-    {
-        // استدعاء دالة المعالجة الأساسية لضمان وحدة الكود (Don't Repeat Yourself)
-        return $this->updateProfileDisplayImage($request);
-    }
-
-    /**
-     * الدالة الأساسية لمعالجة الصور وتخزينها.
-     * سياق التخزين: يتم حذف الملفات القديمة لمنع تراكم الملفات غير المستخدمة.
-     */
-    public function updateProfileDisplayImage(Request $request)
     {
         $request->validate([
             'profile_image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -112,15 +100,15 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         try {
-            // 1. التحقق من وجود الصورة القديمة وحذفها (Atomic File Operation)
+            // حذف الصورة القديمة لمنع تراكم الملفات
             if ($user->profile_image && Storage::disk('public')->exists($user->profile_image)) {
                 Storage::disk('public')->delete($user->profile_image);
             }
 
-            // 2. رفع الصورة بمسار منظم زمنياً لحماية هيكل المجلدات
+            // رفع الصورة بمسار منظم
             $path = $request->file('profile_image')->store('profiles/' . date('Y/m'), 'public');
 
-            // 3. تحديث سجل المستخدم في قاعدة البيانات
+            // تحديث سجل المستخدم
             $user->update([
                 'profile_image' => $path
             ]);
@@ -133,18 +121,19 @@ class ProfileController extends Controller
     }
 
     /**
-     * عرض قائمة تذاكر الدعم الفني الخاصة بالمستخدم.
+     * عرض قائمة تذاكر الدعم الفني.
+     * تم تعديل الاسم من (showSupportTicketsHistory) إلى (tickets) ليتوافق مع الـ Route.
      */
-    public function showSupportTicketsHistory()
+    public function tickets()
     {
         return view('support.index');
     }
 
     /**
      * إنشاء وإرسال تذكرة دعم فني جديدة.
-     * سياق الحماية: استخدام نظام القائمة البيضاء (Whitelist) لمنع التلاعب بالمدخلات.
+     * تم تعديل الاسم من (dispatchNewSupportTicket) إلى (sendTicket) ليتوافق مع الـ Route.
      */
-    public function dispatchNewSupportTicket(Request $request)
+    public function sendTicket(Request $request)
     {
         $validatedData = $request->validate([
             'subject' => 'required|string|max:255',
@@ -153,16 +142,7 @@ class ProfileController extends Controller
         ]);
 
         try {
-            // تنظيف البيانات النهائية قبل الحفظ لمنع حقن السكريبتات
-            $finalTicketData = [
-                'subject' => strip_tags($validatedData['subject']),
-                'type'    => $validatedData['type'],
-                'message' => strip_tags($validatedData['message']),
-                'user_id' => (int) Auth::id(),
-                'status'  => 'open',
-            ];
-
-            // مثال: Ticket::create($finalTicketData);
+            // هنا تضع منطق حفظ التذكرة في قاعدة البيانات (Ticket::create...)
 
             Log::channel('support')->info("New Ticket Created by User ID: " . Auth::id());
 

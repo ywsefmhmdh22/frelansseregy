@@ -3,109 +3,164 @@
 @section('content')
 <div class="container py-5" dir="rtl">
     <div class="row g-4">
-        {{-- الجانب الأيمن: كارت الفيزا المطور --}}
+        {{-- الجانب الأيمن: كارت "ماهر" البلاتيني --}}
         <div class="col-lg-4">
-            {{-- كارت فيزا احترافي --}}
-            <div class="visa-card p-4 shadow-lg mb-4 position-relative overflow-hidden">
-                {{-- الدوائر الخلفية للجماليات --}}
-                <div class="circle-1"></div>
-                <div class="circle-2"></div>
+            <div class="maheer-visa-card shadow-lg mb-4 position-relative overflow-hidden">
+                {{-- تأثيرات بصرية فريحية --}}
+                <div class="vibrant-bg"></div>
+                <div class="glass-reflection"></div>
 
-                <div class="d-flex justify-content-between align-items-start mb-5 position-relative">
-                    <div class="bank-logo">
-                        {{-- الحرف الأول من اسم المستخدم --}}
-                        <div class="user-initial">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                <div class="card-content position-relative">
+                    <div class="d-flex justify-content-between align-items-start mb-5">
+                        <div class="bank-identity">
+                            <div class="premium-initial">
+                                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                            </div>
+                            <span class="platform-label">MAHEER PLATINUM</span>
+                        </div>
+                        <div class="visa-brand">
+                            <i class="fab fa-cc-visa fa-3x text-white opacity-75"></i>
                         </div>
                     </div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" width="60" class="visa-logo">
-                </div>
 
-                <div class="mb-4 position-relative">
-                    <span class="text-white-50 small d-block mb-1">الرصيد المتاح</span>
-                    <h2 class="text-white fw-bold mb-0">
-                        {{ number_format($walletBalance, 2) }}
-                        <span style="font-size: 14px; font-weight: normal;">EGP</span>
-                    </h2>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-end position-relative">
-                    <div class="text-white">
-                        <span class="text-white-50 d-block mb-1" style="font-size: 10px; letter-spacing: 1px;">CARD HOLDER</span>
-                        <span class="fw-bold text-uppercase" style="letter-spacing: 1px;">{{ auth()->user()->name }}</span>
+                    <div class="mb-4">
+                        <span class="balance-title">الرصيد المتاح</span>
+                        <h1 class="balance-display">
+                            <span class="currency">$</span>{{ number_format(Auth::user()->wallet->balance, 2) }}
+                        </h1>
                     </div>
-                    <div class="chip">
-                        <div class="chip-line"></div>
-                        <div class="chip-line"></div>
-                        <div class="chip-line"></div>
-                        <div class="chip-line"></div>
+
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div class="user-info">
+                            <span class="label-txt">CARD HOLDER</span>
+                            <span class="name-txt">{{ auth()->user()->name }}</span>
+                        </div>
+                        <div class="gold-chip">
+                            <div class="chip-line-v"></div>
+                            <div class="chip-line-v"></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {{-- زراير سريعة --}}
-            <div class="row g-2">
+            {{-- أزرار الأكشن بتصميم زجاجي مشرق --}}
+            <div class="row g-3">
                 <div class="col-6">
-                    {{-- تم التعديل هنا: استخدام اسم الروت الصحيح wallet.deposit.view --}}
-                    <a href="{{ route('wallet.deposit') }}" class="btn btn-action-charge w-100 py-3 rounded-4 shadow-sm">
-                        <i class="fas fa-plus-circle d-block mb-1"></i> شحن الرصيد
+                    <a href="{{ route('wallet.deposit') }}" class="btn action-btn-glass charge">
+                        <div class="icon-box"><i class="fas fa-wallet"></i></div>
+                        <span>شحن الرصيد</span>
                     </a>
                 </div>
                 <div class="col-6">
-                    <a href="{{ route('withdraw.create') }}" class="btn btn-action-withdraw w-100 py-3 rounded-4 shadow-sm">
-                        <i class="fas fa-arrow-down d-block mb-1"></i> سحب الأرباح
+                    <a href="{{ route('withdraw.create') }}" class="btn action-btn-glass withdraw">
+                        <div class="icon-box"><i class="fas fa-paper-plane"></i></div>
+                        <span>سحب الأرباح</span>
                     </a>
                 </div>
             </div>
         </div>
 
-        {{-- الجانب الأيسر: سجل العمليات --}}
+        {{-- الجانب الأيسر: الجداول بتصميم عصري وتباين مريح --}}
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-2 mt-lg-0">
-                <div class="card-header bg-white p-4 border-0 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold m-0 text-dark">سجل المعاملات المالية</h6>
-                    <button class="btn btn-light btn-sm rounded-pill px-3 border"><i class="fas fa-file-export me-1"></i> تصدير</button>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-4">نوع العملية</th>
-                                    <th>التاريخ</th>
-                                    <th>المبلغ</th>
-                                    <th class="text-center">الحالة</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($transactions ?? [] as $transaction)
-                                    <tr>
-                                        <td class="ps-4">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="icon-circle bg-light text-primary">
-                                                    <i class="fas fa-exchange-alt"></i>
-                                                </div>
-                                                <div>
-                                                    <span class="d-block fw-bold small">عملية مالية</span>
-                                                    <span class="text-muted" style="font-size: 11px;">#{{ $transaction->id }}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-muted small">{{ $transaction->created_at->format('Y-m-d') }}</td>
-                                        <td class="fw-bold text-dark">{{ number_format($transaction->amount, 2) }} ج.م</td>
-                                        <td class="text-center"><span class="badge bg-light-success text-success rounded-pill">مكتمل</span></td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center py-5">
-                                            <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" width="80" class="opacity-25 mb-3 grey-scale">
-                                            <p class="text-muted">لا توجد حركات مالية مسجلة حتى الآن.</p>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+            {{-- 1. سجل طلبات السحب --}}
+            <div class="vibrant-table-card mb-4">
+                <div class="card-header-vibrant bg-primary-light">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-history text-primary"></i>
+                        <h6 class="fw-bold m-0 text-primary">طلبات السحب النشطة</h6>
                     </div>
+                    <span class="badge-vibrant pending">تحت المراجعة</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-vibrant align-middle">
+                        <thead>
+                            <tr>
+                                <th>الوسيلة</th>
+                                <th>المبلغ</th>
+                                <th>التاريخ</th>
+                                <th class="text-center">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse(Auth::user()->withdrawRequests()->latest()->take(5)->get() as $request)
+                                <tr>
+                                    <td>
+                                        <div class="method-badge">
+                                            <i class="fas fa-university"></i>
+                                            <span>{{ ucfirst(str_replace('_', ' ', $request->method)) }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="fw-bold text-danger">-${{ number_format($request->amount, 2) }}</td>
+                                    <td class="text-muted small">{{ $request->created_at->format('Y-m-d') }}</td>
+                                    <td class="text-center">
+                                        @php
+                                            $statusClass = $request->status == 'pending' ? 'pending' : ($request->status == 'approved' ? 'success' : 'danger');
+                                            $statusText = $request->status == 'pending' ? 'انتظار' : ($request->status == 'approved' ? 'تم القبول' : 'مرفوض');
+                                        @endphp
+                                        <span class="badge-vibrant {{ $statusClass }}">{{ $statusText }}</span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted small">لا توجد طلبات سحب حالية.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- 2. سجل المعاملات المالية --}}
+            <div class="vibrant-table-card">
+                <div class="card-header-vibrant bg-success-light">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-list-ul text-success"></i>
+                        <h6 class="fw-bold m-0 text-success">سجل المعاملات المالية</h6>
+                    </div>
+                    <button class="btn-export-vibrant"><i class="fas fa-download me-1"></i> Excel</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-vibrant align-middle">
+                        <thead>
+                            <tr>
+                                <th>نوع العملية</th>
+                                <th>التاريخ</th>
+                                <th>المبلغ</th>
+                                <th class="text-center">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($transactions ?? [] as $transaction)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="trans-icon-circle shadow-sm">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </div>
+                                            <div>
+                                                <span class="d-block fw-bold text-dark" style="font-size: 13px;">عملية مالية</span>
+                                                <span class="text-muted" style="font-size: 10px;">ID: #{{ $transaction->id }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-muted small">{{ $transaction->created_at->format('Y-m-d') }}</td>
+                                    <td class="fw-bold text-dark">${{ number_format($transaction->amount, 2) }}</td>
+                                    <td class="text-center">
+                                        <span class="badge-vibrant {{ $transaction->status_color }}">
+                                            {{ $transaction->status_arabic }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-5">
+                                        <img src="https://cdn-icons-png.flaticon.com/512/11545/11545300.png" width="60" class="opacity-50 mb-2">
+                                        <p class="text-muted mb-0">سجل المعاملات فارغ حالياً.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -113,99 +168,118 @@
 </div>
 
 <style>
-    /* تصميم كارت الفيزا المطور */
-    .visa-card {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        border-radius: 20px;
-        min-height: 230px;
-        color: white;
-        border: 1px solid rgba(255,255,255,0.1);
+    /* الإعدادات العامة والألوان الفريحية */
+    :root {
+        --primary-vibrant: #4f46e5;
+        --success-vibrant: #10b981;
+        --card-grad: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        --glass-white: rgba(255, 255, 255, 0.95);
     }
 
-    .circle-1 {
+    /* كارت الفيزا الأسطوري */
+    .maheer-visa-card {
+        background: var(--card-grad);
+        border-radius: 30px;
+        min-height: 250px;
+        padding: 30px;
+        color: white;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.4);
+    }
+
+    .vibrant-bg {
         position: absolute;
-        width: 300px;
-        height: 300px;
-        background: rgba(255,255,255,0.03);
+        top: -20%; right: -10%; width: 250px; height: 250px;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
         border-radius: 50%;
-        top: -150px;
-        right: -100px;
     }
 
-    .circle-2 {
+    .glass-reflection {
         position: absolute;
-        width: 200px;
-        height: 200px;
-        background: rgba(255,255,255,0.02);
-        border-radius: 50%;
-        bottom: -100px;
-        left: -50px;
+        top: 0; left: -100%; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transform: skewX(-25deg);
+        animation: slideShine 4s infinite;
     }
 
-    /* شعار اسم المستخدم */
-    .user-initial {
-        width: 45px;
-        height: 45px;
-        background: linear-gradient(45deg, #fbbf24, #f59e0b);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 22px;
-        color: #1e293b;
-        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    @keyframes slideShine { 0% { left: -100%; } 100% { left: 150%; } }
+
+    .premium-initial {
+        width: 55px; height: 55px;
+        background: #fff; border-radius: 18px;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--primary-vibrant); font-weight: 900; font-size: 26px;
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
     }
 
-    /* شريحة الفيزا (الذهبية) */
-    .chip {
-        width: 40px;
-        height: 30px;
-        background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%);
-        border-radius: 6px;
-        padding: 4px;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 2px;
-        opacity: 0.8;
-    }
-    .chip-line { border: 1px solid rgba(0,0,0,0.1); border-radius: 2px; }
+    .platform-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; margin-right: 12px; opacity: 0.9; }
 
-    /* زراير التحكم */
-    .btn-action-charge {
-        background: #10b981;
-        color: white;
-        border: none;
-        transition: all 0.3s ease;
-    }
-    .btn-action-charge:hover {
-        background: #059669;
-        color: white;
-        transform: translateY(-3px);
-    }
+    .balance-title { display: block; font-size: 13px; opacity: 0.8; margin-bottom: 5px; }
+    .balance-display { font-size: 44px; font-weight: 800; letter-spacing: -1px; margin: 0; text-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .currency { font-size: 24px; color: #fbbf24; margin-left: 8px; vertical-align: top; }
 
-    .btn-action-withdraw {
-        background: #f8fafc;
-        color: #1e293b;
-        border: 1px solid #e2e8f0;
-        transition: all 0.3s ease;
-    }
-    .btn-action-withdraw:hover {
-        background: #f1f5f9;
-        transform: translateY(-3px);
-    }
+    .label-txt { display: block; font-size: 9px; opacity: 0.6; letter-spacing: 2px; }
+    .name-txt { font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
 
-    /* أيقونات الجدول */
-    .icon-circle {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .gold-chip {
+        width: 50px; height: 38px; background: linear-gradient(135deg, #ffd700, #f59e0b);
+        border-radius: 10px; display: flex; align-items: center; justify-content: space-around; padding: 5px;
+    }
+    .chip-line-v { width: 1px; height: 100%; background: rgba(0,0,0,0.1); }
+
+    /* الأزرار الفريحية */
+    .action-btn-glass {
+        padding: 15px; border-radius: 22px; border: none;
+        display: flex; flex-direction: column; align-items: center; gap: 8px;
+        font-weight: 700; font-size: 14px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #fff; border: 1px solid #f1f5f9; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    }
+    .action-btn-glass.charge { color: var(--primary-vibrant); }
+    .action-btn-glass.withdraw { color: var(--success-vibrant); }
+
+    .icon-box { width: 45px; height: 45px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: 0.3s; }
+    .charge .icon-box { background: #eef2ff; }
+    .withdraw .icon-box { background: #ecfdf5; }
+
+    .action-btn-glass:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+
+    /* الجداول المودرن */
+    .vibrant-table-card {
+        background: #fff; border-radius: 28px; border: 1px solid #f1f5f9;
+        overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
-    .bg-light-success { background-color: #dcfce7; }
-    .grey-scale { filter: grayscale(1); }
+    .card-header-vibrant {
+        padding: 22px 28px; display: flex; justify-content: space-between; align-items: center; border: none;
+    }
+    .bg-primary-light { background-color: #f5f3ff; }
+    .bg-success-light { background-color: #f0fdf4; }
+
+    .table-vibrant thead th {
+        background: #fafafa; padding: 18px 25px; border: none;
+        color: #475569; font-size: 13px; font-weight: 700;
+    }
+    .table-vibrant tbody td { padding: 22px 25px; border-bottom: 1px solid #f8fafc; }
+
+    .badge-vibrant {
+        padding: 8px 18px; border-radius: 14px; font-size: 12px; font-weight: 700; display: inline-block;
+    }
+    .badge-vibrant.pending, .badge-vibrant.warning { background: #fffbeb; color: #b45309; }
+    .badge-vibrant.success { background: #dcfce7; color: #15803d; }
+    .badge-vibrant.danger { background: #fee2e2; color: #b91c1c; }
+
+    .method-badge { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #1e293b; }
+    .method-badge i { color: #64748b; }
+
+    .trans-icon-circle {
+        width: 42px; height: 42px; border-radius: 14px; background: #fff;
+        display: flex; align-items: center; justify-content: center; color: var(--primary-vibrant);
+        border: 1px solid #f1f5f9;
+    }
+
+    .btn-export-vibrant {
+        background: #fff; border: 1px solid #e2e8f0; padding: 6px 14px;
+        border-radius: 12px; font-size: 12px; font-weight: 600; color: #64748b;
+    }
 </style>
 @endsection

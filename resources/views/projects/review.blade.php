@@ -52,7 +52,7 @@
         border-radius: 0 50px 0 100%;
     }
 
-    /* كروت معايير التقييم - تصميم عصري جداً */
+    /* كروت معايير التقييم */
     .rating-criterion {
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
         padding: 35px 25px;
@@ -86,7 +86,7 @@
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
     }
 
-    /* نجوم التقييم - ألوان كريستالية */
+    /* نجوم التقييم المعدلة */
     .star-rating-v2 {
         display: flex;
         flex-direction: row-reverse;
@@ -95,14 +95,14 @@
     .star-rating-v2 input { display: none; }
     .star-rating-v2 label {
         font-size: 2.4rem;
-        color: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.1);
         cursor: pointer;
         transition: all 0.4s ease;
     }
     .star-rating-v2 label:hover,
     .star-rating-v2 label:hover ~ label,
     .star-rating-v2 input:checked ~ label {
-        color: #ffaa00; /* تدرج ذهبي برتقالي */
+        color: #ffaa00;
         text-shadow: 0 0 25px rgba(255, 170, 0, 0.8), 0 0 50px rgba(255, 170, 0, 0.3);
         transform: rotate(-10deg) scale(1.15);
     }
@@ -136,19 +136,7 @@
         object-fit: cover;
     }
 
-    .online-indicator {
-        position: absolute;
-        bottom: 5px;
-        right: 5px;
-        width: 15px;
-        height: 15px;
-        background: #2ecc71;
-        border: 3px solid #0a0f1c;
-        border-radius: 50%;
-        box-shadow: 0 0 10px #2ecc71;
-    }
-
-    /* الأزرار الفخمة */
+    /* الأزرار */
     .btn-submit-premium {
         background: linear-gradient(90deg, #00d2ff, #9d4edd, #00d2ff);
         background-size: 200% auto;
@@ -175,11 +163,6 @@
         border-radius: 25px !important;
         padding: 25px !important;
         font-size: 1.1rem;
-    }
-
-    .form-control-premium:focus {
-        border-color: #9d4edd !important;
-        box-shadow: 0 0 30px rgba(157, 78, 221, 0.15) !important;
     }
 
     /* صندوق معلومات النقاط */
@@ -213,7 +196,6 @@
         font-weight: 700;
         margin-bottom: 10px;
         font-size: 1.15rem;
-        letter-spacing: -0.5px;
     }
 
     .label-accent {
@@ -223,11 +205,15 @@
         letter-spacing: 2px;
     }
 
-    .hover-white:hover {
-        color: #ffffff !important;
-    }
-    .transition-all {
-        transition: all 0.3s ease;
+    /* ستايل مخصص للتنبيهات ليتماشى مع التصميم */
+    .alert-premium {
+        background: rgba(220, 53, 69, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+        color: #ff8585;
+        border-radius: 25px;
+        padding: 20px;
+        margin-bottom: 30px;
     }
 </style>
 
@@ -236,6 +222,22 @@
 <div class="container review-container">
     <div class="row justify-content-center">
         <div class="col-xl-9 col-lg-11">
+
+            {{-- فاحص الأخطاء --}}
+            @if ($errors->any())
+                <div class="alert alert-premium shadow-lg animate__animated animate__shakeX">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <h5 class="mb-0 fw-bold">توجد مشكلة في التقييم:</h5>
+                    </div>
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="glass-review-card p-4 p-md-5">
 
                 <div class="text-center mb-5">
@@ -247,9 +249,8 @@
                 <div class="freelancer-hero">
                     <div class="avatar-wrapper">
                         <img src="https://ui-avatars.com/api/?name={{ urlencode($project->freelancer->name ?? 'F') }}&background=0a0f1c&color=00d2ff&size=256" class="avatar-glow" alt="Freelancer Avatar">
-                        <div class="online-indicator"></div>
                     </div>
-                    <h3 class="text-white fw-bold mb-1">{{ $project->freelancer->name }}</h3>
+                    <h3 class="text-white fw-bold mb-1">{{ $project->freelancer->name ?? 'اسم المستقل' }}</h3>
                     <p class="text-white-50 mb-0">خبير تقني موثق لدى المنصة</p>
                 </div>
 
@@ -259,62 +260,62 @@
                     <h5 class="text-white-50 mb-4 text-center small text-uppercase fw-bold" style="letter-spacing: 3px;">Global Performance Metrics</h5>
 
                     <div class="row g-4 mb-5">
-                        <!-- دقة العمل -->
+                        {{-- جودة العمل --}}
                         <div class="col-md-6 col-xl-3">
                             <div class="rating-criterion">
                                 <div class="criterion-icon"><i class="fas fa-gem"></i></div>
                                 <label class="section-title">جودة العمل</label>
                                 <div class="star-rating-v2">
-                                    <input type="radio" id="quality-5" name="rating_quality" value="5" required/><label for="quality-5">★</label>
-                                    <input type="radio" id="quality-4" name="rating_quality" value="4"/><label for="quality-4">★</label>
-                                    <input type="radio" id="quality-3" name="rating_quality" value="3"/><label for="quality-3">★</label>
-                                    <input type="radio" id="quality-2" name="rating_quality" value="2"/><label for="quality-2">★</label>
-                                    <input type="radio" id="quality-1" name="rating_quality" value="1"/><label for="quality-1">★</label>
+                                    <input type="radio" id="quality-5" name="rating_quality" value="5" {{ old('rating_quality') == 5 ? 'checked' : '' }} required/><label for="quality-5">★</label>
+                                    <input type="radio" id="quality-4" name="rating_quality" value="4" {{ old('rating_quality') == 4 ? 'checked' : '' }}/><label for="quality-4">★</label>
+                                    <input type="radio" id="quality-3" name="rating_quality" value="3" {{ old('rating_quality') == 3 ? 'checked' : '' }}/><label for="quality-3">★</label>
+                                    <input type="radio" id="quality-2" name="rating_quality" value="2" {{ old('rating_quality') == 2 ? 'checked' : '' }}/><label for="quality-2">★</label>
+                                    <input type="radio" id="quality-1" name="rating_quality" value="1" {{ old('rating_quality') == 1 ? 'checked' : '' }}/><label for="quality-1">★</label>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- وقت التسليم -->
+                        {{-- سرعة التنفيذ --}}
                         <div class="col-md-6 col-xl-3">
                             <div class="rating-criterion">
                                 <div class="criterion-icon"><i class="fas fa-bolt"></i></div>
                                 <label class="section-title">سرعة التنفيذ</label>
                                 <div class="star-rating-v2">
-                                    <input type="radio" id="time-5" name="rating_time" value="5" required/><label for="time-5">★</label>
-                                    <input type="radio" id="time-4" name="rating_time" value="4"/><label for="time-4">★</label>
-                                    <input type="radio" id="time-3" name="rating_time" value="3"/><label for="time-3">★</label>
-                                    <input type="radio" id="time-2" name="rating_time" value="2"/><label for="time-2">★</label>
-                                    <input type="radio" id="time-1" name="rating_time" value="1"/><label for="time-1">★</label>
+                                    <input type="radio" id="time-5" name="rating_time" value="5" {{ old('rating_time') == 5 ? 'checked' : '' }} required/><label for="time-5">★</label>
+                                    <input type="radio" id="time-4" name="rating_time" value="4" {{ old('rating_time') == 4 ? 'checked' : '' }}/><label for="time-4">★</label>
+                                    <input type="radio" id="time-3" name="rating_time" value="3" {{ old('rating_time') == 3 ? 'checked' : '' }}/><label for="time-3">★</label>
+                                    <input type="radio" id="time-2" name="rating_time" value="2" {{ old('rating_time') == 2 ? 'checked' : '' }}/><label for="time-2">★</label>
+                                    <input type="radio" id="time-1" name="rating_time" value="1" {{ old('rating_time') == 1 ? 'checked' : '' }}/><label for="time-1">★</label>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- حسن التعامل -->
+                        {{-- الاحترافية --}}
                         <div class="col-md-6 col-xl-3">
                             <div class="rating-criterion">
                                 <div class="criterion-icon"><i class="fas fa-crown"></i></div>
                                 <label class="section-title">الاحترافية</label>
                                 <div class="star-rating-v2">
-                                    <input type="radio" id="behavior-5" name="rating_behavior" value="5" required/><label for="behavior-5">★</label>
-                                    <input type="radio" id="behavior-4" name="rating_behavior" value="4"/><label for="behavior-4">★</label>
-                                    <input type="radio" id="behavior-3" name="rating_behavior" value="3"/><label for="behavior-3">★</label>
-                                    <input type="radio" id="behavior-2" name="rating_behavior" value="2"/><label for="behavior-2">★</label>
-                                    <input type="radio" id="behavior-1" name="rating_behavior" value="1"/><label for="behavior-1">★</label>
+                                    <input type="radio" id="behavior-5" name="rating_behavior" value="5" {{ old('rating_behavior') == 5 ? 'checked' : '' }} required/><label for="behavior-5">★</label>
+                                    <input type="radio" id="behavior-4" name="rating_behavior" value="4" {{ old('rating_behavior') == 4 ? 'checked' : '' }}/><label for="behavior-4">★</label>
+                                    <input type="radio" id="behavior-3" name="rating_behavior" value="3" {{ old('rating_behavior') == 3 ? 'checked' : '' }}/><label for="behavior-3">★</label>
+                                    <input type="radio" id="behavior-2" name="rating_behavior" value="2" {{ old('rating_behavior') == 2 ? 'checked' : '' }}/><label for="behavior-2">★</label>
+                                    <input type="radio" id="behavior-1" name="rating_behavior" value="1" {{ old('rating_behavior') == 1 ? 'checked' : '' }}/><label for="behavior-1">★</label>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- التواصل -->
+                        {{-- التواصل --}}
                         <div class="col-md-6 col-xl-3">
                             <div class="rating-criterion">
                                 <div class="criterion-icon"><i class="fas fa-satellite-dish"></i></div>
                                 <label class="section-title">التواصل</label>
                                 <div class="star-rating-v2">
-                                    <input type="radio" id="comm-5" name="rating_communication" value="5" required/><label for="comm-5">★</label>
-                                    <input type="radio" id="comm-4" name="rating_communication" value="4"/><label for="comm-4">★</label>
-                                    <input type="radio" id="comm-3" name="rating_communication" value="3"/><label for="comm-3">★</label>
-                                    <input type="radio" id="comm-2" name="rating_communication" value="2"/><label for="comm-2">★</label>
-                                    <input type="radio" id="comm-1" name="rating_communication" value="1"/><label for="comm-1">★</label>
+                                    <input type="radio" id="comm-5" name="rating_communication" value="5" {{ old('rating_communication') == 5 ? 'checked' : '' }} required/><label for="comm-5">★</label>
+                                    <input type="radio" id="comm-4" name="rating_communication" value="4" {{ old('rating_communication') == 4 ? 'checked' : '' }}/><label for="comm-4">★</label>
+                                    <input type="radio" id="comm-3" name="rating_communication" value="3" {{ old('rating_communication') == 3 ? 'checked' : '' }}/><label for="comm-3">★</label>
+                                    <input type="radio" id="comm-2" name="rating_communication" value="2" {{ old('rating_communication') == 2 ? 'checked' : '' }}/><label for="comm-2">★</label>
+                                    <input type="radio" id="comm-1" name="rating_communication" value="1" {{ old('rating_communication') == 1 ? 'checked' : '' }}/><label for="comm-1">★</label>
                                 </div>
                             </div>
                         </div>
@@ -322,7 +323,8 @@
 
                     <div class="mb-5">
                         <label class="section-title">شهادتك في حق المستقل</label>
-                        <textarea name="review_comment" class="form-control form-control-premium" rows="5" placeholder="أخبر العالم عن تجربتك المميزة مع هذا المستقل..." required></textarea>
+                        {{-- تم تعديل name إلى comment و old إلى comment --}}
+                        <textarea name="review_comment" class="form-control form-control-premium" rows="5" placeholder="أخبر العالم عن تجربتك المميزة مع هذا المستقل (حد أدنى 10 أحرف)..." required>{{ old('review_comment') }}</textarea>
                     </div>
 
                     <div class="points-info-box shadow-lg">
@@ -345,7 +347,7 @@
             </div>
 
             <div class="text-center mt-5">
-                <a href="{{ route('projects.show', $project->id) }}" class="text-white-50 text-decoration-none hover-white transition-all">
+                <a href="{{ route('projects.show', $project->id) }}" class="text-white-50 text-decoration-none transition-all">
                     <i class="fas fa-chevron-right me-2"></i> العودة لتفاصيل المشروع
                 </a>
             </div>

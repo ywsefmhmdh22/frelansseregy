@@ -7,7 +7,7 @@ use App\Models\Service;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Project;
-use App\Models\Wallet; // إضافة الموديل لضمان التعامل السليم
+use App\Models\Wallet;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -16,18 +16,15 @@ class OrderController extends Controller
 {
     /**
      * عرض الخدمات التي اشتراها العميل
-     * تم حل مشكلة الـ Performance والـ Null User
      */
     public function purchasedServices()
     {
         $user = Auth::user();
 
-        // حماية: إذا لم يكن هناك مستخدم مسجل دخول (رغم وجود Middleware)
         if (!$user) {
             return redirect()->route('login');
         }
 
-        // جلب الطلبات مع حماية الـ Relations
         $orders = Order::with(['service', 'seller'])
             ->where('buyer_id', $user->id)
             ->latest()
@@ -45,7 +42,6 @@ class OrderController extends Controller
      */
     public function show($id)
     {
-        // findOrFail بتحل جزء كبير من الـ Bug لو الـ ID مش موجود
         $order = Order::with(['service', 'seller', 'buyer'])->findOrFail($id);
 
         if (Auth::id() !== $order->buyer_id && Auth::id() !== $order->seller_id) {
@@ -56,7 +52,27 @@ class OrderController extends Controller
     }
 
     /**
-     * عرض صفحة التقييم المنفصلة (GET)
+     * جديد: عرض صفحة تسليم الطلب للفريلانسر (GET)
+     */
+    public function showDeliverPage($id)
+    {
+        $order = Order::findOrFail($id);
+
+        // التأكد أن المستخدم هو الفريلانسر (البائع)
+        if (Auth::id() !== $order->seller_id) {
+            abort(403, 'هذه الصفحة مخصصة لمنفذ الخدمة فقط.');
+        }
+
+        // منع التسليم إذا كان الطلب مكتمل أو ملغي
+        if (in_array($order->status, ['completed', 'cancelled'])) {
+            return redirect()->route('orders.show', $order->id)->with('error', 'لا يمكن تعديل حالة طلب مكتمل أو ملغي.');
+        }
+
+        return view('orders.complete', compact('order'));
+    }
+
+    /**
+     * عرض صفحة التقييم للعميل (GET)
      */
     public function showCompletePage($id)
     {
@@ -73,15 +89,13 @@ class OrderController extends Controller
     }
 
     /**
-     * عملية شراء الخدمة
-     * تم إضافة حل الـ BUG الخاص بالمحفظة والمستخدم
+     * شراء خدمة (معدلة لدعم الخدمات الجاهزة والعادية)
      */
     public function store(Request $request)
     {
         $service = Service::findOrFail($request->service_id);
         $buyer = Auth::user();
 
-        // 1. التأكد أن البائع لسه موجود في الداتابيز (حل الـ BUG)
         if (!$service->user) {
             return back()->with('error', 'عفواً، صاحب هذه الخدمة غير متاح حالياً.');
         }
@@ -90,7 +104,6 @@ class OrderController extends Controller
             return back()->with('error', 'لا يمكنك شراء خدمتك الخاصة!');
         }
 
-        // 2. التأكد من وجود محفظة للمشتري أو إنشائها (حماية من الـ Exception)
         $wallet = Wallet::firstOrCreate(
             ['user_id' => $buyer->id],
             ['balance' => 0]
@@ -102,29 +115,53 @@ class OrderController extends Controller
 
         try {
             $order = DB::transaction(function () use ($buyer, $service, $wallet) {
-                // خصم الرصيد
+                // 1. خصم الرصيد من المشتري
                 $wallet->decrement('balance', $service->price);
 
-                return Order::create([
-                    'service_id' => $service->id,
-                    'buyer_id'   => $buyer->id,
-                    'seller_id'  => $service->user_id,
-                    'price'      => $service->price,
-                    'status'     => 'processing',
+                // 2. تحديد الحالة والبيانات بناءً على نوع الخدمة
+                $isReady = ($service->type === 'ready');
+                $status = $isReady ? 'completed' : 'processing';
+
+                $newOrder = Order::create([
+                    'service_id'   => $service->id,
+                    'buyer_id'    => $buyer->id,
+                    'seller_id'   => $service->user_id,
+                    'price'       => $service->price,
+                    'status'      => $status,
+                    'completed_at' => $isReady ? now() : null,
                 ]);
+
+                // 3. إذا كانت خدمة جاهزة، يتم تحويل الرصيد للبائع فوراً
+                if ($isReady) {
+                    $sellerWallet = Wallet::firstOrCreate(
+                        ['user_id' => $service->user_id],
+                        ['balance' => 0]
+                    );
+                    $sellerWallet->increment('balance', $service->price);
+                }
+
+                return $newOrder;
             });
+
+            // 4. التوجيه (Redirect) بناءً على نوع الخدمة
+            if ($service->type === 'ready') {
+                return back()->with([
+                    'success' => 'تم شراء الخدمة الجاهزة بنجاح! يمكنك الآن تحميل الملف من زر التحميل.',
+                    'ready_file_path' => $service->ready_file
+                ]);
+            }
 
             return redirect()->route('messages.chat', ['user' => $order->seller_id])
                              ->with('success', 'تم شراء الخدمة بنجاح! يمكنك الآن التواصل مع المستقل.');
 
         } catch (\Exception $e) {
             Log::error('Order Store Error: ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ أثناء إتمام العملية، يرجى المحاولة لاحقاً.');
+            return back()->with('error', 'حدث خطأ أثناء إتمام العملية.');
         }
     }
 
     /**
-     * الوظيفة المسؤولة عن تسليم الطلب
+     * تنفيذ عملية التسليم الفعلية (POST)
      */
     public function submitDelivery(Request $request, $id)
     {
@@ -134,26 +171,20 @@ class OrderController extends Controller
             return back()->with('error', 'غير مسموح لك بهذا الإجراء.');
         }
 
-        $order->update([
-            'status' => 'delivered',
-            'delivery_msg' => strip_tags($request->delivery_msg ?? 'تم إنجاز العمل المطلوب وتسليمه.'),
+        $request->validate([
+            'delivery_msg' => 'required|string|min:10|max:2000',
         ]);
 
-        return back()->with('success', 'تم تسليم العمل بنجاح بانتظار مراجعة المشتري.');
-    }
+        $order->update([
+            'status' => 'delivered',
+            'delivery_msg' => strip_tags($request->delivery_msg),
+        ]);
 
-    public function submit_delivery(Request $request, $id)
-    {
-        return $this->submitDelivery($request, $id);
-    }
-
-    public function deliverOrder(Request $request, $id)
-    {
-        return $this->submitDelivery($request, $id);
+        return redirect()->route('orders.show', $order->id)->with('success', 'تم تسليم العمل بنجاح بانتظار مراجعة المشتري.');
     }
 
     /**
-     * المشتري يؤكد الاستلام والتقييم
+     * اعتماد الاستلام والتقييم (POST)
      */
     public function completeAndRate(Request $request)
     {
@@ -182,7 +213,6 @@ class OrderController extends Controller
                     'completed_at' => now(),
                 ]);
 
-                // حماية: التأكد من وجود البائع ومحفظته قبل التحويل
                 if($order->seller) {
                     $sellerWallet = Wallet::firstOrCreate(
                         ['user_id' => $order->seller_id],
@@ -193,7 +223,8 @@ class OrderController extends Controller
             });
 
             return redirect()->route('orders.show', $order->id)
-                             ->with('success', 'تم إتمام العملية بنجاح وتحويل الأرباح.');
+                             ->with('success', 'تم إتمام العملية بنجاح وتحويل الأرباح للمستقل.');
+
         } catch (\Exception $e) {
             Log::error('Complete Order Error: ' . $e->getMessage());
             return back()->with('error', 'فشل في إتمام الطلب برمجياً.');
@@ -201,7 +232,7 @@ class OrderController extends Controller
     }
 
     /**
-     * إلغاء الطلب وإرجاع الفلوس
+     * إلغاء الطلب
      */
     public function cancelOrder($id)
     {
@@ -215,7 +246,6 @@ class OrderController extends Controller
             DB::transaction(function () use ($order) {
                 $order->update(['status' => 'cancelled']);
 
-                // التأكد من إرجاع الفلوس لمحفظة المشتري
                 $buyerWallet = Wallet::firstOrCreate(
                     ['user_id' => $order->buyer_id],
                     ['balance' => 0]
