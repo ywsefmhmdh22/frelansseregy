@@ -133,8 +133,12 @@ class ChatController extends Controller
         ]);
 
         // 4. البث اللحظي (The Real-time Magic)
-        // نستخدم toOthers لضمان عدم إرسالها للمرسل مرة أخرى عبر السوكيت لأنه سيعرضها عبر AJAX
-        broadcast(new MessageSent($messageInstance))->toOthers();
+        // تم التعديل هنا: وضع البث داخل try-catch لمنع توقف الكود إذا فشل الاتصال بسيرفر السوكيت
+        try {
+            broadcast(new MessageSent($messageInstance))->toOthers();
+        } catch (Exception $e) {
+            Log::error('Broadcasting failed, but message was saved: ' . $e->getMessage());
+        }
 
         // 5. الرد لمرسل الرسالة (AJAX)
         if ($request->ajax() || $request->wantsJson()) {
