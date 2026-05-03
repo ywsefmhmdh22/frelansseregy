@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- الصفحة الرئيسية -->
+  <url>
+    <loc>https://worklyday.com/</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- صفحة المشاريع المفتوحة -->
+  <url>
+    <loc>https://worklyday.com/Projects</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- صفحة الخدمات الجاهزة -->
+  <url>
+    <loc>https://worklyday.com/Services</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- صفحة معرض الأعمال المنفذة -->
+  <url>
+    <loc>https://worklyday.com/Works</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- صفحة أفضل المستقلين -->
+  <url>
+    <loc>https://worklyday.com/top-rated</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- صفحة المدونة (Blog) -->
+  <url>
+    <loc>https://worklyday.com/client/projects/blog</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- صفحة عن المنصة -->
+  <url>
+    <loc>https://worklyday.com/about</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- صفحات التسجيل والدخول -->
+  <url>
+    <loc>https://worklyday.com/register</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://worklyday.com/login</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+</urlset>
