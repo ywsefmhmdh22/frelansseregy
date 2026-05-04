@@ -74,8 +74,10 @@ Route::get('/fix-wallets', function () {
     return "مبروك يا هاني.. كل المحافظ جاهزة!";
 });
 
-// --- روت الـ Webhook ---
+// --- روت الـ Webhook و الـ Callback ---
+// نقلنا الـ Callback هنا عشان يكون متاح مباشرة لـ Paymob بدون prefix
 Route::post('/payment/processed', [PaymentController::class, 'processedCallback'])->name('pay.webhook');
+Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('pay.callback');
 
 /*
 |--------------------------------------------------------------------------
@@ -111,7 +113,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [ClientDashboardController::class, 'wallet'])->name('wallet.index');
         Route::get('/deposit', [PaymentController::class, 'showDepositForm'])->name('wallet.deposit');
         Route::post('/payment/initiate', [PaymentController::class, 'initiatePayment'])->name('pay.initiate');
-        Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('pay.callback');
+        // تم حذف الـ callback من هنا ونقله للأعلى ليعمل بشكل صحيح مع Paymob
         Route::post('/withdraw', [WithdrawController::class, 'store'])->name('wallet.process_withdraw');
     });
 
