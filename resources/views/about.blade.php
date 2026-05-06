@@ -1,4 +1,4 @@
- @extends('layouts.master')
+@extends('layouts.master')
 
 @section('content')
 
@@ -6,10 +6,11 @@
 
     <!-- Hero -->
     <div class="about-hero">
-        <h1>نحن نصنع مستقبل العمل الحر</h1>
+        <h1 class="brand-logo-text mb-4" style="font-family: 'Playfair Display', serif; -webkit-text-fill-color: initial; background: none; color: var(--text-main);">Worklyday</h1>
+        <h2 class="fw-800">نبتكر الحلول الرقمية لمستقبلك</h2>
         <p>
-            منصة ذكية تربط بين أصحاب المشاريع وأفضل المستقلين
-            في تجربة سريعة، آمنة، واحترافية بمعايير عالمية.
+            Worklyday هي شريكك التقني الأمثل لتنفيذ مشاريعك الرقمية. نحن متخصصون في تقديم حلول برمجية مبتكرة
+            بجودة عالمية تضمن نمو وتطور أعمالك في العصر الرقمي.
         </p>
     </div>
 
@@ -22,8 +23,8 @@
             </div>
             <h3>رؤيتنا</h3>
             <p>
-                أن نكون المنصة العربية الأولى في مجال العمل الحر
-                عبر تجربة تقنية متطورة تضع الجودة والسرعة أولاً.
+                أن نكون المؤسسة الرائدة في تقديم الحلول التقنية المتكاملة وتطوير البرمجيات،
+                من خلال تبني أحدث التكنولوجيات التي تضع الجودة والابتكار في المقام الأول.
             </p>
         </div>
 
@@ -33,8 +34,8 @@
             </div>
             <h3>رسالتنا</h3>
             <p>
-                تمكين المستقلين من تحقيق دخل مستقر
-                ومساعدة رواد الأعمال على تنفيذ مشاريعهم بكفاءة.
+                توفير بيئة تقنية احترافية تتيح لأصحاب الأعمال تنفيذ رؤيتهم البرمجية وتطوير تطبيقاتهم
+                بأعلى معايير الدقة والكفاءة التقنية.
             </p>
         </div>
 
@@ -44,8 +45,8 @@
             </div>
             <h3>قيمنا</h3>
             <p>
-                الشفافية — الأمان — الجودة — السرعة —
-                تجربة مستخدم استثنائية.
+                الالتزام التام — الأمان الرقمي — جودة الأداء — وسرعة التنفيذ.
+                نحن نؤمن ببناء شراكات طويلة الأمد تعتمد على الثقة والاحترافية.
             </p>
         </div>
 
@@ -53,125 +54,116 @@
 
     <!-- CTA -->
     <div class="about-cta">
-        <h2>ابدأ رحلتك معنا اليوم</h2>
-        <!-- تم استخدام كلاس boxed-btn ليتطابق مع زرار الواجهة الرئيسية -->
-        <a href="#" class="boxed-btn px-5 py-3 fs-5 mt-3">ابدأ الآن <i class="fas fa-arrow-left ms-2"></i></a>
+        <h2>نفذ مشروعك التقني الآن مع فريق من الخبراء</h2>
+        <div class="mt-4">
+            <a href="/Services" class="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm" style="background: var(--primary-color); border:none;">
+                اطلب خدمة الآن <i class="fas fa-arrow-left ms-2"></i>
+            </a>
+        </div>
     </div>
 
 </section>
 
 <style>
-/* تنسيقات صفحة من نحن المتناسقة مع الثيم الفاتح والأخضر */
+/* تنسيقات صفحة "عن الشركة" المتوافقة مع نظام Worklyday */
 .about-section {
     font-family: 'Cairo', sans-serif;
     direction: rtl;
-    padding: 20px 5%;
-    /* تم إزالة الخلفية الداكنة لتندمج مع الواجهة الرئيسية بشفافية */
-    color: #0f172a;
+    padding: 40px 5%;
+    color: var(--text-main);
 }
 
-/* Hero */
 .about-hero {
     text-align: center;
     margin-bottom: 70px;
 }
 
-.about-hero h1 {
-    font-size: clamp(28px, 4vw, 42px);
-    font-weight: 900;
+.about-hero h2 {
+    font-size: clamp(26px, 3.5vw, 38px);
+    font-weight: 800;
     margin-bottom: 20px;
-    color: #0f172a; /* كحلي داكن أنيق */
-    letter-spacing: -0.5px;
+    color: var(--text-main);
 }
 
 .about-hero p {
     font-size: 18px;
-    max-width: 700px;
+    max-width: 850px;
     margin: auto;
-    color: #475569; /* رمادي مريح للعين */
-    line-height: 1.7;
+    color: var(--text-muted);
+    line-height: 1.8;
 }
 
-/* Cards */
 .about-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 30px;
     margin-bottom: 80px;
 }
 
 .about-card {
-    background: #ffffff;
-    padding: 40px 30px;
-    border-radius: 20px;
+    background: var(--card-bg);
+    padding: 50px 35px;
+    border-radius: 30px;
     text-align: center;
-    transition: all 0.4s ease;
-    border: 1px solid rgba(16, 185, 129, 0.1);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid var(--border-color);
 }
 
-/* تصميم دائرة الأيقونات باللون الأخضر المميز للمنصة */
 .about-card .icon-wrapper {
-    width: 80px;
-    height: 80px;
-    background: #ecfdf5; /* أخضر فاتح جداً */
-    border-radius: 50%;
+    width: 85px;
+    height: 85px;
+    background: var(--nav-hover);
+    border-radius: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 25px auto;
-    transition: all 0.4s ease;
+    margin: 0 auto 30px auto;
+    transition: 0.4s;
 }
 
 .about-card i {
-    font-size: 32px;
-    color: #10b981; /* أخضر المنصة الأساسي */
-    transition: all 0.4s ease;
+    font-size: 30px;
+    color: var(--primary-color);
 }
 
 .about-card h3 {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 800;
-    margin-bottom: 15px;
-    color: #0f172a;
+    margin-bottom: 18px;
+    color: var(--text-main);
 }
 
 .about-card p {
-    color: #64748b;
-    font-size: 15px;
-    line-height: 1.6;
-    margin: 0;
+    color: var(--text-muted);
+    font-size: 15.5px;
+    line-height: 1.7;
 }
 
-/* تأثير التمرير (Hover) */
 .about-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.08);
-    border-color: rgba(16, 185, 129, 0.3);
+    transform: translateY(-12px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-light);
 }
 
 .about-card:hover .icon-wrapper {
-    background: #10b981;
+    background: var(--primary-color);
 }
 
 .about-card:hover i {
     color: #ffffff;
 }
 
-/* CTA */
 .about-cta {
     text-align: center;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(59, 130, 246, 0.05));
-    padding: 50px 30px;
-    border-radius: 24px;
-    border: 1px solid rgba(16, 185, 129, 0.1);
+    background: var(--card-bg);
+    padding: 60px 40px;
+    border-radius: 40px;
+    border: 1px solid var(--border-color);
 }
 
 .about-cta h2 {
-    font-size: 32px;
+    font-size: 30px;
     font-weight: 800;
-    margin-bottom: 10px;
-    color: #0f172a;
 }
 </style>
 

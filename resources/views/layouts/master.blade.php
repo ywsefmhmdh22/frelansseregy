@@ -5,13 +5,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Mäheer - منصة العمل الحر العالمية | إبداع بلا حدود</title>
-    <meta name="description" content="Mäheer هي المنصة الرائدة عالمياً للعمل الحر، تجمع بين أفضل المبدعين والشركات. ابدأ رحلتك المهنية الآن.">
-    <meta name="keywords" content="Freelance, العمل الحر, مبرمجين, مصممين, توظيف، Mäheer, Remote Work, وظائف عن بعد, Digital Transformation">
-    <meta name="author" content="Mäheer Team">
+    <title>Worklyday - للحلول التقنية المتكاملة وتطوير البرمجيات</title>
+    <meta name="description" content="Worklyday هي شريكك التقني الأمثل لتنفيذ مشاريعك الرقمية. متخصصون في تطوير المواقع، تطبيقات الموبايل، والحلول البرمجية المبتكرة بجودة عالمية.">
+    <meta name="keywords" content="برمجة، تطوير تطبيقات، تطوير مواقع، حلول تقنية، Worklyday, Software House, Digital Solutions">
+    <meta name="author" content="Worklyday Team">
 
-    <meta property="og:title" content="Mäheer - منصة العمل الحر الأولى">
-    <meta property="og:description" content="وظف أفضل الخبراء في كافة المجالات بضغطة زر.">
+    <meta property="og:title" content="Worklyday - للحلول التقنية المتكاملة">
+    <meta property="og:description" content="نفذ مشروعك التقني الآن مع فريق من الخبراء والمتخصصين.">
     <meta property="og:type" content="website">
 
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
@@ -220,6 +220,34 @@
 
     .hero-content { position: relative; z-index: 2; text-align: center; }
 
+    .policy-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 25px;
+        padding: 2rem;
+        height: 100%;
+        transition: 0.4s;
+        position: relative;
+        overflow: hidden;
+    }
+    .policy-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        border-color: var(--primary-light);
+    }
+    .policy-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--nav-hover);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+    }
+
     @media (max-width: 991.98px) {
         .sidebar {
             width: 100%; height: 75px;
@@ -258,21 +286,21 @@
     <div class="nav-item-custom">
         <a href="/top-rated" class="nav-link-custom">
             <i class="fas fa-award text-warning" aria-hidden="true"></i>
-            <span>النخبة</span>
+            <span>المميزون</span>
         </a>
     </div>
 
     <div class="nav-item-custom">
         <a href="/about" class="nav-link-custom">
             <i class="fas fa-users-viewfinder" aria-hidden="true"></i>
-            <span>من نحن</span>
+            <span>عن الشركة</span>
         </a>
     </div>
 
     <div class="nav-item-custom">
         <a href="/Services" class="nav-link-custom">
             <i class="fas fa-cubes" aria-hidden="true"></i>
-            <span>الخدمات</span>
+            <span>خدماتنا</span>
         </a>
     </div>
 
@@ -286,14 +314,14 @@
     <div class="nav-item-custom">
         <a href="{{ route('works.index') }}" class="nav-link-custom">
             <i class="fas fa-layer-group" aria-hidden="true"></i>
-            <span>الأعمال</span>
+            <span>أعمالنا</span>
         </a>
     </div>
 
     <div class="nav-item-custom">
         <button class="nav-link-custom border-0 bg-transparent w-100" data-bs-toggle="modal" data-bs-target="#supportModal" aria-label="الدعم الفني">
             <i class="fas fa-headset text-warning" aria-hidden="true"></i>
-            <span>الدعم</span>
+            <span>تواصل معنا</span>
         </button>
     </div>
 
@@ -301,7 +329,7 @@
         @auth
             <a href="{{ auth()->user()->role === 'freelancer' ? route('freelancer.dashboard') : route('client.dashboard') }}" class="nav-link-custom">
                 <i class="fas fa-chart-pie" aria-hidden="true"></i>
-                <span>لوحة التحكم</span>
+                <span>حسابي</span>
             </a>
         @else
             <a href="/login" class="nav-link-custom">
@@ -316,14 +344,14 @@
     <header class="top-header">
         <div class="d-flex align-items-center flex-grow-1">
             <div class="header-logo">
-                <a href="/" class="brand-logo-text">Mäheer</a>
+                <a href="/" class="brand-logo-text">Worklyday</a>
                 <button class="theme-toggle-header theme-toggle-btn" aria-label="تبديل الوضع الليلي">
                     <i class="fas fa-moon theme-icon" aria-hidden="true"></i>
                 </button>
             </div>
             <a href="{{ route('blog.index') }}" class="blog-nav-btn d-none d-md-flex">
                 <i class="fas fa-feather-pointed"></i>
-                <span>المدونة</span>
+                <span>المدونة التقنية</span>
             </a>
         </div>
 
@@ -355,11 +383,11 @@
     @if(request()->is('/'))
     <section class="hero-section-card">
         <div class="hero-content">
-            <h1 class="fw-800 display-4 mb-3">صمم مستقبلك المهني معنا</h1>
-            <p class="lead opacity-90 mb-5 fs-5">نجمع لك أفضل المبدعين العرب والخبراء العالميين في منصة واحدة آمنة وسهلة الاستخدام تماماً.</p>
+            <h1 class="fw-800 display-4 mb-3">نبتكر الحلول الرقمية لمستقبلك</h1>
+            <p class="lead opacity-90 mb-5 fs-5">فريقنا المتخصص يقدم لك أفضل الخدمات البرمجية وتطوير التطبيقات بجودة تضمن نجاح أعمالك.</p>
             <div class="d-flex justify-content-center flex-wrap gap-3">
-                <a href="/top-rated" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-success shadow-lg">تصفح المستقلين</a>
-                <a href="/register" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold">ابدأ رحلتك الآن</a>
+                <a href="/Services" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-success shadow-lg">اطلب خدمة الآن</a>
+                <a href="{{ route('works.index') }}" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold">شاهد أعمالنا</a>
             </div>
         </div>
     </section>
@@ -369,8 +397,37 @@
         @yield('content')
     </section>
 
+    <section class="policies-section py-5">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="policy-card">
+                    <div class="policy-icon"><i class="fas fa-user-shield"></i></div>
+                    <h5 class="fw-bold">سياسة الخصوصية</h5>
+                    <p class="text-muted small">تلتزم المنصة بعدم استخدام بيانات العملاء لأي أغراض خارج نطاق الخدمة، ونتبع أحدث طرق الحماية العالمية لضمان أمان معلوماتك تماماً.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="policy-card">
+                    <div class="policy-icon"><i class="fas fa-rotate-left"></i></div>
+                    <h5 class="fw-bold">سياسة الاسترجاع</h5>
+                    <p class="text-muted small">في حال عدم استلام الخدمة في الوقت المقدر وطلب الاسترجاع، يتم الموافقة فوراً واسترداد كامل أموالك خلال 24 ساعة فقط دون أي تعقيدات.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="policy-card">
+                    <div class="policy-icon"><i class="fas fa-server"></i></div>
+                    <h5 class="fw-bold">سياسة التسليم</h5>
+                    <p class="text-muted small">يتم تسليم الخدمات ورفعها على السيرفر الخاص بالمنصة بعد إجراء مراجعة نهائية شاملة والتأكد من رضاء العميل التام عن جودة الخدمة المقدمة.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <footer class="d-flex flex-wrap justify-content-between align-items-center py-4 my-5 border-top border-2">
-        <p class="col-md-4 mb-0 text-muted fw-bold">© 2026 Mäheer Global. جميع الحقوق محفوظة.</p>
+        <p class="col-md-8 mb-0 text-muted fw-bold">
+            © 2026 Worklyday Solutions. All Rights Reserved.
+            <span class="ms-3 text-primary"><i class="fas fa-location-dot me-1"></i> Alexandria, New Borg El Arab, El Gehaz St.</span>
+        </p>
         <ul class="nav col-md-4 justify-content-end list-unstyled d-flex gap-4 fs-5">
             <li><a class="text-muted" href="#"><i class="fab fa-x-twitter"></i></a></li>
             <li><a class="text-muted" href="#"><i class="fab fa-instagram"></i></a></li>
@@ -410,7 +467,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // Particle Background
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let width, height, particles = [];
@@ -450,7 +506,6 @@
     }
     animate();
 
-    // Theme Logic
     const themeToggles = document.querySelectorAll('.theme-toggle-btn');
     const themeIcons = document.querySelectorAll('.theme-icon');
     const updateUI = (theme) => {

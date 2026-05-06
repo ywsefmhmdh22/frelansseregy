@@ -49,12 +49,11 @@
         <div class="row g-4 justify-content-center" id="services-grid">
             @forelse($allData as $service)
                 @php
-                    // التعديل الجوهري: القراءة من عمود type ليتوافق مع الـ Controller
                     $isReady = ($service->type === 'ready');
                 @endphp
 
                 <div class="col-sm-12 col-md-6 col-lg-4 col-xl-3 service-card-wrapper animate__animated animate__fadeInUp"
-                     data-category="{{ $service->type }}"> {{-- سيأخذ القيمة normal أو ready مباشرة من الداتابيز --}}
+                     data-category="{{ $service->type }}">
 
                     <div class="bright-service-card h-100 border-0 shadow-sm rounded-5 overflow-hidden d-flex flex-column position-relative bg-white">
 
@@ -70,10 +69,10 @@
                                 {{ $isReady ? 'خدمة جاهزة' : 'مشروع عادي' }}
                             </div>
 
-                            {{-- السعر --}}
+                            {{-- السعر بالدولار --}}
                             <div class="bright-price-badge position-absolute bottom-0 end-0 m-3 shadow-lg">
+                                <small>$</small>
                                 <span class="fw-black">{{ number_format($service->price, 0) }}</span>
-                                <small>ج.م</small>
                             </div>
                         </div>
 
@@ -186,7 +185,6 @@
 
         filterButtons.forEach(button => {
             button.addEventListener('click', () => {
-                // تفعيل التبويب المختار
                 filterButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
 
@@ -199,7 +197,6 @@
                     if (filterValue === 'all' || filterValue === itemCategory) {
                         item.style.display = 'block';
                         foundAny = true;
-                        // تأثير حركة بسيط عند الفلترة
                         item.classList.add('animate__fadeInUp');
                     } else {
                         item.style.display = 'none';
@@ -207,7 +204,6 @@
                     }
                 });
 
-                // إظهار رسالة "لا يوجد نتائج" لو الفلتر فاضي
                 if (!foundAny) {
                     noResults.classList.remove('d-none');
                 } else {
