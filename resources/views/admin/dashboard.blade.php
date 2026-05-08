@@ -84,13 +84,18 @@
     .section-content { display: none; }
     .section-active { display: block !important; }
 
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    /* Identity Images in Modal */
+    .id-card-preview { width: 100%; border-radius: 12px; border: 2px dashed #0ea5e9; margin-top: 10px; cursor: pointer; transition: 0.3s; }
+    .id-card-preview:hover { transform: scale(1.02); }
 
-    /* SweetAlert Custom Styling */
     .swal2-popup-custom {
         border-radius: 25px !important;
         border: 1px solid var(--neon-blue) !important;
+        width: 800px !important;
     }
+
+    .info-label { color: var(--neon-blue); font-weight: bold; min-width: 100px; display: inline-block; }
+    .skill-badge { background: rgba(14, 165, 233, 0.1); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 11px; border: 1px solid rgba(14, 165, 233, 0.3); margin-right: 4px; }
 </style>
 
 <div class="dashboard-wrapper">
@@ -186,7 +191,9 @@
             </div>
 
             <div class="filter-btn-group">
-                <button class="filter-btn active" onclick="switchSection('users', this); filterUsers('all')">المستخدمين</button>
+                <button class="filter-btn active" onclick="switchSection('users', this); filterRole('all')">الكل</button>
+                <button class="filter-btn" onclick="switchSection('users', this); filterRole('freelancer')">المستقلين</button>
+                <button class="filter-btn" onclick="switchSection('users', this); filterRole('client')">العملاء</button>
                 <button class="filter-btn" onclick="switchSection('projects', this)">مشاريع معلقة</button>
                 <button class="filter-btn" onclick="switchSection('deposits', this)">شحن</button>
                 <button class="filter-btn" onclick="switchSection('withdrawals', this)">سحب</button>
@@ -214,10 +221,13 @@
                     </thead>
                     <tbody id="userTableBody">
                         @foreach($users as $user)
-                        <tr class="user-row animate__animated animate__fadeIn" data-status="{{ $user->verification_status }}">
+                        <tr class="user-row animate__animated animate__fadeIn" data-status="{{ $user->verification_status }}" data-role="{{ $user->role }}">
                             <td>
                                 <div class="d-flex align-items-center gap-3">
-                                    <img src="https://ui-avatars.com/api/?name={{urlencode($user->name)}}&background=random" class="rounded-circle" width="38">
+                                    @php
+                                        $p_img = $user->profile_image ? asset('storage/' . $user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=random';
+                                    @endphp
+                                    <img src="{{ $p_img }}" class="rounded-circle border border-secondary" width="40" height="40" style="object-fit: cover;">
                                     <div>
                                         <h6 class="mb-0 small fw-bold">{{ $user->name }}</h6>
                                         <small class="text-muted" style="font-size: 10px">{{ $user->email }}</small>
@@ -225,7 +235,7 @@
                                 </div>
                             </td>
                             <td>
-                                 <span class="badge bg-dark border {{ $user->role == 'admin' ? 'border-danger text-danger' : 'border-info text-info' }}" style="font-size: 10px">
+                                 <span class="badge bg-dark border {{ $user->role == 'client' ? 'border-success text-success' : 'border-info text-info' }}" style="font-size: 10px">
                                     {{ strtoupper($user->role) }}
                                  </span>
                             </td>
@@ -233,7 +243,7 @@
                             <td>
                                 @if($user->verification_status == 'pending')
                                     <span class="badge bg-warning text-dark animate__animated animate__flash animate__infinite">
-                                        <i class="fas fa-spinner fa-spin me-1"></i> قيد المراجعة
+                                        <i class="fas fa-spinner fa-spin me-1"></i> مراجعة
                                     </span>
                                 @elseif($user->verification_status == 'verified')
                                     <span class="text-success small fw-bold"><i class="fas fa-check-double me-1"></i> موثق</span>
@@ -243,14 +253,24 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-2">
-                                    @if($user->verification_status !== 'verified')
-                                        <button onclick="approveUser('{{$user->id}}')" class="btn btn-sm btn-success">
-                                            <i class="fas fa-check"></i>
+                                    @if($user->is_profile_completed == 0)
+                                        <button onclick="approveUser('{{$user->id}}', 'activation')" class="btn btn-sm btn-success px-3" title="تفعيل بسيط">
+                                            تفعيل الحساب
+                                        </button>
+                                    @else
+                                        <button onclick="showVerifyModal({{ json_encode($user) }})" class="btn btn-sm btn-info px-3" title="توثيق نهائي">
+                                            توثيق وتفعيل نهائي
                                         </button>
                                     @endif
+
                                     <a href="{{ route('admin.user.edit', $user->id) }}" class="btn btn-sm btn-outline-info"><i class="fas fa-eye"></i></a>
-                                    <button onclick="banUser('{{$user->id}}')" class="btn btn-sm btn-outline-danger" title="حظر">
+
+                                    <button onclick="banUser('{{$user->id}}')" class="btn btn-sm btn-outline-warning" title="حظر">
                                         <i class="fas fa-ban"></i>
+                                    </button>
+
+                                    <button onclick="deleteUser('{{$user->id}}')" class="btn btn-sm btn-outline-danger" title="حذف نهائي">
+                                        <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
                             </td>
@@ -282,20 +302,10 @@
                                 <span class="badge bg-warning text-dark" style="font-size: 9px">PENDING REVIEW</span>
                             </td>
                             <td>{{ $project->user->name ?? 'N/A' }}</td>
-                            <td class="text-info fw-bold">
-                                {{ number_format($project->price, 2) }}
-                                <small style="font-size: 10px">{{ $project->currency }}</small>
-                            </td>
+                            <td class="text-info fw-bold">{{ number_format($project->price, 2) }}</td>
                             <td class="small text-muted">{{ $project->created_at->format('Y-m-d') }}</td>
                             <td class="text-center">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <button onclick="approveProject('{{$project->id}}')" class="btn btn-sm btn-success">
-                                        <i class="fas fa-check-circle me-1"></i> موافقة
-                                    </button>
-                                    <button onclick="rejectProject('{{$project->id}}')" class="btn btn-sm btn-outline-danger">
-                                        <i class="fas fa-times"></i> رفض
-                                    </button>
-                                </div>
+                                <button onclick="approveProject('{{$project->id}}')" class="btn btn-sm btn-success">موافقة</button>
                             </td>
                         </tr>
                         @empty
@@ -343,8 +353,8 @@
                     <thead class="text-muted small border-bottom border-secondary">
                         <tr>
                             <th>المستخدم</th>
-                            <th>المبلغ المسحوب</th>
-                            <th>بيانات السحب</th>
+                            <th>المبلغ</th>
+                            <th>البيانات</th>
                             <th>الحالة</th>
                             <th class="text-center">التحكم</th>
                         </tr>
@@ -355,11 +365,9 @@
                             <td>{{ $withdraw->user->name }}</td>
                             <td class="text-danger fw-bold">- {{ number_format($withdraw->amount) }}</td>
                             <td class="small text-muted">{{ $withdraw->payment_details }}</td>
-                            <td><span class="badge bg-{{ $withdraw->status == 'pending' ? 'warning' : ($withdraw->status == 'completed' ? 'success' : 'danger') }}">{{ $withdraw->status }}</span></td>
+                            <td><span class="badge bg-{{ $withdraw->status == 'pending' ? 'warning' : 'success' }}">{{ $withdraw->status }}</span></td>
                             <td class="text-center">
-                                <button class="btn btn-sm btn-info" onclick="processWithdraw('{{$withdraw->id}}', '{{$withdraw->user->name}}', '{{$withdraw->amount}}')">
-                                    <i class="fas fa-cog"></i>
-                                </button>
+                                <button class="btn btn-sm btn-info" onclick="processWithdraw('{{$withdraw->id}}', '{{$withdraw->user->name}}', '{{$withdraw->amount}}')">إجراء</button>
                             </td>
                         </tr>
                         @empty
@@ -370,52 +378,32 @@
             </div>
         </div>
 
-        {{-- Disputes Table (MODIFIED SECTION) --}}
+        {{-- Disputes Table --}}
         <div id="disputesSection" class="section-content">
             <div class="table-responsive">
                 <table class="table table-dark table-hover align-middle">
                     <thead class="text-muted small border-bottom border-secondary">
                         <tr>
                             <th>المشروع</th>
-                            <th>أطراف النزاع (عميل ضد مستقل)</th>
-                            <th>قيمة العقد</th>
+                            <th>الأطراف</th>
+                            <th>القيمة</th>
                             <th>الحالة</th>
-                            <th>تاريخ النزاع</th>
                             <th class="text-center">الإجراء</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($disputedProjects ?? [] as $dispute)
                         <tr>
-                            <td class="fw-bold">
-                                {{ $dispute->project->title ?? 'مشروع محذوف' }}
-                                <br><small class="text-muted">ID: #{{ $dispute->id }}</small>
-                            </td>
-                            <td>
-                                <div class="d-flex flex-column">
-                                    <span class="text-info"><i class="fas fa-user-tie me-1"></i> {{ $dispute->client->name ?? 'N/A' }}</span>
-                                    <span class="text-warning"><i class="fas fa-user-ninja me-1"></i> {{ $dispute->freelancer->name ?? 'N/A' }}</span>
-                                </div>
-                            </td>
+                            <td>{{ $dispute->project->title ?? 'N/A' }}</td>
+                            <td>{{ $dispute->client->name }} vs {{ $dispute->freelancer->name }}</td>
                             <td class="text-success fw-bold">{{ number_format($dispute->amount) }} ج.م</td>
-                            <td>
-                                @if($dispute->status == 'open')
-                                    <span class="badge bg-danger animate__animated animate__pulse animate__infinite">مفتوح</span>
-                                @elseif($dispute->status == 'resolved')
-                                    <span class="badge bg-success">تم الفصل</span>
-                                @else
-                                    <span class="badge bg-secondary">{{ $dispute->status }}</span>
-                                @endif
-                            </td>
-                            <td class="small text-muted">{{ $dispute->created_at->format('Y-m-d') }}</td>
+                            <td><span class="badge bg-danger">مفتوح</span></td>
                             <td class="text-center">
-                                <a href="{{ route('admin.disputes.show', $dispute->id) }}" class="btn btn-sm btn-outline-danger px-3 rounded-pill">
-                                    <i class="fas fa-gavel me-1"></i> دخول المحكمة
-                                </a>
+                                <a href="{{ route('admin.disputes.show', $dispute->id) }}" class="btn btn-sm btn-outline-danger px-3 rounded-pill">دخول المحكمة</a>
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="6" class="text-center py-5 text-muted">لا توجد نزاعات نشطة حالياً</td></tr>
+                        <tr><td colspan="5" class="text-center py-5 text-muted">لا توجد نزاعات نشطة</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -444,6 +432,194 @@
 
         if(btn) btn.classList.add('active');
     }
+
+    // --- فلترة حسب الدور ---
+    function filterRole(role) {
+        const rows = document.querySelectorAll('.user-row');
+        rows.forEach(row => {
+            const userRole = row.getAttribute('data-role');
+            if (role === 'all') {
+                row.style.display = '';
+            } else {
+                row.style.display = (userRole === role) ? '' : 'none';
+            }
+        });
+    }
+
+    // --- عرض بيانات التوثيق الشاملة ---
+    function showVerifyModal(user) {
+        // تجهيز المهارات كـ Badges
+        let skillsHtml = '';
+        if (user.skills) {
+            let skillsArray = user.skills.split(',');
+            skillsHtml = skillsArray.map(s => `<span class="skill-badge">${s.trim()}</span>`).join('');
+        } else {
+            skillsHtml = '<span class="text-muted">لا يوجد</span>';
+        }
+
+        let profilePic = user.profile_image ? `/storage/${user.profile_image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+
+        Swal.fire({
+            title: `<span style="color:#0ea5e9; font-family:Orbitron;">USER VERIFICATION DOSSIER</span>`,
+            html: `
+                <div class="text-start" style="font-size:13px; color: #e2e8f0;">
+                    <div class="row g-3">
+                        <div class="col-md-4 text-center border-end border-secondary">
+                            <img src="${profilePic}" class="rounded-circle border border-info mb-2" width="100" height="100" style="object-fit:cover;">
+                            <h5 class="mb-0 text-info fw-bold">${user.name}</h5>
+                            <p class="text-muted small">${user.role.toUpperCase()}</p>
+                            <hr class="border-secondary">
+                            <div class="text-start ps-2">
+                                <p class="mb-1"><span class="info-label">رقم الهوية:</span> ${user.id_number || '---'}</p>
+                                <p class="mb-1"><span class="info-label">الهاتف:</span> ${user.phone || '---'}</p>
+                                <p class="mb-1"><span class="info-label">الموقع:</span> ${user.country || ''}, ${user.city || ''}</p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <h6 class="text-info fw-bold"><i class="fas fa-briefcase me-2"></i>التخصص (Headline)</h6>
+                                <p class="bg-dark p-2 rounded border border-secondary">${user.headline || 'لم يتم تحديده'}</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="text-info fw-bold"><i class="fas fa-tags me-2"></i>المهارات (Skills)</h6>
+                                <div class="d-flex flex-wrap gap-1">${skillsHtml}</div>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="text-info fw-bold"><i class="fas fa-info-circle me-2"></i>النبذة التعريفية (Bio)</h6>
+                                <div class="bg-dark p-2 rounded border border-secondary" style="max-height:80px; overflow-y:auto;">
+                                    ${user.bio || 'لا توجد نبذة'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-2">
+                            <h6 class="text-center text-info fw-bold mb-3 border-top border-secondary pt-3">وثائق الهوية الرسمية</h6>
+                            <div class="row">
+                                <div class="col-6 text-center">
+                                    <small class="text-muted d-block mb-1">الوجه الأمامي (Front)</small>
+                                    <img src="/storage/${user.id_image}" class="id-card-preview" onclick="window.open(this.src)" onerror="this.src='https://placehold.co/400x250?text=No+Front+Image'">
+                                </div>
+                                <div class="col-6 text-center">
+                                    <small class="text-muted d-block mb-1">الوجه الخلفي (Back)</small>
+                                    <img src="/storage/${user.id_image_back}" class="id-card-preview" onclick="window.open(this.src)" onerror="this.src='https://placehold.co/400x250?text=No+Back+Image'">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            background: '#0f172a',
+            color: '#fff',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check-circle me-2"></i> توثيق واعتماد الحساب',
+            cancelButtonText: 'إغلاق',
+            confirmButtonColor: '#10b981',
+            customClass: { popup: 'swal2-popup-custom' }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                approveUser(user.id, 'verification');
+            }
+        });
+    }
+
+    // --- توثيق/تفعيل المستخدم ---
+    function approveUser(id, type) {
+        let title = type === 'activation' ? 'تفعيل الحساب؟' : 'إتمام التوثيق النهائي؟';
+        Swal.fire({
+            title: title,
+            text: "سيتم تغيير حالة التوثيق للمستخدم فوراً",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'تأكيد',
+            cancelButtonText: 'إلغاء',
+            background: '#141923', color: '#fff'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'جاري المعالجة...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                fetch(`/admin/user/${id}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ type: type })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire({ icon: 'success', title: 'تمت العملية بنجاح', showConfirmButton: false, timer: 1500 });
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                });
+            }
+        });
+    }
+
+    // --- حظر المستخدم ---
+    function banUser(id) {
+        Swal.fire({
+            title: 'حظر المستخدم؟',
+            text: "سيتم تقييد وصول الحساب للمنصة فوراً",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            confirmButtonText: 'نعم، حظر',
+            background: '#141923', color: '#fff'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/admin/user/${id}/ban`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire({ icon: 'success', title: 'تم الحظر بنجاح', showConfirmButton: false, timer: 1500 });
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                });
+            }
+        });
+    }
+
+    // --- حذف المستخدم نهائياً من قاعدة البيانات ---
+     function deleteUser(id) {
+    Swal.fire({
+        title: 'هل أنت متأكد تماماً؟',
+        text: "سيتم حذف المستخدم نهائياً من قاعدة البيانات!",
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'نعم، احذف نهائياً',
+        background: '#0f172a',
+        color: '#fff'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // انتبه لهذا المسار: يجب أن يطابق تماماً ما وضعته في web.php
+            fetch(`/admin/user/${id}/delete`, {
+                method: 'DELETE', // تأكد أن النوع DELETE
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire('تم الحذف!', data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    Swal.fire('خطأ!', data.message, 'error');
+                }
+            })
+            .catch(err => Swal.fire('خطأ!', 'المسار غير موجود أو حدث خطأ بالخادم', 'error'));
+        }
+    });
+}
 
     // --- معالجة طلب السحب ---
     function processWithdraw(id, userName, amount) {
@@ -477,69 +653,19 @@
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire({ title: 'جاري الإرسال...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-                fetch(`/admin/withdrawals/${id}/process`, {
+                fetch(`/admin/withdraw/${id}/process`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({
-                        decision: result.value.status,
-                        notification: result.value.message
-                    })
+                    body: JSON.stringify(result.value)
                 })
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        Swal.fire('تم!', 'تم تنفيذ قرارك وإرسال الإشعار بنجاح', 'success');
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        Swal.fire('خطأ', data.message || 'حدث خطأ أثناء المعالجة', 'error');
-                    }
-                })
-                .catch(err => Swal.fire('خطأ', 'فشل الاتصال بالخادم', 'error'));
-            }
-        });
-    }
-
-    // --- تصفية صفوف المستخدمين ---
-    function filterUsers(status) {
-        const rows = document.querySelectorAll('.user-row');
-        rows.forEach(row => {
-            const rowStatus = row.getAttribute('data-status');
-            if (status === 'all') {
-                row.style.display = '';
-            } else {
-                row.style.display = (rowStatus === status) ? '' : 'none';
-            }
-        });
-    }
-
-    // --- توثيق المستخدم ---
-    function approveUser(id) {
-        Swal.fire({
-            title: 'توثيق الحساب؟',
-            text: "سيتم منح المستخدم كافة الصلاحيات على المنصة",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#10b981',
-            confirmButtonText: 'تفعيل الآن',
-            cancelButtonText: 'إلغاء',
-            background: '#141923', color: '#fff'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({ title: 'جاري المعالجة...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                fetch(`/admin/user/${id}/approve`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        Swal.fire({ icon: 'success', title: 'تم التوثيق!', showConfirmButton: false, timer: 1500 });
+                        Swal.fire('تم التنفيذ!', 'تم معالجة طلب السحب بنجاح', 'success');
                         setTimeout(() => location.reload(), 1500);
                     }
                 });
@@ -547,83 +673,36 @@
         });
     }
 
-    // --- الموافقة على مشروع ---
-    function approveProject(id) {
-        Swal.fire({
-            title: 'الموافقة على المشروع؟',
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonColor: '#10b981',
-            confirmButtonText: 'موافقة ونشر',
-            background: '#141923', color: '#fff'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch(`/admin/projects/${id}/approve`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                }).then(() => {
-                    Swal.fire('تم!', 'تم نشر المشروع بنجاح', 'success');
-                    setTimeout(() => location.reload(), 1500);
-                });
-            }
-        });
-    }
-
-    // --- حظر المستخدم ---
-    function banUser(id) {
-        Swal.fire({
-            title: 'حظر المستخدم؟',
-            text: "سيتم تقييد وصول الحساب للمنصة فوراً",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            confirmButtonText: 'نعم، حظر',
-            background: '#141923', color: '#fff'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch(`/admin/user/${id}/ban`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        Swal.fire({ icon: 'success', title: 'تم الحظر', showConfirmButton: false, timer: 1500 });
-                        setTimeout(() => location.reload(), 1500);
-                    }
-                });
-            }
-        });
-    }
-
-    // --- البحث السريع ---
+    // --- بحث سريع في الجدول ---
     document.getElementById('dbSearch').addEventListener('keyup', function() {
-        let val = this.value.toLowerCase();
-        document.querySelectorAll('.section-active tbody tr').forEach(row => {
-            row.style.display = row.innerText.toLowerCase().includes(val) ? '' : 'none';
+        let value = this.value.toLowerCase();
+        document.querySelectorAll("tbody tr").forEach(row => {
+            row.style.display = (row.innerText.toLowerCase().indexOf(value) > -1) ? "" : "none";
         });
     });
 
-    // --- رسم بياني مصغر للنمو ---
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctxGrowth = document.getElementById('miniGrowthChart').getContext('2d');
-        new Chart(ctxGrowth, {
+    // --- رسم بياني صغير (Mini Chart) ---
+    const ctx = document.getElementById('miniGrowthChart');
+    if(ctx) {
+        new Chart(ctx, {
             type: 'line',
             data: {
-                labels: [1, 2, 3, 4, 5],
+                labels: ['', '', '', '', '', ''],
                 datasets: [{
-                    data: [12, 19, 13, 25, {{ $growthRate }}],
-                    borderColor: '{{ $growthRate >= 0 ? "#10b981" : "#ef4444" }}',
-                    borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4
+                    data: [12, 19, 15, 25, 22, 30],
+                    borderColor: '#10b981',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: true,
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { x: { display: false }, y: { display: false } },
-                plugins: { legend: { display: false } }
+                plugins: { legend: { display: false } },
+                scales: { x: { display: false }, y: { display: false } }
             }
         });
-    });
+    }
 </script>
 @endsection

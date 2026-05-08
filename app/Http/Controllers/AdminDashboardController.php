@@ -7,7 +7,7 @@ use App\Models\Project;
 use App\Models\Transaction;
 use App\Models\Wallet;
 use App\Models\WithdrawRequest;
-use App\Models\Dispute; // تم إضافة موديل النزاعات الجديد
+use App\Models\Dispute;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
@@ -22,39 +22,34 @@ class AdminDashboardController extends Controller
      */
     public function index()
     {
-        // 1. جلب المستخدمين (أخذ آخر 100 فقط للجدول لتحسين سرعة التحميل)
+        // 1. جلب المستخدمين (آخر 100 لتحسين الأداء)
         $users = User::with(['wallet'])->latest()->take(100)->get();
 
-        // 2. طلبات التوثيق المعلقة (استعلام منفصل لضمان دقة التنبيهات في الـ Navbar والجدول)
+        // 2. طلبات التوثيق المعلقة
         $pendingUsers = User::where('verification_status', 'pending')->latest()->get();
 
         // 3. المشاريع المعلقة والنزاعات
         $pendingProjects = Project::where('admin_status', 'pending')->latest()->get();
 
-        // تعديل: جلب النزاعات من جدول النزاعات الموحد (Polymorphic) ليدعم المشاريع والخدمات
         $allDisputes = Dispute::with(['user:id,name', 'disputable'])
                                 ->latest()
                                 ->get();
 
         // 4. العمليات المالية
-
-        // عمليات الشحن (تظل من جدول المعاملات العام)
         $deposits = Transaction::where('type', 'deposit')
                                 ->with('user:id,name')
                                 ->latest()
                                 ->take(10)
                                 ->get();
 
-        // تعديل: جلب طلبات السحب من جدول withdraw_requests لضمان بيانات أوضح (الحالة، وسيلة السحب، إلخ)
         $withdrawals = WithdrawRequest::with('user:id,name')
                                 ->latest()
                                 ->take(10)
                                 ->get();
 
-        // إبقاء المتغير الأصلي لضمان عدم كسر أي جزء آخر يعتمد عليه (اختياري)
         $transactions = Transaction::with('user:id,name')->latest()->take(10)->get();
 
-        // 5. إحصائيات الخزنة والمشاريع (استعلامات مجمعة سريعة)
+        // 5. إحصائيات الخزنة والمشاريع
         $totalBalance = Wallet::sum('balance');
         $totalWallets = Wallet::count();
         $activeWalletsCount = Wallet::where('balance', '>', 0)->count();
@@ -66,7 +61,7 @@ class AdminDashboardController extends Controller
             'completed'   => Project::where('status', 'completed')->count(),
         ];
 
-        // 6. حساب نسبة النمو الشهري (Optimized)
+        // 6. حساب نسبة النمو الشهري
         $now = Carbon::now();
         $lastMonth = $now->copy()->subMonth();
 
@@ -93,9 +88,9 @@ class AdminDashboardController extends Controller
             'pendingUsers'        => $pendingUsers,
             'pendingProjects'     => $pendingProjects,
             'transactions'        => $transactions,
-            'deposits'            => $deposits,         // لجدول الشحن
-            'withdrawals'         => $withdrawals,      // لجدول السحب (الآن من withdraw_requests)
-            'disputes'            => $allDisputes,      // تم تغيير المسمى ليتناسب مع الجدول الموحد
+            'deposits'            => $deposits,
+            'withdrawals'         => $withdrawals,
+            'disputes'            => $allDisputes,
             'activeDisputesCount' => $allDisputes->where('status', 'pending')->count(),
             'totalBalance'        => $totalBalance,
             'totalWallets'        => $totalWallets,
@@ -109,68 +104,31 @@ class AdminDashboardController extends Controller
     }
 
     /**
-     * معالجة طلب السحب (موافقة/رفض)
-     * تم التعديل ليتناسب مع حقول الـ Blade (decision, notification) وحالات الـ Database (approved, rejected)
+     * تفعيل أو توثيق حساب المستخدم
+     * تم التعديل ليتناسب مع اللوجيك الذكي (تفعيل بسيط / توثيق نهائي)
      */
-    public function processWithdrawal(Request $request, $id): JsonResponse
-    {
-        try {
-            // 1. التحقق من البيانات المرسلة من الـ JS
-            $request->validate([
-                'decision'     => 'required|in:approve,reject',
-                'notification' => 'required|string|min:3'
-            ]);
-
-            $withdraw = WithdrawRequest::findOrFail($id);
-
-            // 2. تحويل القرار القادم من الـ Blade إلى الحالة المسجلة في الميجريشن
-            $newStatus = ($request->decision === 'approve') ? 'approved' : 'rejected';
-
-            // 3. تحديث حالة الطلب
-            $withdraw->update([
-                'status' => $newStatus,
-                // يمكنك إضافة حقل ملاحظات في الداتا بيز لتخزين الـ notification إذا أردت
-            ]);
-
-            // 4. إذا تم الرفض، يتم إعادة المبلغ لمحفظة المستخدم تلقائياً
-            if ($newStatus === 'rejected') {
-                $userWallet = Wallet::where('user_id', $withdraw->user_id)->first();
-                if ($userWallet) {
-                    $userWallet->increment('balance', $withdraw->amount);
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => $newStatus === 'approved' ? 'تمت الموافقة على السحب بنجاح' : 'تم رفض طلب السحب وإعادة المبلغ للمحفظة'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error("Error processing withdrawal $id: " . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء معالجة الطلب: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * تفعيل حساب المستخدم (Verified)
-     */
-    public function approveUser($id): JsonResponse
+    public function approveUser(Request $request, $id): JsonResponse
     {
         try {
             $user = User::findOrFail($id);
+            $type = $request->input('type'); // 'activation' or 'verification'
 
-            $user->update([
-                'verification_status' => 'verified',
-                'is_profile_completed' => true
-            ]);
+            if ($type === 'verification') {
+                // توثيق نهائي (الحالة verified)
+                $user->update([
+                    'verification_status' => 'verified',
+                    'is_profile_completed' => true
+                ]);
+                $msg = "تم توثيق حساب {$user->name} بنجاح";
+            } else {
+                // تفعيل حساب عادي (تغيير الحالة فقط)
+                $user->update([
+                    'verification_status' => 'verified'
+                ]);
+                $msg = "تم تفعيل حساب {$user->name} بنجاح";
+            }
 
-            return response()->json([
-                'success' => true,
-                'message' => "تم توثيق حساب {$user->name} بنجاح"
-            ]);
+            return response()->json(['success' => true, 'message' => $msg]);
         } catch (\Exception $e) {
             Log::error("Error approving user $id: " . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'حدث خطأ أثناء التفعيل'], 500);
@@ -178,7 +136,7 @@ class AdminDashboardController extends Controller
     }
 
     /**
-     * حظر المستخدم أو إلغاء التوثيق
+     * حظر المستخدم
      */
     public function banUser($id): JsonResponse
     {
@@ -200,6 +158,66 @@ class AdminDashboardController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'تعذر إتمام العملية'], 500);
+        }
+    }
+
+    /**
+     * حذف المستخدم نهائياً من قاعدة البيانات
+     */
+    public function destroyUser($id): JsonResponse
+    {
+        try {
+            if (Auth::id() == $id) {
+                return response()->json(['success' => false, 'message' => 'لا يمكنك حذف حسابك الشخصي!'], 403);
+            }
+
+            $user = User::findOrFail($id);
+
+            // يمكنك هنا إضافة لوجيك لحذف الملفات (صور البطاقة) من الـ Storage قبل حذف السجل
+
+            $user->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "تم حذف المستخدم وكافة بياناته نهائياً"
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error deleting user $id: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'حدث خطأ أثناء الحذف'], 500);
+        }
+    }
+
+    /**
+     * معالجة طلب السحب
+     */
+    public function processWithdrawal(Request $request, $id): JsonResponse
+    {
+        try {
+            $request->validate([
+                'decision'     => 'required|in:approve,reject',
+                'notification' => 'required|string|min:3'
+            ]);
+
+            $withdraw = WithdrawRequest::findOrFail($id);
+            $newStatus = ($request->decision === 'approve') ? 'approved' : 'rejected';
+
+            $withdraw->update(['status' => $newStatus]);
+
+            if ($newStatus === 'rejected') {
+                $userWallet = Wallet::where('user_id', $withdraw->user_id)->first();
+                if ($userWallet) {
+                    $userWallet->increment('balance', $withdraw->amount);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $newStatus === 'approved' ? 'تمت الموافقة على السحب بنجاح' : 'تم رفض طلب السحب وإعادة المبلغ للمحفظة'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error processing withdrawal $id: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'حدث خطأ: ' . $e->getMessage()], 500);
         }
     }
 
