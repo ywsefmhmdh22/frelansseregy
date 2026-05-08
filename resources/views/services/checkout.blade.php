@@ -77,7 +77,8 @@
                     <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
                         <div class="row g-0">
                             <div class="col-md-5">
-                                <img src="{{ asset($service->image) }}" class="img-fluid h-100 object-fit-cover" alt="{{ $service->title }}">
+                                {{-- التعديل هنا: إضافة storage/ قبل المسار لضمان ظهور الصورة --}}
+                                <img src="{{ asset('storage/' . $service->image) }}" class="img-fluid h-100 object-fit-cover" alt="{{ $service->title }}">
                             </div>
                             <div class="col-md-7">
                                 <div class="card-body p-4 text-end">
