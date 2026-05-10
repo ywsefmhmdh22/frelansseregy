@@ -40,12 +40,12 @@ class ServiceController extends Controller
         $readyFilePath = null;
 
         try {
-            // 2. رفع صورة الغلاف
+            // 2. رفع صورة الغلاف (تم تعديلها لترفع على s3)
             $imagePath = $this->uploadServiceImage($request);
 
-            // 3. رفع ملف الخدمة الجاهزة (إذا وجد)
+            // 3. رفع ملف الخدمة الجاهزة (تم التعديل ليرفع على s3 بدلاً من public)
             if ($request->type === 'ready' && $request->hasFile('ready_file')) {
-                $readyFilePath = $request->file('ready_file')->store('services/files/' . date('Y/m'), 'public');
+                $readyFilePath = $request->file('ready_file')->store('services/files/' . date('Y/m'), 's3');
             }
 
             // 4. الحفظ في قاعدة البيانات
@@ -55,8 +55,8 @@ class ServiceController extends Controller
                 'description' => strip_tags($validatedData['description']),
                 'price'       => (float) $validatedData['price'],
                 'image'       => $imagePath,
-                'type'        => $validatedData['type'], // النوع الجديد
-                'ready_file'  => $readyFilePath,        // مسار ملف التسليم الفوري
+                'type'        => $validatedData['type'], 
+                'ready_file'  => $readyFilePath,        
                 'status'      => 'active',
             ]);
 
@@ -66,12 +66,12 @@ class ServiceController extends Controller
         } catch (Exception $processingError) {
             Log::error('Service Store Failure: ' . $processingError->getMessage());
 
-            // تنظيف السيرفر من الملفات التي رُفعت في حالة فشل عملية الحفظ
+            // تنظيف الملفات من Cloudflare s3 في حالة فشل عملية الحفظ
             if ($imagePath) {
-                Storage::disk('public')->delete($imagePath);
+                Storage::disk('s3')->delete($imagePath);
             }
             if ($readyFilePath) {
-                Storage::disk('public')->delete($readyFilePath);
+                Storage::disk('s3')->delete($readyFilePath);
             }
 
             return back()->with('error', 'عذراً، حدث خطأ تقني أثناء حفظ الخدمة.')
@@ -154,15 +154,15 @@ class ServiceController extends Controller
         $wallet->increment('pending_balance', $amount);
 
         Transaction::create([
-            'user_id'        => $order->seller_id,
-            'amount'         => $amount,
-            'currency'       => 'USD',
-            'type'           => 'receive',
-            'status'         => 'pending',
-            'release_at'     => now()->addDays(7),
-            'source_id'      => $order->id,
-            'source_type'    => Order::class,
-            'details'        => 'أرباح معلقة عن بيع خدمة: ' . strip_tags($order->service_title ?? 'خدمة مصغرة'),
+            'user_id'         => $order->seller_id,
+            'amount'          => $amount,
+            'currency'        => 'USD',
+            'type'            => 'receive',
+            'status'          => 'pending',
+            'release_at'      => now()->addDays(7),
+            'source_id'       => $order->id,
+            'source_type'     => Order::class,
+            'details'         => 'أرباح معلقة عن بيع خدمة: ' . strip_tags($order->service_title ?? 'خدمة مصغرة'),
         ]);
     }
 
@@ -174,14 +174,15 @@ class ServiceController extends Controller
             'price'       => 'required|numeric|min:1|max:99999',
             'image'       => 'required|image|mimes:jpeg,png,jpg,webp|max:3072',
             'type'        => 'required|in:normal,ready',
-            'ready_file'  => 'required_if:type,ready|file|max:20480', // حد أقصى 20 ميجا للملف الجاهز
+            'ready_file'  => 'required_if:type,ready|file|max:20480', 
         ]);
     }
 
     protected function uploadServiceImage(Request $request)
     {
         if ($request->hasFile('image')) {
-            return $request->file('image')->store('services/covers/' . date('Y/m'), 'public');
+            // تم تغيير الديسك من public إلى s3 ليرسل لـ Cloudflare
+            return $request->file('image')->store('services/covers/' . date('Y/m'), 's3');
         }
         return null;
     }
