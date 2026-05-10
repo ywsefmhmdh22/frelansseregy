@@ -42,14 +42,24 @@
                             <div class="row text-end" dir="rtl">
 
                                 <div class="col-12 mb-5">
-                                    <label class="form-label text-gold-light fw-bold fs-5 mb-3 d-block text-center">اختر نوع الإبداع</label>
-                                    <div class="service-type-selector d-flex justify-content-center gap-3">
-                                        <input type="radio" name="type" value="normal" id="type_normal" class="btn-check" {{ old('type', 'normal') == 'normal' ? 'checked' : '' }}>
-                                        <label class="type-card" for="type_normal">
-                                            <i class="fas fa-handshake fa-2x mb-2"></i>
-                                            <span>خدمة عامة</span>
-                                            <small>تواصل وتفاوض مع العميل</small>
-                                        </label>
+    <span class="form-label text-gold-light fw-bold fs-5 mb-3 d-block text-center">اختر نوع الإبداع</span>
+
+    <div class="service-type-selector d-flex justify-content-center gap-3">
+        <input type="radio" name="type" value="normal" id="type_normal" class="btn-check" {{ old('type', 'normal') == 'normal' ? 'checked' : '' }}>
+        <label class="type-card" for="type_normal">
+            <i class="fas fa-handshake fa-2x mb-2"></i>
+            <span>خدمة عامة</span>
+            <small>تواصل وتفاوض مع العميل</small>
+        </label>
+
+        <input type="radio" name="type" value="ready" id="type_ready" class="btn-check" {{ old('type') == 'ready' ? 'checked' : '' }}>
+        <label class="type-card" for="type_ready">
+            <i class="fas fa-bolt fa-2x mb-2"></i>
+            <span>خدمة جاهزة</span>
+            <small>بيع فوري وتحميل تلقائي</small>
+        </label>
+    </div>
+</div>
 
                                         <input type="radio" name="type" value="ready" id="type_ready" class="btn-check" {{ old('type') == 'ready' ? 'checked' : '' }}>
                                         <label class="type-card" for="type_ready">
