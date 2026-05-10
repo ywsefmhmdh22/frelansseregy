@@ -59,7 +59,8 @@
 
                         {{-- حاوية الصورة --}}
                         <div class="card-image-wrapper position-relative overflow-hidden">
-                            <img src="{{ $service->image ? Storage::url($service->image) : asset('images/default-service.jpg') }}"
+                            {{-- تم التعديل هنا لاستخدام درايفر S3 (Cloudflare R2) بشكل صريح --}}
+                            <img src="{{ $service->image ? Storage::disk('s3')->url($service->image) : asset('images/default-service.jpg') }}"
                                  alt="{{ $service->title }}"
                                  class="w-100 h-100 object-fit-cover transition-transform main-service-img">
 
@@ -79,7 +80,8 @@
                         {{-- تفاصيل الخدمة --}}
                         <div class="card-body p-4 text-end d-flex flex-column" dir="rtl">
                             <div class="user-info-top d-flex align-items-center mb-3 pb-2 border-bottom border-light">
-                                <img src="{{ $service->user->profile_image ? Storage::url($service->user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($service->user->name).'&background=0ea5e9&color=fff' }}"
+                                {{-- تم التعديل هنا أيضاً لصورة المستخدم --}}
+                                <img src="{{ $service->user->profile_image ? Storage::disk('s3')->url($service->user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($service->user->name).'&background=0ea5e9&color=fff' }}"
                                      class="rounded-circle shadow-sm border border-2 border-white"
                                      style="width: 35px; height: 35px; object-fit: cover;">
                                 <div class="me-2 d-flex flex-column text-end">
