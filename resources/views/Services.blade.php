@@ -81,8 +81,8 @@
                         <div class="card-body p-4 text-end d-flex flex-column" dir="rtl">
                             <div class="user-info-top d-flex align-items-center mb-3 pb-2 border-bottom border-light">
                                 {{-- تم التعديل هنا أيضاً لصورة المستخدم --}}
-                                <img src="{{ $service->user->profile_image ? Storage::disk('s3')->url($service->user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($service->user->name).'&background=0ea5e9&color=fff' }}"
-                                     class="rounded-circle shadow-sm border border-2 border-white"
+                                 <img src="{{ $service->image ? Storage::disk(env('FILESYSTEM_DISK', 'cloud'))->url($service->image) : asset('images/default-service.jpg') }}"
+     class="w-100 h-100 object-fit-cover transition-transform main-service-img">
                                      style="width: 35px; height: 35px; object-fit: cover;">
                                 <div class="me-2 d-flex flex-column text-end">
                                     <span class="fw-bold text-dark small">{{ $service->user->name }}</span>
