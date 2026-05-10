@@ -60,9 +60,9 @@
                         {{-- حاوية الصورة --}}
                         <div class="card-image-wrapper position-relative overflow-hidden">
                             {{-- تم التعديل هنا لاستخدام درايفر S3 (Cloudflare R2) بشكل صريح --}}
-                            <img src="{{ $service->image ? Storage::disk('s3')->url($service->image) : asset('images/default-service.jpg') }}"
-                                 alt="{{ $service->title }}"
-                                 class="w-100 h-100 object-fit-cover transition-transform main-service-img">
+                             <img src="{{ $service->image ? Storage::disk(config('filesystems.default'))->url($service->image) : asset('images/default-service.jpg') }}"
+     alt="{{ $service->title }}"
+     class="w-100 h-100 object-fit-cover transition-transform main-service-img">
 
                             {{-- شارة نوع الخدمة --}}
                             <div class="type-badge position-absolute top-0 start-0 m-3 shadow-sm {{ $isReady ? 'bg-ready' : 'bg-public' }}">

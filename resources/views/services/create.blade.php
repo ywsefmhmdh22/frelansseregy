@@ -62,9 +62,9 @@
 
                                 <div class="col-12 mb-4">
                                     <label class="form-label text-gold-light fw-bold fs-5 mb-3">ما هو عنوان إبداعك القادم؟</label>
-                                    <div class="premium-input-group">
-                                        <i class="fas fa-pen-fancy input-icon"></i>
-                                        <input type="text" name="title" class="premium-input" placeholder="مثلاً: تصميم هوية بصرية فاخرة لشركتك" value="{{ old('title') }}" required>
+                                    <div class="premium-input-group position-relative">
+                                        <i class="fas fa-pen-fancy input-icon" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); z-index: 10;"></i>
+                                        <input type="text" name="title" class="premium-input" style="padding-right: 50px;" placeholder="مثلاً: تصميم هوية بصرية فاخرة لشركتك" value="{{ old('title') }}" required>
                                     </div>
                                 </div>
 
@@ -97,9 +97,9 @@
                                     <div class="ready-upload-box p-4 rounded-4 text-center">
                                         <label class="form-label text-gold-light fw-bold fs-5 mb-3">ارفع ملف الخدمة (ZIP, PDF, JPG)</label>
                                         <p class="text-white-50 small">سيتم إرسال هذا الملف تلقائياً للعميل فور الدفع</p>
-                                        <div class="premium-input-group">
-                                            <i class="fas fa-cloud-arrow-up input-icon"></i>
-                                            <input type="file" name="ready_file" class="premium-input" id="ready_file_input" {{ old('type') == 'ready' ? 'required' : '' }}>
+                                        <div class="premium-input-group position-relative">
+                                            <i class="fas fa-cloud-arrow-up input-icon" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); z-index: 10;"></i>
+                                            <input type="file" name="ready_file" class="premium-input" id="ready_file_input" style="padding-right: 50px;" {{ old('type') == 'ready' ? 'required' : '' }}>
                                         </div>
                                     </div>
                                 </div>
@@ -107,7 +107,7 @@
                                 <div class="col-12 mb-4 text-center">
                                     <div id="image_preview_container" class="d-none animate__animated animate__zoomIn">
                                         <div class="preview-wrapper border-gold p-1 rounded-4 shadow-lg d-inline-block">
-                                            <img id="image_preview" src="#" alt="Preview" class="rounded-4">
+                                            <img id="image_preview" src="#" alt="Preview" class="rounded-4" style="max-width: 100%; max-height: 280px;">
                                             <div class="preview-badge">معاينة الواجهة</div>
                                         </div>
                                     </div>
@@ -131,7 +131,6 @@
 </div>
 
 <script>
-    // تم تحديث اسم الحقل في الـ Selector ليتناسب مع التعديل الجديد
     document.querySelectorAll('input[name="type"]').forEach((elem) => {
         elem.addEventListener("change", function(event) {
             let fileSection = document.getElementById('ready_file_section');
@@ -142,7 +141,7 @@
             } else {
                 fileSection.classList.add('d-none');
                 fileInput.removeAttribute('required');
-                fileInput.value = ""; // مسح الملف المختار إذا تراجع عن الاختيار
+                fileInput.value = "";
             }
         });
     });
@@ -158,7 +157,9 @@
             fileStatus.innerText = "تم اختيار الصورة بنجاح ✅";
             fileStatus.style.color = "#fbbf24";
         };
-        reader.readAsDataURL(event.target.files[0]);
+        if(event.target.files[0]) {
+            reader.readAsDataURL(event.target.files[0]);
+        }
     }
 </script>
 
@@ -265,8 +266,9 @@
         border-radius: 15px; padding: 20px; cursor: pointer; color: #cbd5e1;
     }
 
+    .file-hidden { display: none; }
+
     .preview-wrapper { position: relative; }
-    .preview-wrapper img { max-width: 100%; max-height: 280px; }
     .preview-badge { position: absolute; bottom: 10px; right: 10px; background: var(--gold); color: black; padding: 2px 12px; border-radius: 50px; font-weight: 900; font-size: 0.75rem; }
     .alert-premium-danger { background: rgba(220, 38, 38, 0.2); border-right: 4px solid var(--gold) !important; }
 </style>
