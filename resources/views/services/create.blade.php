@@ -28,7 +28,7 @@
                     <div class="card-body p-4 p-md-5">
                         @if($errors->any())
                             <div class="alert alert-premium-danger border-0 rounded-4 shadow-sm mb-4 animate__animated animate__shakeX">
-                                <ul class="mb-0 text-white small fw-bold">
+                                <ul class="mb-0 text-white small fw-bold text-end" dir="rtl">
                                     @foreach($errors->all() as $error)
                                         <li><i class="fas fa-exclamation-circle me-1 text-gold"></i> {{ $error }}</li>
                                     @endforeach
@@ -41,25 +41,16 @@
 
                             <div class="row text-end" dir="rtl">
 
+                                {{-- اختيار نوع الخدمة --}}
                                 <div class="col-12 mb-5">
-    <span class="form-label text-gold-light fw-bold fs-5 mb-3 d-block text-center">اختر نوع الإبداع</span>
-
-    <div class="service-type-selector d-flex justify-content-center gap-3">
-        <input type="radio" name="type" value="normal" id="type_normal" class="btn-check" {{ old('type', 'normal') == 'normal' ? 'checked' : '' }}>
-        <label class="type-card" for="type_normal">
-            <i class="fas fa-handshake fa-2x mb-2"></i>
-            <span>خدمة عامة</span>
-            <small>تواصل وتفاوض مع العميل</small>
-        </label>
-
-        <input type="radio" name="type" value="ready" id="type_ready" class="btn-check" {{ old('type') == 'ready' ? 'checked' : '' }}>
-        <label class="type-card" for="type_ready">
-            <i class="fas fa-bolt fa-2x mb-2"></i>
-            <span>خدمة جاهزة</span>
-            <small>بيع فوري وتحميل تلقائي</small>
-        </label>
-    </div>
-</div>
+                                    <span class="form-label text-gold-light fw-bold fs-5 mb-3 d-block text-center">اختر نوع الإبداع</span>
+                                    <div class="service-type-selector d-flex justify-content-center gap-3">
+                                        <input type="radio" name="type" value="normal" id="type_normal" class="btn-check" {{ old('type', 'normal') == 'normal' ? 'checked' : '' }}>
+                                        <label class="type-card" for="type_normal">
+                                            <i class="fas fa-handshake fa-2x mb-2"></i>
+                                            <span>خدمة عامة</span>
+                                            <small>تواصل وتفاوض مع العميل</small>
+                                        </label>
 
                                         <input type="radio" name="type" value="ready" id="type_ready" class="btn-check" {{ old('type') == 'ready' ? 'checked' : '' }}>
                                         <label class="type-card" for="type_ready">
@@ -70,28 +61,32 @@
                                     </div>
                                 </div>
 
+                                {{-- عنوان الخدمة --}}
                                 <div class="col-12 mb-4">
                                     <label class="form-label text-gold-light fw-bold fs-5 mb-3">ما هو عنوان إبداعك القادم؟</label>
                                     <div class="premium-input-group position-relative">
-                                        <i class="fas fa-pen-fancy input-icon" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); z-index: 10;"></i>
-                                        <input type="text" name="title" class="premium-input" style="padding-right: 50px;" placeholder="مثلاً: تصميم هوية بصرية فاخرة لشركتك" value="{{ old('title') }}" required>
+                                        <i class="fas fa-pen-fancy input-icon"></i>
+                                        <input type="text" name="title" class="premium-input" placeholder="مثلاً: تصميم هوية بصرية فاخرة لشركتك" value="{{ old('title') }}" required>
                                     </div>
                                 </div>
 
+                                {{-- وصف الخدمة --}}
                                 <div class="col-12 mb-4">
                                     <label class="form-label text-gold-light fw-bold fs-5 mb-3">وصف الخدمة (تفاصيل الامتياز)</label>
                                     <textarea name="description" class="premium-input" rows="5" placeholder="اكتب هنا تفاصيل الخدمة..." required>{{ old('description') }}</textarea>
                                 </div>
 
+                                {{-- السعر --}}
                                 <div class="col-md-6 mb-4">
                                     <label class="form-label text-gold-light fw-bold fs-5 mb-3">قيمة الخدمة (USD $)</label>
-                                    <div class="premium-input-group price-group">
+                                    <div class="premium-input-group price-group position-relative">
                                         <span class="currency-label">$</span>
                                         <input type="number" name="price" class="premium-input pe-5" placeholder="50" value="{{ old('price') }}" min="1" required>
                                     </div>
                                     <small class="text-white-50 mt-2 d-block">السعر العالمي للخدمات الاحترافية.</small>
                                 </div>
 
+                                {{-- صورة الغلاف --}}
                                 <div class="col-md-6 mb-4">
                                     <label class="form-label text-gold-light fw-bold fs-5 mb-3">غلاف الخدمة الفخم</label>
                                     <div class="custom-file-upload">
@@ -103,17 +98,19 @@
                                     </div>
                                 </div>
 
-                                <div class="col-12 mb-4 {{ old('type') == 'ready' ? '' : 'd-none' }} animate__animated animate__fadeIn" id="ready_file_section">
-                                    <div class="ready-upload-box p-4 rounded-4 text-center">
+                                {{-- قسم رفع الملف الجاهز (يظهر فقط عند اختيار خدمة جاهزة) --}}
+                                <div class="col-12 mb-4 {{ old('type') == 'ready' ? '' : 'd-none' }}" id="ready_file_section">
+                                    <div class="ready-upload-box p-4 rounded-4 text-center animate__animated animate__fadeIn">
                                         <label class="form-label text-gold-light fw-bold fs-5 mb-3">ارفع ملف الخدمة (ZIP, PDF, JPG)</label>
                                         <p class="text-white-50 small">سيتم إرسال هذا الملف تلقائياً للعميل فور الدفع</p>
                                         <div class="premium-input-group position-relative">
-                                            <i class="fas fa-cloud-arrow-up input-icon" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); z-index: 10;"></i>
-                                            <input type="file" name="ready_file" class="premium-input" id="ready_file_input" style="padding-right: 50px;" {{ old('type') == 'ready' ? 'required' : '' }}>
+                                            <i class="fas fa-cloud-arrow-up input-icon"></i>
+                                            <input type="file" name="ready_file" class="premium-input" id="ready_file_input" {{ old('type') == 'ready' ? 'required' : '' }}>
                                         </div>
                                     </div>
                                 </div>
 
+                                {{-- معاينة الصورة --}}
                                 <div class="col-12 mb-4 text-center">
                                     <div id="image_preview_container" class="d-none animate__animated animate__zoomIn">
                                         <div class="preview-wrapper border-gold p-1 rounded-4 shadow-lg d-inline-block">
@@ -123,6 +120,7 @@
                                     </div>
                                 </div>
 
+                                {{-- زر النشر --}}
                                 <div class="col-12 mt-3">
                                     <button type="submit" class="btn btn-premium-submit w-100 py-3 rounded-pill fw-black">
                                         <i class="fas fa-paper-plane me-2"></i> نـشـر الـخدمـة فـي الـمـتـجر الآن
@@ -250,8 +248,8 @@
         outline: none;
     }
 
-    .input-icon { position: absolute; right: 20px; color: var(--gold); }
-    .currency-label { position: absolute; left: 20px; color: var(--gold); font-weight: 900; font-size: 1.3rem; }
+    .input-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); z-index: 10; color: var(--gold); }
+    .currency-label { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--gold); font-weight: 900; font-size: 1.3rem; z-index: 10; }
 
     .ready-upload-box {
         background: rgba(251, 191, 36, 0.05);

@@ -31,63 +31,59 @@ class ServiceController extends Controller
     /**
      * حفظ الخدمة في قاعدة البيانات.
      */
-     /**
- * حفظ الخدمة في قاعدة البيانات.
- */
-public function store(Request $request)
-{
-    $validatedData = $this->validateServiceRequest($request);
-    $imagePath = null;
-    $readyFilePath = null;
+    public function store(Request $request)
+    {
+        $validatedData = $this->validateServiceRequest($request);
+        $imagePath = null;
+        $readyFilePath = null;
 
-    // الحصول على الديسك الافتراضي (سواء كان s3 أو cloud)
-    $disk = config('filesystems.default');
+        // حددنا الديسك s3 صراحة لضمان التوافق مع Laravel Cloud
+        $disk = 's3';
 
-    try {
-        // 2. رفع صورة الغلاف
-        if ($request->hasFile('image')) {
-            // أضفنا 'public' لضمان أن الصورة تظهر للجميع على الموقع
-            $imagePath = $request->file('image')->store('services/covers/' . date('Y/m'), [
-                'disk' => $disk,
-                'visibility' => 'public'
+        try {
+            // 1. رفع صورة الغلاف
+            if ($request->hasFile('image')) {
+                // 'public' تضمن أن الصورة ستكون متاحة للقراءة عبر الرابط المباشر
+                $imagePath = $request->file('image')->store('services/covers/' . date('Y/m'), [
+                    'disk' => $disk,
+                    'visibility' => 'public'
+                ]);
+            }
+
+            // 2. رفع ملف الخدمة الجاهزة (إن وجد)
+            if ($request->type === 'ready' && $request->hasFile('ready_file')) {
+                // نرفع الملف بوضع private (افتراضي) لأنه ملف خاص للمشتري فقط
+                $readyFilePath = $request->file('ready_file')->store('services/files/' . date('Y/m'), [
+                    'disk' => $disk
+                ]);
+            }
+
+            // 3. الحفظ في قاعدة البيانات
+            Service::create([
+                'user_id'     => Auth::id(),
+                'title'       => strip_tags($validatedData['title']),
+                'description' => strip_tags($validatedData['description']),
+                'price'       => (float) $validatedData['price'],
+                'image'       => $imagePath,
+                'type'        => $validatedData['type'],
+                'ready_file'  => $readyFilePath,
+                'status'      => 'active',
             ]);
+
+            return redirect()->route('freelancer.dashboard')
+                             ->with('success', 'تم نشر خدمتك الاحترافية بنجاح!');
+
+        } catch (Exception $processingError) {
+            Log::error('Service Store Failure: ' . $processingError->getMessage());
+
+            // حذف الملفات في حالة فشل العملية لتوفير المساحة
+            if ($imagePath) { Storage::disk($disk)->delete($imagePath); }
+            if ($readyFilePath) { Storage::disk($disk)->delete($readyFilePath); }
+
+            return back()->with('error', 'عذراً، حدث خطأ تقني أثناء حفظ الخدمة.')->withInput();
         }
-
-        // 3. رفع ملف الخدمة الجاهزة
-        if ($request->type === 'ready' && $request->hasFile('ready_file')) {
-            // هنا نرفع الملف بوضع 'private' (افتراضي) لزيادة الأمان
-             $readyFilePath = $request->file('ready_file')->store('services/files/' . date('Y/m'), [
-                'disk' => $disk
-             ]);
-        }
-
-        // 4. الحفظ في قاعدة البيانات
-        Service::create([
-            'user_id'     => Auth::id(),
-            'title'       => strip_tags($validatedData['title']),
-            'description' => strip_tags($validatedData['description']),
-            'price'       => (float) $validatedData['price'],
-            'image'       => $imagePath,
-            'type'        => $validatedData['type'],
-            'ready_file'  => $readyFilePath,
-            'status'      => 'active',
-        ]);
-
-        return redirect()->route('freelancer.dashboard')
-                         ->with('success', 'تم نشر خدمتك الاحترافية بنجاح!');
-
-    } catch (Exception $processingError) {
-        Log::error('Service Store Failure: ' . $processingError->getMessage());
-
-        // حذف الملفات في حالة فشل العملية (Rollback)
-        if ($imagePath) { Storage::disk($disk)->delete($imagePath); }
-        if ($readyFilePath) { Storage::disk($disk)->delete($readyFilePath); }
-
-        return back()->with('error', 'عذراً، حدث خطأ تقني أثناء حفظ الخدمة.')->withInput();
     }
-}
 
-// يمكنك حذف دالة uploadServiceImage القديمة ودمج الرفع داخل store كما فعلت أعلاه لسهولة الإدارة.
     /**
      * عرض صفحة تأكيد الدفع (Checkout).
      */
@@ -103,12 +99,11 @@ public function store(Request $request)
     }
 
     /**
-     * معالجة طلب تسليم العمل من قبل المستقل.
+     * معالجة طلب تسليم العمل.
      */
     public function requestDelivery(Order $order)
     {
         if (Auth::id() !== (int)$order->seller_id) {
-            Log::warning("Unauthorized Delivery Attempt by User ID " . Auth::id() . " for Order ID: {$order->id}");
             return back()->with('error', 'عذراً، لا تملك صلاحية تسليم هذا الطلب.');
         }
 
@@ -122,7 +117,7 @@ public function store(Request $request)
     }
 
     /**
-     * استلام العميل للخدمة وتحويل الأرباح للمستقل.
+     * إتمام العميل للطلب.
      */
     public function completeOrder(Request $request, Order $order)
     {
@@ -148,7 +143,7 @@ public function store(Request $request)
     }
 
     // =========================================================================
-    // Private Helpers
+    // Helpers
     // =========================================================================
 
     private function payoutToFreelancer(Order $order)
@@ -186,13 +181,4 @@ public function store(Request $request)
             'ready_file'  => 'required_if:type,ready|file|max:20480',
         ]);
     }
-
-     protected function uploadServiceImage(Request $request)
-   {
-    if ($request->hasFile('image')) {
-        // نستخدم config('filesystems.default') عشان يرفع على الديسك اللي متعرف في الـ .env (اللي هو cloud)
-        return $request->file('image')->store('services/covers/' . date('Y/m'), config('filesystems.default'));
-    }
-    return null;
-  }
 }

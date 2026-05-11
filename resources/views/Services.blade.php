@@ -60,7 +60,7 @@
                         {{-- حاوية الصورة --}}
                         <div class="card-image-wrapper position-relative overflow-hidden">
                             {{-- عرض صورة الخدمة من S3 --}}
-                            <img src="{{ $service->image ? Storage::disk('s3')->url($service->image) : asset('images/default-service.jpg') }}"
+                            <img src="{{ Storage::disk('s3')->url($service->image) }}"
                                  alt="{{ $service->title }}"
                                  class="w-100 h-100 object-fit-cover transition-transform main-service-img">
 
@@ -81,7 +81,7 @@
                         <div class="card-body p-4 text-end d-flex flex-column" dir="rtl">
                             <div class="user-info-top d-flex align-items-center mb-3 pb-2 border-bottom border-light">
                                 {{-- صورة صاحب الخدمة --}}
-                                  <img src="https://ui-avatars.com/api/?name={{ urlencode($service->user->name) }}&color=7F9CF5&background=EBF4FF"
+                                <img src="https://ui-avatars.com/api/?name={{ urlencode($service->user->name) }}&color=7F9CF5&background=EBF4FF"
                                      class="rounded-circle border border-2 border-white shadow-sm"
                                      style="width: 35px; height: 35px; object-fit: cover;"
                                      alt="user">
@@ -167,11 +167,11 @@
     .bright-service-card { transition: all 0.4s ease; border: 1px solid #e2e8f0 !important; }
     .bright-service-card:hover { transform: translateY(-10px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05) !important; border-color: var(--primary-main) !important; }
 
-    .card-image-wrapper { height: 200px; }
+    .card-image-wrapper { height: 200px; position: relative; }
     .main-service-img { transition: transform 0.8s ease; }
     .bright-service-card:hover .main-service-img { transform: scale(1.08); }
 
-    .bright-price-badge { background: white; color: var(--primary-main); padding: 8px 15px; border-radius: 15px; border-right: 4px solid var(--primary-main); }
+    .bright-price-badge { background: white; color: var(--primary-main); padding: 8px 15px; border-radius: 15px; border-right: 4px solid var(--primary-main); z-index: 10; }
     .btn-bright-action { background: #f1f5f9; color: #475569; border: none; }
     .bright-service-card:hover .btn-bright-action { background: var(--primary-main); color: white; }
 
