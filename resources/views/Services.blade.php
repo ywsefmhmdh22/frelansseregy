@@ -59,10 +59,10 @@
 
                         {{-- حاوية الصورة --}}
                         <div class="card-image-wrapper position-relative overflow-hidden">
-                            {{-- تم التعديل هنا لاستخدام درايفر S3 (Cloudflare R2) بشكل صريح --}}
-                             <img src="{{ $service->image ? Storage::disk(config('filesystems.default'))->url($service->image) : asset('images/default-service.jpg') }}"
-     alt="{{ $service->title }}"
-     class="w-100 h-100 object-fit-cover transition-transform main-service-img">
+                            {{-- عرض صورة الخدمة من S3 --}}
+                            <img src="{{ $service->image ? Storage::disk('s3')->url($service->image) : asset('images/default-service.jpg') }}"
+                                 alt="{{ $service->title }}"
+                                 class="w-100 h-100 object-fit-cover transition-transform main-service-img">
 
                             {{-- شارة نوع الخدمة --}}
                             <div class="type-badge position-absolute top-0 start-0 m-3 shadow-sm {{ $isReady ? 'bg-ready' : 'bg-public' }}">
@@ -80,10 +80,12 @@
                         {{-- تفاصيل الخدمة --}}
                         <div class="card-body p-4 text-end d-flex flex-column" dir="rtl">
                             <div class="user-info-top d-flex align-items-center mb-3 pb-2 border-bottom border-light">
-                                {{-- تم التعديل هنا أيضاً لصورة المستخدم --}}
-                                 <img src="{{ $service->image ? Storage::disk(env('FILESYSTEM_DISK', 'cloud'))->url($service->image) : asset('images/default-service.jpg') }}"
-     class="w-100 h-100 object-fit-cover transition-transform main-service-img">
-                                     style="width: 35px; height: 35px; object-fit: cover;">
+                                {{-- صورة صاحب الخدمة --}}
+                                  <img src="https://ui-avatars.com/api/?name={{ urlencode($service->user->name) }}&color=7F9CF5&background=EBF4FF"
+                                     class="rounded-circle border border-2 border-white shadow-sm"
+                                     style="width: 35px; height: 35px; object-fit: cover;"
+                                     alt="user">
+
                                 <div class="me-2 d-flex flex-column text-end">
                                     <span class="fw-bold text-dark small">{{ $service->user->name }}</span>
                                     <span class="text-primary small" style="font-size: 0.7rem;">مستقل موثق <i class="fas fa-check-circle"></i></span>
@@ -115,7 +117,6 @@
                 </div>
             @endforelse
 
-            {{-- رسالة تظهر عند عدم وجود نتائج للفلتر المختار --}}
             <div id="no-filter-results" class="col-12 text-center py-5 d-none animate__animated animate__fadeIn">
                 <i class="fas fa-filter fa-3x text-muted opacity-25 mb-3"></i>
                 <h4 class="text-dark fw-bold">لا توجد نتائج لهذا التصنيف</h4>
