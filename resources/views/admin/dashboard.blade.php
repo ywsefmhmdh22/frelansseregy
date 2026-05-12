@@ -447,67 +447,103 @@
     }
 
     // --- عرض بيانات التوثيق الشاملة ---
-    function showVerifyModal(user) {
-        // تجهيز المهارات كـ Badges
-        let skillsHtml = '';
-        if (user.skills) {
-            let skillsArray = user.skills.split(',');
-            skillsHtml = skillsArray.map(s => `<span class="skill-badge">${s.trim()}</span>`).join('');
-        } else {
-            skillsHtml = '<span class="text-muted">لا يوجد</span>';
-        }
+     function showVerifyModal(user) {
+    // تجهيز المهارات كـ Badges
+    let skillsHtml = '';
+    if (user.skills) {
+        let skillsArray = user.skills.split(',');
+        skillsHtml = skillsArray.map(s => `<span class="skill-badge">${s.trim()}</span>`).join('');
+    } else {
+        skillsHtml = '<span class="text-muted">لا يوجد</span>';
+    }
 
-        let profilePic = user.profile_image ? `/storage/${user.profile_image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+    /**
+     * تعديل جلب الصور ليتوافق مع Laravel Cloud (S3)
+     * نقوم بفحص ما إذا كان المسار يبدأ بـ http لضمان عدم تكرار الرابط إذا كان قادماً من السيرفر جاهزاً
+     * أو نقوم ببناء الرابط باستخدام الدومين الخاص بالتخزين السحابي
+     */
+    const storageBase = "https://frelansseregy.s3.amazonaws.com/"; // تأكد من مطابقة هذا الرابط لإعدادات AWS_URL لديك
 
-        Swal.fire({
-            title: `<span style="color:#0ea5e9; font-family:Orbitron;">USER VERIFICATION DOSSIER</span>`,
-            html: `
-                <div class="text-start" style="font-size:13px; color: #e2e8f0;">
-                    <div class="row g-3">
-                        <div class="col-md-4 text-center border-end border-secondary">
-                            <img src="${profilePic}" class="rounded-circle border border-info mb-2" width="100" height="100" style="object-fit:cover;">
-                            <h5 class="mb-0 text-info fw-bold">${user.name}</h5>
-                            <p class="text-muted small">${user.role.toUpperCase()}</p>
-                            <hr class="border-secondary">
-                            <div class="text-start ps-2">
-                                <p class="mb-1"><span class="info-label">رقم الهوية:</span> ${user.id_number || '---'}</p>
-                                <p class="mb-1"><span class="info-label">الهاتف:</span> ${user.phone || '---'}</p>
-                                <p class="mb-1"><span class="info-label">الموقع:</span> ${user.country || ''}, ${user.city || ''}</p>
+    const getFullUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        // إزالة /storage/ من بداية المسار إذا وجدت لتجنب التكرار مع رابط S3
+        const cleanPath = path.replace(/^\/?storage\//, '');
+        return storageBase + cleanPath;
+    };
+
+    let profilePic = user.profile_image
+        ? getFullUrl(user.profile_image)
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+
+    let idFront = getFullUrl(user.id_image);
+    let idBack = getFullUrl(user.id_image_back);
+
+    Swal.fire({
+        title: `<span style="color:#0ea5e9; font-family:Orbitron;">USER VERIFICATION DOSSIER</span>`,
+        width: '800px',
+        background: '#0f172a',
+        html: `
+            <div class="text-start" style="font-size:13px; color: #e2e8f0;">
+                <div class="row g-3">
+                    <div class="col-md-4 text-center border-end border-secondary">
+                        <img src="${profilePic}" class="rounded-circle border border-info mb-2" width="100" height="100" style="object-fit:cover;">
+                        <h5 class="mb-0 text-info fw-bold">${user.name}</h5>
+                        <p class="text-muted small">${(user.role || '').toUpperCase()}</p>
+                        <hr class="border-secondary">
+                        <div class="text-start ps-2">
+                            <p class="mb-1"><span class="info-label">رقم الهوية:</span> ${user.id_number || '---'}</p>
+                            <p class="mb-1"><span class="info-label">الهاتف:</span> ${user.phone || '---'}</p>
+                            <p class="mb-1"><span class="info-label">الموقع:</span> ${user.country || ''}, ${user.city || ''}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <h6 class="text-info fw-bold"><i class="fas fa-briefcase me-2"></i>التخصص (Headline)</h6>
+                            <p class="bg-dark p-2 rounded border border-secondary">${user.headline || 'لم يتم تحديده'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="text-info fw-bold"><i class="fas fa-tags me-2"></i>المهارات (Skills)</h6>
+                            <div class="d-flex flex-wrap gap-1">${skillsHtml}</div>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="text-info fw-bold"><i class="fas fa-info-circle me-2"></i>النبذة التعريفية (Bio)</h6>
+                            <div class="bg-dark p-2 rounded border border-secondary" style="max-height:80px; overflow-y:auto;">
+                                ${user.bio || 'لا توجد نبذة'}
                             </div>
                         </div>
+                    </div>
 
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <h6 class="text-info fw-bold"><i class="fas fa-briefcase me-2"></i>التخصص (Headline)</h6>
-                                <p class="bg-dark p-2 rounded border border-secondary">${user.headline || 'لم يتم تحديده'}</p>
+                    <div class="col-12 mt-2">
+                        <h6 class="text-center text-info fw-bold mb-3 border-top border-secondary pt-3">وثائق الهوية الرسمية</h6>
+                        <div class="row">
+                            <div class="col-6 text-center">
+                                <small class="text-muted d-block mb-1">الوجه الأمامي (Front)</small>
+                                <img src="${idFront || ''}" class="id-card-preview img-fluid rounded border border-secondary"
+                                     onclick="window.open(this.src)"
+                                     style="cursor:pointer; max-height:200px;"
+                                     onerror="this.src='https://placehold.co/400x250/1e293b/0ea5e9?text=No+Front+Image'">
                             </div>
-                            <div class="mb-3">
-                                <h6 class="text-info fw-bold"><i class="fas fa-tags me-2"></i>المهارات (Skills)</h6>
-                                <div class="d-flex flex-wrap gap-1">${skillsHtml}</div>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="text-info fw-bold"><i class="fas fa-info-circle me-2"></i>النبذة التعريفية (Bio)</h6>
-                                <div class="bg-dark p-2 rounded border border-secondary" style="max-height:80px; overflow-y:auto;">
-                                    ${user.bio || 'لا توجد نبذة'}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 mt-2">
-                            <h6 class="text-center text-info fw-bold mb-3 border-top border-secondary pt-3">وثائق الهوية الرسمية</h6>
-                            <div class="row">
-                                <div class="col-6 text-center">
-                                    <small class="text-muted d-block mb-1">الوجه الأمامي (Front)</small>
-                                    <img src="/storage/${user.id_image}" class="id-card-preview" onclick="window.open(this.src)" onerror="this.src='https://placehold.co/400x250?text=No+Front+Image'">
-                                </div>
-                                <div class="col-6 text-center">
-                                    <small class="text-muted d-block mb-1">الوجه الخلفي (Back)</small>
-                                    <img src="/storage/${user.id_image_back}" class="id-card-preview" onclick="window.open(this.src)" onerror="this.src='https://placehold.co/400x250?text=No+Back+Image'">
-                                </div>
+                            <div class="col-6 text-center">
+                                <small class="text-muted d-block mb-1">الوجه الخلفي (Back)</small>
+                                <img src="${idBack || ''}" class="id-card-preview img-fluid rounded border border-secondary"
+                                     onclick="window.open(this.src)"
+                                     style="cursor:pointer; max-height:200px;"
+                                     onerror="this.src='https://placehold.co/400x250/1e293b/0ea5e9?text=No+Back+Image'">
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>`,
+        showCloseButton: true,
+        showConfirmButton: false,
+        customClass: {
+            container: 'my-swal-container',
+            popup: 'my-swal-popup',
+        }
+    });
+}
             `,
             background: '#0f172a',
             color: '#fff',
