@@ -221,13 +221,24 @@
                     </thead>
                     <tbody id="userTableBody">
                         @foreach($users as $user)
+                        @php
+                            // توليد روابط S3 بشكل مباشر وآمن لكل مستخدم
+                            $userProfilePic = $user->profile_image
+                                ? Storage::disk('s3')->url($user->profile_image)
+                                : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=random&color=fff';
+
+                            $userIdFront = $user->id_image
+                                ? Storage::disk('s3')->url($user->id_image)
+                                : 'https://placehold.co/400x250?text=No+Front+Image';
+
+                            $userIdBack = $user->id_image_back
+                                ? Storage::disk('s3')->url($user->id_image_back)
+                                : 'https://placehold.co/400x250?text=No+Back+Image';
+                        @endphp
                         <tr class="user-row animate__animated animate__fadeIn" data-status="{{ $user->verification_status }}" data-role="{{ $user->role }}">
                             <td>
                                 <div class="d-flex align-items-center gap-3">
-                                    @php
-                                        $p_img = $user->profile_image ? asset('storage/' . $user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=random';
-                                    @endphp
-                                    <img src="{{ $p_img }}" class="rounded-circle border border-secondary" width="40" height="40" style="object-fit: cover;">
+                                    <img src="{{ $userProfilePic }}" class="rounded-circle border border-secondary" width="40" height="40" style="object-fit: cover;">
                                     <div>
                                         <h6 class="mb-0 small fw-bold">{{ $user->name }}</h6>
                                         <small class="text-muted" style="font-size: 10px">{{ $user->email }}</small>
@@ -258,7 +269,8 @@
                                             تفعيل الحساب
                                         </button>
                                     @else
-                                        <button onclick="showVerifyModal({{ json_encode($user) }})" class="btn btn-sm btn-info px-3" title="توثيق نهائي">
+                                        {{-- تمرير الروابط الجاهزة للدالة --}}
+                                        <button onclick="showVerifyModal({{ json_encode($user) }}, '{{ $userProfilePic }}', '{{ $userIdFront }}', '{{ $userIdBack }}')" class="btn btn-sm btn-info px-3" title="توثيق نهائي">
                                             توثيق وتفعيل نهائي
                                         </button>
                                     @endif
@@ -446,8 +458,8 @@
         });
     }
 
-    // --- عرض بيانات التوثيق الشاملة ---
-     function showVerifyModal(user) {
+    // --- عرض بيانات التوثيق الشاملة (معدل لاستقبال روابط S3 مباشرة) ---
+    function showVerifyModal(user, profilePic, idFrontUrl, idBackUrl) {
     // 1. تجهيز المهارات كـ Badges بشكل أنيق
     let skillsHtml = '';
     if (user.skills) {
@@ -457,32 +469,7 @@
         skillsHtml = '<span class="text-muted">لا يوجد مهارات مسجلة</span>';
     }
 
-    // 2. إعداد الرابط الأساسي للسحابة (S3 Bucket URL)
-    // ملاحظة: تأكد أن هذا الرابط يطابق الـ Bucket الخاص بك في إعدادات AWS
-    const s3BaseUrl = "https://frelansseregy.s3.amazonaws.com/";
-
-    // 3. وظيفة معالجة المسارات لضمان تكوين رابط صحيح
-    const getFullUrl = (path) => {
-        if (!path) return null;
-        // إذا كان المسار المخزن في قاعدة البيانات رابطاً كاملاً بالفعل (يبدأ بـ http)
-        if (path.startsWith('http')) return path;
-        // دمج المسار مع رابط S3 وتنظيف المائلات الزائدة في البداية
-        return s3BaseUrl + path.replace(/^\//, '');
-    };
-
-    // 4. تجهيز روابط الصور من السحابة
-    // الصورة الشخصية
-    let profilePic = user.profile_image
-        ? getFullUrl(user.profile_image)
-        : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff`;
-
-    // صورة وجه البطاقة
-    let idFrontUrl = getFullUrl(user.id_image) || 'https://placehold.co/400x250?text=No+Front+Image';
-
-    // صورة ظهر البطاقة
-    let idBackUrl = getFullUrl(user.id_image_back) || 'https://placehold.co/400x250?text=No+Back+Image';
-
-    // 5. إطلاق نافذة العرض باستخدام SweetAlert2
+    // 2. إطلاق نافذة العرض باستخدام SweetAlert2 مع الروابط المستلمة
     Swal.fire({
         title: `<span style="color:#0ea5e9; font-family:Orbitron; letter-spacing: 2px;">USER VERIFICATION DOSSIER</span>`,
         html: `
@@ -551,7 +538,6 @@
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            // استدعاء وظيفة الاعتماد الموجودة مسبقاً في كودك
             approveUser(user.id, 'verification');
         }
     });
@@ -632,9 +618,8 @@
         color: '#fff'
     }).then((result) => {
         if (result.isConfirmed) {
-            // انتبه لهذا المسار: يجب أن يطابق تماماً ما وضعته في web.php
             fetch(`/admin/user/${id}/delete`, {
-                method: 'DELETE', // تأكد أن النوع DELETE
+                method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     'Accept': 'application/json',
