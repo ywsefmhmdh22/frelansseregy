@@ -8,10 +8,12 @@ use App\Models\Proposal;
 use App\Models\Favorite;
 use App\Models\Wallet;
 use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 
 /**
@@ -71,6 +73,46 @@ class ClientDashboardController extends Controller
             'walletBalance'    => $wallet->balance,
             'formattedBalance' => $formattedWalletBalance
         ]);
+    }
+
+    /**
+     * تحديث صورة البروفايل ورفعها على Laravel Cloud (S3)
+     */
+    public function updateImage(Request $request)
+    {
+        $request->validate([
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $disk = 's3'; // تحديد الديسك السحابي المتوافق مع Laravel Cloud
+
+            if ($request->hasFile('profile_image')) {
+                // 1. حذف الصورة القديمة من السحاب إذا وجدت لتوفير المساحة
+                if ($user->profile_image) {
+                    Storage::disk($disk)->delete($user->profile_image);
+                }
+
+                // 2. رفع الصورة الجديدة بخصوصية Public لتظهر في الموقع
+                $path = $request->file('profile_image')->store('avatars', [
+                    'disk' => $disk,
+                    'visibility' => 'public'
+                ]);
+
+                // 3. تحديث المسار في قاعدة البيانات
+                $user->update([
+                    'profile_image' => $path
+                ]);
+
+                return back()->with('success', 'تم تحديث صورة الملف الشخصي بنجاح.');
+            }
+        } catch (Exception $e) {
+            Log::error('Profile Image Upload Error for User ' . Auth::id() . ': ' . $e->getMessage());
+            return back()->with('error', 'حدث خطأ أثناء رفع الصورة، يرجى المحاولة لاحقاً.');
+        }
+
+        return back();
     }
 
     /**
