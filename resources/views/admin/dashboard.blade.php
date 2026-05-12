@@ -447,56 +447,63 @@
     }
 
     // --- عرض بيانات التوثيق الشاملة ---
-    function showVerifyModal(user) {
-    // 1. تجهيز المهارات كـ Badges
+     function showVerifyModal(user) {
+    // 1. تجهيز المهارات كـ Badges بشكل أنيق
     let skillsHtml = '';
     if (user.skills) {
         let skillsArray = user.skills.split(',');
-        skillsHtml = skillsArray.map(s => `<span class="skill-badge">${s.trim()}</span>`).join('');
+        skillsHtml = skillsArray.map(s => `<span class="skill-badge" style="background: rgba(14, 165, 233, 0.1); border: 1px solid #0ea5e9; color: #0ea5e9; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px;">${s.trim()}</span>`).join('');
     } else {
-        skillsHtml = '<span class="text-muted">لا يوجد</span>';
+        skillsHtml = '<span class="text-muted">لا يوجد مهارات مسجلة</span>';
     }
 
-    // 2. إعداد الروابط لتعمل مع Laravel Cloud (S3)
-    // تأكد أن هذا الرابط يطابق الـ Bucket الخاص بك
+    // 2. إعداد الرابط الأساسي للسحابة (S3 Bucket URL)
+    // ملاحظة: تأكد أن هذا الرابط يطابق الـ Bucket الخاص بك في إعدادات AWS
     const s3BaseUrl = "https://frelansseregy.s3.amazonaws.com/";
 
+    // 3. وظيفة معالجة المسارات لضمان تكوين رابط صحيح
     const getFullUrl = (path) => {
         if (!path) return null;
-        if (path.startsWith('http')) return path; // إذا كان الرابط كاملاً بالفعل
-        // دمج المسار مع رابط S3 وتنظيف أي مائلات زائدة
+        // إذا كان المسار المخزن في قاعدة البيانات رابطاً كاملاً بالفعل (يبدأ بـ http)
+        if (path.startsWith('http')) return path;
+        // دمج المسار مع رابط S3 وتنظيف المائلات الزائدة في البداية
         return s3BaseUrl + path.replace(/^\//, '');
     };
 
-    // جلب الصور الشخصية وصور البطاقة من السحابة
+    // 4. تجهيز روابط الصور من السحابة
+    // الصورة الشخصية
     let profilePic = user.profile_image
         ? getFullUrl(user.profile_image)
-        : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff`;
 
+    // صورة وجه البطاقة
     let idFrontUrl = getFullUrl(user.id_image) || 'https://placehold.co/400x250?text=No+Front+Image';
+
+    // صورة ظهر البطاقة
     let idBackUrl = getFullUrl(user.id_image_back) || 'https://placehold.co/400x250?text=No+Back+Image';
 
+    // 5. إطلاق نافذة العرض باستخدام SweetAlert2
     Swal.fire({
-        title: `<span style="color:#0ea5e9; font-family:Orbitron;">USER VERIFICATION DOSSIER</span>`,
+        title: `<span style="color:#0ea5e9; font-family:Orbitron; letter-spacing: 2px;">USER VERIFICATION DOSSIER</span>`,
         html: `
-            <div class="text-start" style="font-size:13px; color: #e2e8f0;">
+            <div class="text-start" style="font-size:13px; color: #e2e8f0; font-family: 'Cairo', sans-serif;">
                 <div class="row g-3">
                     <div class="col-md-4 text-center border-end border-secondary">
-                        <img src="${profilePic}" class="rounded-circle border border-info mb-2" width="100" height="100" style="object-fit:cover;">
+                        <img src="${profilePic}" class="rounded-circle border border-info mb-2" width="100" height="100" style="object-fit:cover; box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);">
                         <h5 class="mb-0 text-info fw-bold">${user.name}</h5>
-                        <p class="text-muted small">${(user.role || '').toUpperCase()}</p>
+                        <p class="text-muted small">${(user.role || 'User').toUpperCase()}</p>
                         <hr class="border-secondary">
                         <div class="text-start ps-2">
-                            <p class="mb-1"><span class="info-label">رقم الهوية:</span> ${user.id_number || '---'}</p>
-                            <p class="mb-1"><span class="info-label">الهاتف:</span> ${user.phone || '---'}</p>
-                            <p class="mb-1"><span class="info-label">الموقع:</span> ${user.country || ''}</p>
+                            <p class="mb-2"><strong style="color: #0ea5e9;">رقم الهوية:</strong> <span style="font-family: monospace;">${user.id_number || '---'}</span></p>
+                            <p class="mb-2"><strong style="color: #0ea5e9;">الهاتف:</strong> ${user.phone || '---'}</p>
+                            <p class="mb-2"><strong style="color: #0ea5e9;">الموقع:</strong> ${user.country || 'غير محدد'}</p>
                         </div>
                     </div>
 
                     <div class="col-md-8">
                         <div class="mb-3">
                             <h6 class="text-info fw-bold"><i class="fas fa-briefcase me-2"></i>التخصص</h6>
-                            <p class="bg-dark p-2 rounded border border-secondary">${user.headline || 'لم يتم تحديده'}</p>
+                            <p class="bg-dark p-2 rounded border border-secondary" style="background-color: rgba(0,0,0,0.3) !important;">${user.headline || 'لم يتم تحديد تخصص'}</p>
                         </div>
                         <div class="mb-3">
                             <h6 class="text-info fw-bold"><i class="fas fa-tags me-2"></i>المهارات</h6>
@@ -504,26 +511,28 @@
                         </div>
                         <div class="mb-3">
                             <h6 class="text-info fw-bold"><i class="fas fa-info-circle me-2"></i>النبذة التعريفية</h6>
-                            <div class="bg-dark p-2 rounded border border-secondary" style="max-height:80px; overflow-y:auto;">
-                                ${user.bio || 'لا توجد نبذة'}
+                            <div class="bg-dark p-2 rounded border border-secondary" style="max-height:100px; overflow-y:auto; background-color: rgba(0,0,0,0.3) !important; line-height: 1.6;">
+                                ${user.bio || 'لا توجد نبذة تعريفية متوفرة لهذا المستخدم.'}
                             </div>
                         </div>
                     </div>
 
                     <div class="col-12 mt-2">
-                        <h6 class="text-center text-info fw-bold mb-3 border-top border-secondary pt-3">وثائق الهوية الرسمية</h6>
+                        <h6 class="text-center text-info fw-bold mb-3 border-top border-secondary pt-3">وثائق الهوية الرسمية (مستضافة سحابياً)</h6>
                         <div class="row">
                             <div class="col-6 text-center">
-                                <small class="text-muted d-block mb-1">الوجه الأمامي (Front)</small>
-                                <img src="${idFrontUrl}" class="id-card-preview" style="width:100%; border-radius:8px; cursor:pointer;"
+                                <small class="text-muted d-block mb-1">الوجه الأمامي (ID Front)</small>
+                                <img src="${idFrontUrl}" class="id-card-preview"
+                                     style="width:100%; border-radius:8px; cursor:pointer; border: 1px dashed #475569;"
                                      onclick="window.open(this.src)"
-                                     onerror="this.src='https://placehold.co/400x250?text=No+Front+Image'">
+                                     onerror="this.src='https://placehold.co/400x250?text=Error+Loading+Image'">
                             </div>
                             <div class="col-6 text-center">
-                                <small class="text-muted d-block mb-1">الوجه الخلفي (Back)</small>
-                                <img src="${idBackUrl}" class="id-card-preview" style="width:100%; border-radius:8px; cursor:pointer;"
+                                <small class="text-muted d-block mb-1">الوجه الخلفي (ID Back)</small>
+                                <img src="${idBackUrl}" class="id-card-preview"
+                                     style="width:100%; border-radius:8px; cursor:pointer; border: 1px dashed #475569;"
                                      onclick="window.open(this.src)"
-                                     onerror="this.src='https://placehold.co/400x250?text=No+Back+Image'">
+                                     onerror="this.src='https://placehold.co/400x250?text=Error+Loading+Image'">
                             </div>
                         </div>
                     </div>
@@ -532,14 +541,17 @@
         `,
         background: '#0f172a',
         color: '#fff',
-        width: '800px',
+        width: '850px',
         showCancelButton: true,
-        confirmButtonText: 'توثيق واعتماد الحساب',
+        confirmButtonText: '<i class="fas fa-check-circle me-2"></i>توثيق واعتماد الحساب',
         cancelButtonText: 'إغلاق',
         confirmButtonColor: '#10b981',
-        customClass: { popup: 'swal2-popup-custom' }
+        customClass: {
+            popup: 'swal2-popup-custom animate__animated animate__fadeInUp'
+        }
     }).then((result) => {
         if (result.isConfirmed) {
+            // استدعاء وظيفة الاعتماد الموجودة مسبقاً في كودك
             approveUser(user.id, 'verification');
         }
     });
