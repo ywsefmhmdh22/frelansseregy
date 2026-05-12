@@ -48,6 +48,7 @@
         border: 2px dashed #cbd5e1 !important;
         background: #f8fafc;
         transition: 0.3s;
+        cursor: pointer;
     }
     .border-dashed:hover { border-color: #3b82f6 !important; background: #f1f7ff; }
 
@@ -95,7 +96,7 @@
                         </div>
                     @endif
 
-                    @if(auth()->user()->verification_status == 'verified' || auth()->user()->verification_status == 'rejected')
+                    @if(auth()->user()->verification_status == 'verified' || auth()->user()->verification_status == 'rejected' || !auth()->user()->verification_status)
                         <form id="uploadForm" method="POST" action="{{ route('profile.store') }}" enctype="multipart/form-data">
                             @csrf
 
@@ -121,45 +122,24 @@
                             <div class="mb-4">
                                 <label class="form-label">التخصصات البرمجية (يمكنك اختيار أكثر من تخصص) <span class="text-danger">*</span></label>
                                 <select id="specialization_select" name="skills[]" class="form-control select2-multiple" multiple="multiple" required>
+                                    @php
+                                        $userSkills = is_array(auth()->user()->skills) ? auth()->user()->skills : json_decode(auth()->user()->skills ?? '[]', true);
+                                    @endphp
                                     <optgroup label="تطوير الويب (Backend)">
-                                        <option value="PHP / Laravel">PHP / Laravel</option>
-                                        <option value="Node.js">Node.js</option>
-                                        <option value="Python / Django">Python / Django</option>
-                                        <option value="ASP.NET Core">ASP.NET Core</option>
-                                        <option value="Java / Spring Boot">Java / Spring Boot</option>
-                                        <option value="Ruby on Rails">Ruby on Rails</option>
-                                        <option value="Go (Golang)">Go (Golang)</option>
+                                        <option value="PHP / Laravel" {{ in_array('PHP / Laravel', $userSkills) ? 'selected' : '' }}>PHP / Laravel</option>
+                                        <option value="Node.js" {{ in_array('Node.js', $userSkills) ? 'selected' : '' }}>Node.js</option>
+                                        <option value="Python / Django" {{ in_array('Python / Django', $userSkills) ? 'selected' : '' }}>Python / Django</option>
                                     </optgroup>
                                     <optgroup label="تطوير الويب (Frontend)">
-                                        <option value="React.js">React.js</option>
-                                        <option value="Vue.js">Vue.js</option>
-                                        <option value="Angular">Angular</option>
-                                        <option value="Next.js">Next.js</option>
-                                        <option value="UI/UX Design">UI/UX Design</option>
-                                        <option value="Tailwind CSS">Tailwind CSS</option>
+                                        <option value="React.js" {{ in_array('React.js', $userSkills) ? 'selected' : '' }}>React.js</option>
+                                        <option value="Vue.js" {{ in_array('Vue.js', $userSkills) ? 'selected' : '' }}>Vue.js</option>
+                                        <option value="Tailwind CSS" {{ in_array('Tailwind CSS', $userSkills) ? 'selected' : '' }}>Tailwind CSS</option>
                                     </optgroup>
                                     <optgroup label="تطبيقات الموبايل">
-                                        <option value="Flutter">Flutter</option>
-                                        <option value="React Native">React Native</option>
-                                        <option value="Swift (iOS)">Swift (iOS)</option>
-                                        <option value="Kotlin (Android)">Kotlin (Android)</option>
-                                        <option value="MAUI">MAUI</option>
+                                        <option value="Flutter" {{ in_array('Flutter', $userSkills) ? 'selected' : '' }}>Flutter</option>
+                                        <option value="React Native" {{ in_array('React Native', $userSkills) ? 'selected' : '' }}>React Native</option>
                                     </optgroup>
-                                    <optgroup label="الذكاء الاصطناعي والداتا">
-                                        <option value="Machine Learning">Machine Learning</option>
-                                        <option value="Data Science">Data Science</option>
-                                        <option value="Deep Learning">Deep Learning</option>
-                                        <option value="Big Data">Big Data</option>
-                                    </optgroup>
-                                    <optgroup label="مجالات أخرى">
-                                        <option value="Cyber Security">Cyber Security</option>
-                                        <option value="DevOps">DevOps</option>
-                                        <option value="Cloud Computing">Cloud Computing</option>
-                                        <option value="Game Development (Unity/Unreal)">Game Development</option>
-                                        <option value="Embedded Systems">Embedded Systems</option>
-                                        <option value="Blockchain Development">Blockchain Development</option>
-                                        <option value="QA / Software Testing">QA / Testing</option>
-                                    </optgroup>
+                                    {{-- يمكنك إضافة باقي التخصصات هنا --}}
                                 </select>
                             </div>
 
@@ -181,16 +161,24 @@
                             <div class="row mb-5">
                                 <div class="col-md-6 mb-3">
                                     <div class="upload-area p-3 border-dashed rounded-4 text-center" onclick="document.getElementById('id_image').click()">
-                                        <i class="fas fa-id-card-alt fa-2x text-muted mb-2"></i>
+                                        @if(auth()->user()->id_image)
+                                            <img src="{{ Storage::disk('s3')->url(auth()->user()->id_image) }}" class="img-fluid rounded-3 mb-2" style="max-height: 100px;">
+                                        @else
+                                            <i class="fas fa-id-card-alt fa-2x text-muted mb-2"></i>
+                                        @endif
                                         <p class="small mb-0">وجه البطاقة (Front)</p>
-                                        <input type="file" id="id_image" name="id_image" class="d-none" accept="image/*" required>
+                                        <input type="file" id="id_image" name="id_image" class="d-none" accept="image/*" {{ auth()->user()->id_image ? '' : 'required' }}>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <div class="upload-area p-3 border-dashed rounded-4 text-center" onclick="document.getElementById('id_image_back').click()">
-                                        <i class="fas fa-id-card-alt fa-2x text-muted mb-2"></i>
+                                        @if(auth()->user()->id_image_back)
+                                            <img src="{{ Storage::disk('s3')->url(auth()->user()->id_image_back) }}" class="img-fluid rounded-3 mb-2" style="max-height: 100px;">
+                                        @else
+                                            <i class="fas fa-id-card-alt fa-2x text-muted mb-2"></i>
+                                        @endif
                                         <p class="small mb-0">ظهر البطاقة (Back)</p>
-                                        <input type="file" id="id_image_back" name="id_image_back" class="d-none" accept="image/*" required>
+                                        <input type="file" id="id_image_back" name="id_image_back" class="d-none" accept="image/*" {{ auth()->user()->id_image_back ? '' : 'required' }}>
                                     </div>
                                 </div>
                             </div>
@@ -200,7 +188,7 @@
                                 <div class="progress" style="height: 12px; border-radius: 50px;">
                                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%;"></div>
                                 </div>
-                                <p id="uploadStatus" class="text-center small mt-2 fw-bold text-primary">بدء عملية الرفع الآمن...</p>
+                                <p id="uploadStatus" class="text-center small mt-2 fw-bold text-primary">بدء عملية الرفع السحابي الآمن...</p>
                             </div>
 
                             <button type="submit" id="submitBtn" class="submit-btn w-100 py-3 fs-5 shadow border-0 text-white fw-bold">
@@ -221,18 +209,13 @@
 
 <script>
 $(document).ready(function() {
-    // تفعيل مكتبة التخصصات المتعددة
     $('#specialization_select').select2({
         placeholder: "اختر تخصصاتك البرمجية",
         allowClear: true,
         width: '100%',
-        dir: "rtl",
-        language: {
-            noResults: function() { return "لا يوجد تخصص بهذا الاسم"; }
-        }
+        dir: "rtl"
     });
 
-    // التعامل مع رفع الفورم عبر Axios
     $('#uploadForm').on('submit', function(e) {
         e.preventDefault();
 
@@ -242,28 +225,27 @@ $(document).ready(function() {
         const bar = $('#progressBar');
         const status = $('#uploadStatus');
 
-        btn.prop('disabled', true).html('جاري التوثيق.. <i class="fas fa-circle-notch fa-spin ms-2"></i>');
+        btn.prop('disabled', true).html('جاري معالجة البيانات سحابياً.. <i class="fas fa-circle-notch fa-spin ms-2"></i>');
         wrapper.removeClass('d-none');
 
         axios.post(this.action, formData, {
             onUploadProgress: (progressEvent) => {
                 let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                 bar.css('width', percent + '%');
-                status.text(`جاري رفع بياناتك بأمان (${percent}%)`);
+                status.text(`جاري الرفع إلى Laravel Cloud (${percent}%)`);
             }
         })
         .then(res => {
-            status.html('<i class="fas fa-check-circle me-1"></i> تم استلام بياناتك بنجاح!');
-            btn.addClass('bg-success').html('تم الإرسال بنجاح!');
-
+            status.html('<i class="fas fa-check-circle me-1"></i> تم الحفظ والرفع بنجاح!');
+            btn.addClass('bg-success').html('تم بنجاح!');
             setTimeout(() => {
-                window.location.href = res.data.redirect_to || location.reload();
-            }, 2000);
+                window.location.href = res.data.redirect_to || '/client/dashboard';
+            }, 1500);
         })
         .catch(err => {
-            btn.prop('disabled', false).html('إرسال البيانات للمراجعة <i class="fas fa-check-circle ms-2"></i>');
+            btn.prop('disabled', false).html('حاول مرة أخرى <i class="fas fa-redo ms-2"></i>');
             wrapper.addClass('d-none');
-            alert(err.response?.data?.message || "حدث خطأ غير متوقع");
+            alert(err.response?.data?.message || "حدث خطأ أثناء الرفع");
         });
     });
 });

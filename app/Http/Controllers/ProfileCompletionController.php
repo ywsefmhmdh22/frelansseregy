@@ -12,7 +12,7 @@ use Exception;
 /**
  * Class ProfileCompletionController
  * مسؤول عن التحقق من بيانات الهوية والمعلومات المهنية للمستخدمين الجدد.
- * يضمن الكود سلامة المستندات المرفوعة وتوجيه المستخدم بناءً على صلاحياته (Role).
+ * تم تعديله ليدعم التخزين السحابي (S3) لضمان التوافق مع Laravel Cloud.
  */
 class ProfileCompletionController extends Controller
 {
@@ -26,47 +26,52 @@ class ProfileCompletionController extends Controller
 
     /**
      * معالجة وحفظ بيانات التحقق (Identity & Professional Bio).
-     * يستخدم هذا التابع لتأمين الحسابات قبل السماح لها بالنشاط المالي.
      */
     public function store(Request $request)
     {
-        // 1. التحقق الصارم (تم تعديل skills لتصبح array بدلاً من string)
+        // 1. التحقق الصارم
         $validatedData = $request->validate([
             'phone'         => 'required|numeric|digits_between:8,15',
-            'skills'        => 'required|array|min:1', // التعديل هنا
+            'skills'        => 'required|array|min:1',
             'bio'           => 'required|string|min:30|max:1000',
             'country'       => 'required|string|max:100',
             'id_number'     => 'required|string|unique:users,id_number,' . Auth::id(),
-            'id_image'      => 'required|image|mimes:jpeg,png,jpg|max:3072',
-            'id_image_back' => 'required|image|mimes:jpeg,png,jpg|max:3072',
+            'id_image'      => 'required|image|mimes:jpeg,png,jpg|max:5120', // رفع الحد لـ 5 ميجا لراحة المستخدم
+            'id_image_back' => 'required|image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
         try {
             $authenticatedUser = Auth::user();
 
-            // 2. إدارة مستندات الهوية (Identity Document Management)
+            // 2. إدارة مستندات الهوية سحابياً (S3)
             $frontIdentityPath = $authenticatedUser->id_image;
             $backIdentityPath  = $authenticatedUser->id_image_back;
 
-            // تحديث وجه الهوية الأمامي
+            // تحديث وجه الهوية الأمامي على S3
             if ($request->hasFile('id_image')) {
-                if ($frontIdentityPath) Storage::disk('public')->delete($frontIdentityPath);
-                $frontIdentityPath = $request->file('id_image')->store('identities/front', 'public');
+                if ($frontIdentityPath) {
+                    Storage::disk('s3')->delete($frontIdentityPath);
+                }
+                $frontIdentityPath = $request->file('id_image')->store('identities/front', 's3');
+                Storage::disk('s3')->setVisibility($frontIdentityPath, 'public');
             }
 
-            // تحديث وجه الهوية الخلفي
+            // تحديث وجه الهوية الخلفي على S3
             if ($request->hasFile('id_image_back')) {
-                if ($backIdentityPath) Storage::disk('public')->delete($backIdentityPath);
-                $backIdentityPath = $request->file('id_image_back')->store('identities/back', 'public');
+                if ($backIdentityPath) {
+                    Storage::disk('s3')->delete($backIdentityPath);
+                }
+                $backIdentityPath = $request->file('id_image_back')->store('identities/back', 's3');
+                Storage::disk('s3')->setVisibility($backIdentityPath, 'public');
             }
 
-            // 3. تحويل مصفوفة التخصصات إلى نص مفصول بفاصلة قبل الحفظ (تجنب خطأ strip_tags)
+            // 3. تحويل مصفوفة التخصصات إلى نص مفصول بفاصلة
             $skillsString = implode(', ', $request->skills);
 
-            // 4. تحديث السجل الموحد للمستخدم (Atomic Update)
+            // 4. تحديث سجل المستخدم
             $authenticatedUser->update([
                 'phone'                => $validatedData['phone'],
-                'skills'               => $skillsString, // تم إزالة strip_tags وحفظ النص المدمج
+                'skills'               => $skillsString,
                 'bio'                  => strip_tags($validatedData['bio']),
                 'country'              => $validatedData['country'],
                 'id_number'            => $validatedData['id_number'],
@@ -76,9 +81,8 @@ class ProfileCompletionController extends Controller
                 'verification_status'  => 'pending',
             ]);
 
-            // 5. منطق التوجيه الذكي بناءً على نوع الحساب (Dynamic Redirection)
+            // 5. منطق التوجيه الذكي
             $targetDashboard = route('home');
-
             if ($authenticatedUser->role === 'freelancer') {
                 $targetDashboard = route('freelancer.dashboard');
             } elseif ($authenticatedUser->role === 'client') {
@@ -87,23 +91,22 @@ class ProfileCompletionController extends Controller
 
             return response()->json([
                 'success'     => true,
-                'message'     => 'تم استلام بيانات الهوية بنجاح، ملفك الآن تحت المراجعة.',
+                'message'     => 'تم رفع وثائقك بنجاح إلى الخادم السحابي، ملفك الآن قيد المراجعة.',
                 'redirect_to' => $targetDashboard
             ]);
 
         } catch (Exception $executionError) {
-            // تسجيل الخطأ مع السياق لتسهيل تتبع المشاكل التقنية
-            Log::error("Profile Completion Failure for User ID " . Auth::id() . ": " . $executionError->getMessage());
+            Log::error("Cloud Upload Failure for User ID " . Auth::id() . ": " . $executionError->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ تقني أثناء حفظ البيانات، يرجى المحاولة لاحقاً.'
+                'message' => 'حدث خطأ أثناء الرفع السحابي، يرجى المحاولة لاحقاً.'
             ], 500);
         }
     }
 
     /**
-     * تحديث الصورة الرمزية للمستخدم (Profile Avatar Update).
+     * تحديث الصورة الرمزية للمستخدم سحابياً (S3).
      */
     public function updateImage(Request $request)
     {
@@ -114,18 +117,22 @@ class ProfileCompletionController extends Controller
         try {
             $currentUser = Auth::user();
 
+            // حذف القديم من S3
             if ($currentUser->profile_image) {
-                Storage::disk('public')->delete($currentUser->profile_image);
+                Storage::disk('s3')->delete($currentUser->profile_image);
             }
 
-            $newAvatarPath = $request->file('profile_image')->store('profile_images/avatars', 'public');
+            // رفع الجديد لـ S3
+            $newAvatarPath = $request->file('profile_image')->store('profile_images/avatars', 's3');
+            Storage::disk('s3')->setVisibility($newAvatarPath, 'public');
+
             $currentUser->update(['profile_image' => $newAvatarPath]);
 
-            return back()->with('success', 'تم تحديث الصورة الشخصية بنجاح!');
+            return back()->with('success', 'تم تحديث الصورة الشخصية سحابياً بنجاح!');
 
         } catch (Exception $imageError) {
-            Log::error("Avatar Upload Error: " . $imageError->getMessage());
-            return back()->with('error', 'فشل تحميل الصورة.');
+            Log::error("S3 Avatar Upload Error: " . $imageError->getMessage());
+            return back()->with('error', 'فشل تحميل الصورة للسحابة.');
         }
     }
 }

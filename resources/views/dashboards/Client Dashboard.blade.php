@@ -9,8 +9,9 @@
     $myProjects = $myProjects ?? collect();
     $currency = '$'; // تثبيت العملة دولار
 
+    // التعديل الجديد: عرض الصورة من Laravel Cloud (S3) لضمان التوافق
     $profilePhoto = $user->profile_image
-        ? asset('storage/'.$user->profile_image)
+        ? Storage::disk('s3')->url($user->profile_image)
         : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=10b981&color=fff';
 @endphp
 
@@ -33,6 +34,7 @@
                                     <label for="profile_image_input" class="edit-overlay" title="تغيير الصورة">
                                         <i class="fas fa-camera"></i>
                                     </label>
+                                    {{-- تم تعديل الـ onchange لتشغيل submit تلقائي --}}
                                     <input type="file" id="profile_image_input" name="profile_image" class="d-none" onchange="document.getElementById('profileImageForm').submit();">
                                 </div>
                             </form>
@@ -205,7 +207,6 @@
                                             ];
                                             $currentStatus = $statusMap[$order->status] ?? ['light', $order->status];
 
-                                            // تحسين عرض حالة الإلغاء نتيجه نزاع
                                             if ($order->status == 'cancelled' && $order->admin_status == 'rejected') {
                                                 $currentStatus = ['horror', 'ملغى بقرار الإدارة'];
                                             }
@@ -222,7 +223,6 @@
                                                 <a href="{{ route('orders.complete.view', $order->id) }}" class="btn btn-xs btn-success rounded-pill px-3 fw-bold">قبول</a>
                                             @endif
 
-                                            {{-- زر تحكيم الإدارة للخدمات --}}
                                             @if(!in_array($order->status, ['completed', 'disputed', 'cancelled']))
                                             <button type="button"
                                                     class="btn btn-xs btn-outline-danger rounded-pill px-2 fw-bold"
@@ -283,7 +283,6 @@
                                             if($project->admin_status == 'pending') { $sClass = 'warning'; $sText = 'مراجعة'; }
                                             elseif($project->status == 'open') { $sClass = 'success'; $sText = 'نشط'; }
                                             elseif($project->status == 'disputed') { $sClass = 'danger'; $sText = 'تحكيم'; }
-                                            // تحسين عرض حالة المشروع الملغى نتيجه نزاع وبقرار إداري
                                             elseif($project->status == 'cancelled' && $project->admin_status == 'rejected') {
                                                 $sClass = 'horror'; $sText = 'مغلق (نزاع)'; $sIcon = '<i class="fas fa-gavel me-1 extra-small"></i>';
                                             }
@@ -293,7 +292,6 @@
                                     </td>
                                     <td class="text-center pe-4">
                                         <div class="d-flex justify-content-center gap-2">
-                                            {{-- زر تحكيم الإدارة للمشاريع --}}
                                             @if(!in_array($project->status, ['completed', 'disputed', 'cancelled']))
                                             <button type="button"
                                                     class="btn btn-xs btn-outline-danger rounded-pill px-3 fw-bold"
@@ -370,7 +368,7 @@
     --dark: #1e293b;
     --slate: #64748b;
     --glass: rgba(255, 255, 255, 0.9);
-    --horror-red: #4c0505; /* لون أحمر داكن جداً ومرعب */
+    --horror-red: #4c0505;
     --horror-light: #fecaca;
 }
 body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(--dark); }
@@ -392,19 +390,14 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
 .badge-status.bg-success { background: #d1fae5 !important; color: #065f46; }
 .badge-status.bg-warning { background: #fef3c7 !important; color: #92400e; }
 .badge-status.bg-danger { background: #fee2e2 !important; color: #b91c1c; }
-/* ستايل الرعب الجديد لحكم الإدارة القاطع */
-.badge-status.bg-horror { background: var(--horror-red) !important; color: white; border: 1px solid #b91c1c; box-shadow: 0 0 5px rgba(185, 28, 28, 0.5); }
+.badge-status.bg-horror { background: var(--horror-red) !important; color: white; border: 1px solid #b91c1c; }
 .badge-status.bg-horror .dot { background-color: #fee2e2; animation: pulse-red 1.5s infinite; }
-
 .price-tag-modern { font-weight: 800; color: var(--primary-dark); }
 .wave { display: inline-block; animation: wave-animation 2.5s infinite; transform-origin: 70% 70%; }
-.btn-xs { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
 .icon-box-dispute { width: 80px; height: 80px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
 @keyframes wave-animation { 0%, 100%, 60% { transform: rotate(0deg) } 10%, 30% { transform: rotate(14deg) } 20% { transform: rotate(-8deg) } 40% { transform: rotate(-4deg) } 50% { transform: rotate(10deg) } }
 @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(254, 226, 226, 0.7); } 70% { box-shadow: 0 0 0 5px rgba(254, 226, 226, 0); } 100% { box-shadow: 0 0 0 0 rgba(254, 226, 226, 0); } }
-
-@media (max-width: 768px) { .welcome-text h4 { font-size: 1.1rem; } .sidebar-glass { margin-bottom: 20px; } }
 </style>
 
 <script>
@@ -415,6 +408,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
         myModal.show();
     }
 
+    // إدارة التحديثات التلقائية
     const DashboardManager = (() => {
         const updateMessagesCount = async () => {
             try {
@@ -427,6 +421,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                 }
             } catch (error) { console.warn('Messages update failed.'); }
         };
+
         return {
             init: () => {
                 updateMessagesCount();
