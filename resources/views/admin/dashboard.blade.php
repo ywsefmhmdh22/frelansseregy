@@ -457,17 +457,15 @@
         skillsHtml = '<span class="text-muted">لا يوجد</span>';
     }
 
-    /**
-     * تعديل جلب الصور ليتوافق مع Laravel Cloud (S3)
-     * نقوم بفحص ما إذا كان المسار يبدأ بـ http لضمان عدم تكرار الرابط إذا كان قادماً من السيرفر جاهزاً
-     * أو نقوم ببناء الرابط باستخدام الدومين الخاص بالتخزين السحابي
+    /** * معالجة الروابط لـ Laravel Cloud (S3)
+     * الرابط الأساسي لـ S3 الخاص بمشروعك
      */
-    const storageBase = "https://frelansseregy.s3.amazonaws.com/"; // تأكد من مطابقة هذا الرابط لإعدادات AWS_URL لديك
+    const storageBase = "https://frelansseregy.s3.amazonaws.com/";
 
     const getFullUrl = (path) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
-        // إزالة /storage/ من بداية المسار إذا وجدت لتجنب التكرار مع رابط S3
+        // إزالة /storage/ من بداية المسار إذا وجدت لضمان صحة الرابط مع S3
         const cleanPath = path.replace(/^\/?storage\//, '');
         return storageBase + cleanPath;
     };
@@ -481,8 +479,9 @@
 
     Swal.fire({
         title: `<span style="color:#0ea5e9; font-family:Orbitron;">USER VERIFICATION DOSSIER</span>`,
-        width: '800px',
         background: '#0f172a',
+        color: '#fff',
+        width: '800px',
         html: `
             <div class="text-start" style="font-size:13px; color: #e2e8f0;">
                 <div class="row g-3">
@@ -494,7 +493,7 @@
                         <div class="text-start ps-2">
                             <p class="mb-1"><span class="info-label">رقم الهوية:</span> ${user.id_number || '---'}</p>
                             <p class="mb-1"><span class="info-label">الهاتف:</span> ${user.phone || '---'}</p>
-                            <p class="mb-1"><span class="info-label">الموقع:</span> ${user.country || ''}, ${user.city || ''}</p>
+                            <p class="mb-1"><span class="info-label">الموقع:</span> ${user.country || ''} ${user.city || ''}</p>
                         </div>
                     </div>
 
@@ -520,27 +519,37 @@
                         <div class="row">
                             <div class="col-6 text-center">
                                 <small class="text-muted d-block mb-1">الوجه الأمامي (Front)</small>
-                                <img src="${idFront || ''}" class="id-card-preview img-fluid rounded border border-secondary"
-                                     onclick="window.open(this.src)"
-                                     style="cursor:pointer; max-height:200px;"
-                                     onerror="this.src='https://placehold.co/400x250/1e293b/0ea5e9?text=No+Front+Image'">
+                                <a href="${idFront}" target="_blank">
+                                    <img src="${idFront}" class="id-card-preview"
+                                         style="width:100%; border-radius:10px; border:1px solid #334155; min-height:150px; object-fit:contain;"
+                                         onerror="this.src='https://placehold.co/400x250/1e293b/0ea5e9?text=No+Front+Image'">
+                                </a>
                             </div>
                             <div class="col-6 text-center">
                                 <small class="text-muted d-block mb-1">الوجه الخلفي (Back)</small>
-                                <img src="${idBack || ''}" class="id-card-preview img-fluid rounded border border-secondary"
-                                     onclick="window.open(this.src)"
-                                     style="cursor:pointer; max-height:200px;"
-                                     onerror="this.src='https://placehold.co/400x250/1e293b/0ea5e9?text=No+Back+Image'">
+                                <a href="${idBack}" target="_blank">
+                                    <img src="${idBack}" class="id-card-preview"
+                                         style="width:100%; border-radius:10px; border:1px solid #334155; min-height:150px; object-fit:contain;"
+                                         onerror="this.src='https://placehold.co/400x250/1e293b/0ea5e9?text=No+Back+Image'">
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>`,
-        showCloseButton: true,
-        showConfirmButton: false,
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-check-circle me-2"></i> توثيق واعتماد الحساب',
+        cancelButtonText: 'إغلاق',
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#334155',
         customClass: {
-            container: 'my-swal-container',
-            popup: 'my-swal-popup',
+            popup: 'swal2-popup-custom border border-secondary shadow-lg'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // استدعاء دالة الاعتماد الأصلية
+            approveUser(user.id, 'verification');
         }
     });
 }
