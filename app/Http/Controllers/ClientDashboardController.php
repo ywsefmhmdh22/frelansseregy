@@ -78,42 +78,37 @@ class ClientDashboardController extends Controller
     /**
      * تحديث صورة البروفايل ورفعها على Laravel Cloud (S3)
      */
-    public function updateImage(Request $request)
-    {
-        $request->validate([
-            'profile_image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ]);
+     public function updateImage(Request $request)
+{
+    $request->validate([
+        'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ]);
 
-        try {
-            $user = Auth::user();
-            $disk = 's3'; // تحديد الديسك السحابي المتوافق مع Laravel Cloud
+    try {
+        $user = Auth::user();
+        $disk = 's3';
 
-            if ($request->hasFile('profile_image')) {
-                // 1. حذف الصورة القديمة من السحاب إذا وجدت لتوفير المساحة
-                if ($user->profile_image) {
-                    Storage::disk($disk)->delete($user->profile_image);
-                }
-
-                // 2. رفع الصورة الجديدة بخصوصية Public لتظهر في الموقع
-                $path = $request->file('profile_image')->store('avatars', [
-                    'disk' => $disk,
-                    'visibility' => 'public'
-                ]);
-
-                // 3. تحديث المسار في قاعدة البيانات
-                $user->update([
-                    'profile_image' => $path
-                ]);
-
-                return back()->with('success', 'تم تحديث صورة الملف الشخصي بنجاح.');
-            }
-        } catch (Exception $e) {
-            Log::error('Profile Image Upload Error for User ' . Auth::id() . ': ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ أثناء رفع الصورة، يرجى المحاولة لاحقاً.');
+        // 1. حذف الصورة القديمة إذا وجدت
+        if ($user->profile_image) {
+            Storage::disk($disk)->delete($user->profile_image);
         }
 
-        return back();
+        // 2. الرفع مع تحديد الصلاحية العامة (Public) لضمان ظهورها فوراً
+        $newAvatarPath = $request->file('profile_image')->store('avatars', [
+            'disk' => $disk,
+            'visibility' => 'public' // أضفنا هذا السطر ليطابق ServiceController
+        ]);
+
+        // 3. تحديث قاعدة البيانات
+        $user->update(['profile_image' => $newAvatarPath]);
+
+        return back()->with('success', 'تم تحديث الصورة الشخصية بنجاح!');
+
+    } catch (Exception $e) {
+        Log::error('S3 Avatar Upload Error: ' . $e->getMessage());
+        return back()->with('error', 'حدث خطأ أثناء رفع الصورة للسحاب.');
     }
+}
 
     /**
      * عرض قائمة المشاريع مع دعم Pagination وتنسيق العملات.
