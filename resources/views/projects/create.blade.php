@@ -5,279 +5,284 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-<main class="container py-5" dir="rtl">
-    <div class="row justify-content-center">
-        <div class="col-lg-10 col-xl-8">
-            <article class="card border-0 shadow-lg rounded-5 overflow-hidden luxury-card animate__animated animate__fadeIn">
+<main class="creative-studio-wrapper py-5" dir="rtl">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-9">
+                <article class="card border-0 shadow-2xl rounded-5 overflow-hidden luxury-project-card animate__animated animate__zoomIn">
 
-                {{-- Header Section --}}
-                <header class="card-header border-0 p-4 d-flex align-items-center justify-content-between {{ $type === 'premium' ? 'premium-gradient' : 'standard-gradient' }}">
-                    <div class="d-flex align-items-center">
-                        <div class="icon-badge shadow-sm" aria-hidden="true">
-                            <i class="fas {{ $type === 'premium' ? 'fa-rocket' : 'fa-briefcase' }}"></i>
-                        </div>
-                        <div class="ms-3 text-right pr-3">
-                            <h1 class="mb-0 fw-bold text-white h4">إضافة مشروع جديد</h1>
-                            <p class="mb-0 text-white-50 small">املأ التفاصيل لجذب أفضل المستقلين</p>
-                        </div>
-                    </div>
-                    @if($type === 'premium')
-                        <div class="premium-badge shadow-sm animate__animated animate__pulse animate__infinite" role="status">
-                            <i class="fas fa-crown me-1 text-warning"></i> مشروع مميز
-                        </div>
-                    @endif
-                </header>
-
-                <div class="card-body p-4 p-lg-5 bg-white">
-
-                    @if($type === 'premium')
-                        <section class="alert alert-premium d-flex align-items-center border-0 rounded-4 p-3 mb-4 shadow-sm" role="alert">
-                            <div class="alert-icon-box text-warning" aria-hidden="true">
-                                <i class="fas fa-gem fa-lg"></i>
+                    {{-- Header Section: تصميم سينمائي متدرج --}}
+                    <header class="card-header border-0 p-5 d-flex align-items-center justify-content-between {{ $type === 'premium' ? 'premium-header' : 'standard-header' }}">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-orb-premium shadow-lg animate__animated animate__bounceIn">
+                                <i class="fas {{ $type === 'premium' ? 'fa-rocket' : 'fa-lightbulb' }}"></i>
                             </div>
-                            <div class="ms-3 text-right pr-3">
-                                <strong class="d-block mb-1">خيار ذكي!</strong>
-                                <span class="small opacity-75">سيتم تمييز مشروعك باللون الذهبي وتثبيته في المقدمة لجذب النخبة.</span>
+                            <div class="ms-4 text-right pr-4">
+                                <h1 class="mb-1 fw-black text-white h2">إطلاق مشروع جديد</h1>
+                                <p class="mb-0 text-white-50 fs-6">اصنع مستقبلك الآن عبر التخزين السحابي الآمن</p>
                             </div>
-                        </section>
-                    @endif
+                        </div>
+                        @if($type === 'premium')
+                            <div class="premium-glow-badge shadow-lg animate__animated animate__pulse animate__infinite">
+                                <i class="fas fa-crown me-2"></i> مشروع VIP
+                            </div>
+                        @endif
+                    </header>
 
-                    <form action="{{ route('projects.store') }}" method="POST" enctype="multipart/form-data" id="projectForm">
-                        @csrf
-                        <input type="hidden" name="type" value="{{ $type }}">
+                    <div class="card-body p-4 p-lg-5 bg-white">
 
-                        {{-- Main Image Section --}}
-                        <div class="mb-5">
-                            <label for="image_url" class="form-label fw-bold text-dark h6 mb-3 text-right d-block">الصورة التوضيحية الرئيسية</label>
-                            <div class="image-upload-wrapper">
-                                <label for="image_url" class="image-drop-zone rounded-4 text-center p-4 w-100 mb-0 position-relative d-block" role="button" aria-label="اضغط لرفع صورة المشروع الرئيسية">
-                                    <div class="upload-content" id="upload_placeholder">
-                                        <i class="fas fa-cloud-upload-alt fa-3x text-primary-soft mb-3" aria-hidden="true"></i>
-                                        <h2 class="fw-bold text-dark h6">اسحب الصورة الرئيسية هنا أو اضغط للاختيار</h2>
-                                        <p class="text-muted small mb-0">الحجم الأقصى 2MB (يفضل 1200x630)</p>
-                                    </div>
+                        @if($type === 'premium')
+                            <div class="premium-alert-banner d-flex align-items-center mb-5 p-4 rounded-4 shadow-sm animate__animated animate__fadeInRight">
+                                <div class="alert-icon-gold">
+                                    <i class="fas fa-gem fa-2x"></i>
+                                </div>
+                                <div class="ms-3 pr-3 text-right">
+                                    <h5 class="fw-bold mb-1" style="color: #ca8a04;">أنت الآن في منطقة النخبة!</h5>
+                                    <p class="mb-0 small text-dark opacity-75">سيتم رفع بياناتك مباشرة لـ Laravel Cloud لضمان أعلى مستويات الأداء.</p>
+                                </div>
+                            </div>
+                        @endif
 
-                                    <div id="preview_info_container" class="d-none">
-                                        <img id="image_preview" src="" class="img-fluid rounded-4 shadow-sm mb-2" style="max-height: 250px; width: 100%; object-fit: cover;" alt="معاينة صورة المشروع">
-                                        <div class="d-flex justify-content-center gap-2 mb-2">
-                                            <button type="button" class="btn btn-danger btn-sm rounded-pill px-4" onclick="resetImageInput(event)">
-                                                حذف الصورة <i class="fas fa-trash-alt ms-1"></i>
-                                            </button>
+                        <form action="{{ route('projects.store') }}" method="POST" enctype="multipart/form-data" id="projectForm">
+                            @csrf
+                            <input type="hidden" name="type" value="{{ $type }}">
+
+                            {{-- قسم رفع الصور السحابي المتطور --}}
+                            <div class="mb-5">
+                                <label for="image_url" class="premium-form-label mb-3">الصورة التوضيحية الرئيسية (Cloud Storage)</label>
+                                <div class="cloud-image-uploader">
+                                    <label for="image_url" class="cloud-drop-zone rounded-5 text-center p-5 position-relative d-block transition-all" id="drop_zone">
+                                        <div class="upload-state" id="upload_placeholder">
+                                            <div class="cloud-upload-icon mb-3">
+                                                <i class="fas fa-cloud-arrow-up"></i>
+                                            </div>
+                                            <h3 class="fw-bold text-dark h5">اسحب الصورة هنا للرفع الفوري</h3>
+                                            <p class="text-muted small">الحد الأقصى 5MB (سيرفع لـ Laravel Cloud)</p>
+                                        </div>
+
+                                        <div id="preview_info_container" class="d-none animate__animated animate__fadeIn">
+                                            <div class="preview-frame position-relative">
+                                                <img id="image_preview" src="" class="img-fluid rounded-4 shadow-lg mb-3" style="max-height: 300px; width: 100%; object-fit: cover;">
+                                                <button type="button" class="btn-delete-float" onclick="resetImageInput(event)">
+                                                    <i class="fas fa-trash-can"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <input type="file" name="image_url" id="image_url" class="d-none" accept="image/*" onchange="previewImage(this)">
+                                    </label>
+                                </div>
+                                @error('image_url')
+                                    <div class="error-msg mt-2 animate__animated animate__shakeX"><i class="fas fa-circle-exclamation me-1"></i> {{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            {{-- عنوان المشروع --}}
+                            <div class="mb-4 text-right">
+                                <label for="project_title" class="premium-form-label mb-3">عنوان المشروع</label>
+                                <div class="premium-input-group">
+                                    <i class="fas fa-pen-fancy input-lead-icon"></i>
+                                    <input type="text" name="title" id="project_title"
+                                           class="form-control premium-input @error('title') is-invalid @enderror"
+                                           placeholder="مثلاً: تطوير منصة تجارة إلكترونية متكاملة"
+                                           value="{{ old('title') }}" required>
+                                </div>
+                                @error('title')
+                                    <div class="invalid-feedback d-block mt-2">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            {{-- الوصف بالتفصيل --}}
+                            <div class="mb-4 text-right">
+                                <label for="editor" class="premium-form-label mb-3">وصف المشروع بالتفصيل</label>
+                                <div class="ck-editor-luxury shadow-sm rounded-4 overflow-hidden border">
+                                    <textarea name="description" id="editor" class="form-control">{{ old('description') }}</textarea>
+                                </div>
+                                @error('description')
+                                    <div class="error-msg mt-2">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="row text-right">
+                                {{-- الميزانية --}}
+                                <div class="col-md-6 mb-4">
+                                    <label for="project_price" class="premium-form-label mb-3">الميزانية والعملة</label>
+                                    <div class="d-flex gap-2">
+                                        <select name="currency" id="currency_selector" class="form-select premium-select" onchange="updateChargeNotice(this.value)">
+                                            <option value="EGP" {{ old('currency') == 'EGP' ? 'selected' : '' }}>ج.م</option>
+                                            <option value="USD" {{ old('currency') == 'USD' ? 'selected' : '' }}>USD</option>
+                                            <option value="EUR" {{ old('currency') == 'EUR' ? 'selected' : '' }}>EUR</option>
+                                        </select>
+                                        <div class="premium-input-group flex-grow-1">
+                                            <i class="fas fa-wallet input-lead-icon text-success"></i>
+                                            <input type="number" name="price" id="project_price"
+                                                   class="form-control premium-input @error('price') is-invalid @enderror"
+                                                   placeholder="الميزانية" step="0.01" value="{{ old('price') }}" required>
                                         </div>
                                     </div>
-
-                                    <input type="file" name="image_url" id="image_url" class="d-none" accept="image/*" onchange="previewImage(this)">
-                                </label>
-                            </div>
-                            @error('image_url')
-                                <div class="text-danger small mt-2 text-right" role="alert"><i class="fas fa-exclamation-circle me-1"></i> {{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        {{-- Project Title --}}
-                        <div class="mb-4 text-right">
-                            <label for="project_title" class="form-label fw-bold text-dark h6 mb-3">عنوان المشروع</label>
-                            <div class="input-group-custom">
-                                <i class="fas fa-pen-nib input-icon" aria-hidden="true"></i>
-                                <input type="text" name="title" id="project_title"
-                                       class="form-control luxury-input @error('title') is-invalid @enderror"
-                                       placeholder="مثلاً: تصميم هوية بصرية لشركة عقارات ناشئة"
-                                       value="{{ old('title') }}"
-                                       required
-                                       aria-required="true">
-                            </div>
-                            @error('title')
-                                <div class="invalid-feedback d-block mt-2" role="alert">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        {{-- Project Description --}}
-                        <div class="mb-4 text-right">
-                            <label for="editor" class="form-label fw-bold text-dark h6 mb-3">وصف المشروع بالتفصيل</label>
-                            <div class="editor-wrapper shadow-sm rounded-4 overflow-hidden">
-                                <textarea name="description" id="editor" class="form-control" aria-label="وصف المشروع">{{ old('description') }}</textarea>
-                            </div>
-                            <div class="mt-2">
-                                <span class="text-muted small">اشرح بوضوح ما تريده، المعايير الفنية، وما تتوقع الحصول عليه.</span>
-                            </div>
-                            @error('description')
-                                <div class="text-danger small mt-2" role="alert">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="row text-right">
-                            {{-- Budget --}}
-                            <div class="col-md-6 mb-4">
-                                <label for="project_price" class="form-label fw-bold text-dark h6 mb-3">الميزانية والعملة</label>
-                                <div class="d-flex gap-2">
-                                    <select name="currency" id="currency_selector" aria-label="اختر العملة" class="form-select luxury-input-select" onchange="updateChargeNotice(this.value)">
-                                        <option value="EGP" {{ old('currency') == 'EGP' ? 'selected' : '' }}>ج.م</option>
-                                        <option value="USD" {{ old('currency') == 'USD' ? 'selected' : '' }}>USD</option>
-                                        <option value="EUR" {{ old('currency') == 'EUR' ? 'selected' : '' }}>EUR</option>
-                                    </select>
-                                    <div class="input-group-custom flex-grow-1">
-                                        <i class="fas fa-wallet input-icon text-success" aria-hidden="true"></i>
-                                        <input type="number" name="price" id="project_price"
-                                               class="form-control luxury-input @error('price') is-invalid @enderror"
-                                               placeholder="الميزانية" step="0.01"
-                                               value="{{ old('price') }}"
-                                               required
-                                               aria-required="true">
+                                    <div class="charge-hint mt-3 p-2 rounded-3 bg-light" id="charge_notice">
+                                        <i class="fas fa-info-circle me-1"></i> يجب شحن رصيدك بـ <span id="currency_type_name" class="fw-bold">الجنيه المصري</span> لتفعيل المشروع.
                                     </div>
+                                    @error('price') <div class="error-msg mt-2">{{ $message }}</div> @enderror
                                 </div>
-                                <div class="mt-2 small text-muted" id="charge_notice">
-                                    <i class="fas fa-info-circle me-1"></i> ملاحظة: يجب شحن رصيدك بـ <span id="currency_type_name">الجنيه المصري</span> لتفعيل المشروع.
+
+                                {{-- المدة --}}
+                                <div class="col-md-6 mb-4">
+                                    <label for="project_duration" class="premium-form-label mb-3">مدة التنفيذ المتوقعة</label>
+                                    <div class="premium-input-group">
+                                        <i class="fas fa-hourglass-half input-lead-icon text-primary"></i>
+                                        <input type="text" name="duration" id="project_duration"
+                                               class="form-control premium-input @error('duration') is-invalid @enderror"
+                                               placeholder="مثلاً: 15 يوم" value="{{ old('duration') }}" required>
+                                    </div>
+                                    @error('duration') <div class="error-msg mt-2">{{ $message }}</div> @enderror
                                 </div>
-                                @error('price') <div class="text-danger small mt-2" role="alert">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Duration --}}
-                            <div class="col-md-6 mb-4">
-                                <label for="project_duration" class="form-label fw-bold text-dark h6 mb-3">مدة التنفيذ المتوقعة</label>
-                                <div class="input-group-custom">
-                                    <i class="fas fa-hourglass-half input-icon text-primary" aria-hidden="true"></i>
-                                    <input type="text" name="duration" id="project_duration"
-                                           class="form-control luxury-input @error('duration') is-invalid @enderror"
-                                           placeholder="مثلاً: 10 أيام"
-                                           value="{{ old('duration') }}"
-                                           required
-                                           aria-required="true">
-                                </div>
-                                @error('duration') <div class="text-danger small mt-2" role="alert">{{ $message }}</div> @enderror
+                            {{-- أزرار التحكم الفاخرة --}}
+                            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-end mt-5 pt-4 border-top">
+                                <a href="{{ route('client.dashboard') }}" class="btn btn-cancel-premium px-5 py-3 order-2 order-sm-1">إلغاء وإغلاق</a>
+                                <button type="submit" id="submitBtn" class="btn {{ $type === 'premium' ? 'btn-publish-premium' : 'btn-publish-standard' }} px-5 py-3 order-1 order-sm-2 shadow-lg">
+                                    <span class="btn-text">
+                                        <i class="fas {{ $type === 'premium' ? 'fa-paper-plane' : 'fa-check-circle' }} me-2"></i>
+                                        {{ $type === 'premium' ? 'نشر المشروع المميز فوراً' : 'نشر مشروعي الآن' }}
+                                    </span>
+                                </button>
                             </div>
-                        </div>
-
-                        {{-- Action Buttons --}}
-                        <div class="d-flex flex-column flex-sm-row gap-3 justify-content-end mt-4 pt-4 border-top">
-                            <a href="{{ route('client.dashboard') }}" class="btn btn-outline-secondary px-5 py-3 rounded-pill fw-bold order-2 order-sm-1">إلغاء العملية</a>
-                            <button type="submit" id="submitBtn" class="btn {{ $type === 'premium' ? 'btn-premium-action' : 'btn-primary-action' }} px-5 py-3 rounded-pill shadow-lg fw-bold order-1 order-sm-2">
-                                <i class="fas {{ $type === 'premium' ? 'fa-paper-plane' : 'fa-check-circle' }} me-2"></i>
-                                {{ $type === 'premium' ? 'نشر المشروع المميز فـوراً' : 'نشر مشروعي الآن' }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </article>
+                        </form>
+                    </div>
+                </article>
+            </div>
         </div>
     </div>
 </main>
 
 <style>
-/* --- Global & Typography --- */
+/* --- التصميم العالمي Neo-Luxury --- */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+
 :root {
-    --primary-blue: #2563eb;
-    --premium-gold: #facc15;
-    --text-dark: #1e293b;
-    --bg-light: #f8fafc;
+    --standard-blue: #2563eb;
+    --premium-gold: #fbbf24;
+    --dark-slate: #0f172a;
+    --soft-bg: #f8fafc;
 }
 
-body { background-color: #f1f5f9; }
+body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; }
+.fw-black { font-weight: 900; }
 
-/* --- Luxury Card Design --- */
-.luxury-card {
-    border: none;
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1) !important;
-    transition: transform 0.3s ease;
+.luxury-project-card {
+    background: #fff;
+    box-shadow: 0 40px 100px -20px rgba(0,0,0,0.15) !important;
+    border-radius: 45px !important;
 }
 
-.standard-gradient { background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); }
-.premium-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+/* التدرج اللوني للهيدر */
+.standard-header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+.premium-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-bottom: 4px solid var(--premium-gold); }
 
-.icon-badge {
-    width: 50px; height: 50px;
+.icon-orb-premium {
+    width: 75px; height: 75px;
     background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(5px);
-    border-radius: 15px;
+    backdrop-filter: blur(12px);
+    border-radius: 24px;
     display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 1.2rem;
+    color: #fff; font-size: 2rem;
+    border: 1px solid rgba(255,255,255,0.3);
 }
 
-.premium-badge {
-    background: var(--premium-gold);
-    color: #000; padding: 8px 18px;
-    border-radius: 50px; font-size: 14px; font-weight: 800;
-    box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3);
+.premium-glow-badge {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #000; padding: 12px 30px;
+    border-radius: 50px; font-weight: 900;
+    font-size: 0.9rem; box-shadow: 0 10px 25px rgba(250, 204, 21, 0.4);
 }
 
-/* --- Input Styling --- */
-.input-group-custom { position: relative; display: flex; align-items: center; }
-.input-icon { position: absolute; right: 20px; color: #64748b; z-index: 5; }
+/* حقول الإدخال */
+.premium-form-label {
+    color: #1e293b; font-weight: 800; font-size: 1.05rem;
+    display: block; position: relative; padding-right: 15px;
+}
+.premium-form-label::before {
+    content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 5px;
+    background: var(--standard-blue); border-radius: 10px;
+}
 
-.luxury-input {
-    padding: 16px 55px 16px 20px !important;
-    border-radius: 16px !important;
+.premium-input-group { position: relative; width: 100%; }
+.input-lead-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 1.3rem; color: #64748b; z-index: 5; }
+
+.premium-input {
+    padding: 18px 65px 18px 20px !important;
+    border-radius: 22px !important;
     border: 2px solid #e2e8f0 !important;
-    background-color: var(--bg-light) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    font-weight: 500;
+    background: var(--soft-bg) !important;
+    transition: all 0.4s ease;
+    font-weight: 600;
+}
+.premium-input:focus {
+    border-color: var(--standard-blue) !important;
+    background: #fff !important;
+    box-shadow: 0 15px 30px rgba(37, 99, 235, 0.1) !important;
 }
 
-.luxury-input:focus {
-    background-color: #fff !important;
-    border-color: var(--primary-blue) !important;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+.premium-select {
+    border-radius: 22px !important; border: 2px solid #e2e8f0 !important;
+    width: 120px; font-weight: 800; background: var(--soft-bg);
 }
 
-.luxury-input-select {
-    width: 110px; border-radius: 16px !important;
-    border: 2px solid #e2e8f0; background: var(--bg-light);
-    font-weight: bold; padding: 0 15px;
+/* منطقة الرفع السحابي */
+.cloud-drop-zone {
+    border: 3px dashed #cbd5e1;
+    background: var(--soft-bg);
+    border-radius: 35px !important;
+    cursor: pointer; transition: 0.4s;
 }
+.cloud-drop-zone:hover {
+    border-color: var(--standard-blue);
+    background: #eff6ff; transform: scale(1.01);
+}
+.cloud-upload-icon { font-size: 4rem; color: var(--standard-blue); animation: bounceSoft 2s infinite; }
 
-/* --- Image Upload Zone --- */
-.image-drop-zone {
-    border: 2px dashed #cbd5e1;
-    background: #f8fafc;
-    transition: all 0.3s ease;
-    border-radius: 20px !important;
-}
-.image-drop-zone:hover {
-    border-color: var(--primary-blue);
-    background: #f0f7ff;
-}
+@keyframes bounceSoft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
 
-/* --- Buttons --- */
-.btn-primary-action {
+.btn-delete-float {
+    position: absolute; top: 20px; left: 20px;
+    background: #ef4444; color: #fff; border: none;
+    width: 50px; height: 50px; border-radius: 50%;
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); transition: 0.3s;
+}
+.btn-delete-float:hover { transform: rotate(90deg) scale(1.1); }
+
+/* الأزرار */
+.btn-publish-standard {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    border: none; color: white; transition: all 0.3s ease;
+    color: #fff; border: none; border-radius: 50px;
+    font-weight: 800; font-size: 1.1rem; transition: 0.4s;
 }
-.btn-premium-action {
-    background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
-    border: none; color: #000; transition: all 0.3s ease;
+.btn-publish-premium {
+    background: linear-gradient(135deg, #fbbf24 0%, #ca8a04 100%);
+    color: #000; border: none; border-radius: 50px;
+    font-weight: 900; font-size: 1.1rem; transition: 0.4s;
 }
-.btn-primary-action:hover, .btn-premium-action:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.1);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-}
+.btn-publish-standard:hover, .btn-publish-premium:hover { transform: translateY(-4px); filter: brightness(1.1); }
 
-/* --- Accessibility Focus --- */
-button:focus, a:focus, input:focus {
-    outline: 3px solid rgba(37, 99, 235, 0.5);
-    outline-offset: 2px;
-}
+.btn-cancel-premium { background: #f1f5f9; color: #64748b; border-radius: 50px; font-weight: 700; transition: 0.3s; }
+.btn-cancel-premium:hover { background: #e2e8f0; }
 
-/* CKEditor Adjustments */
-.ck-editor__editable {
-    min-height: 250px !important;
-    border-radius: 0 0 16px 16px !important;
-    border: 1px solid #e2e8f0 !important;
-}
+.error-msg { color: #ef4444; font-weight: 800; font-size: 0.85rem; }
 
-/* SweetAlert Custom Luxe */
-.swal2-popup-luxury {
-    border-radius: 25px !important;
-    font-family: inherit;
-}
+/* CKEditor Custom */
+.ck-editor__editable { min-height: 280px !important; border-radius: 0 0 22px 22px !important; }
 </style>
 
 <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-// 1. CKEditor Initialization
+// 1. تهيئة المحرر الاحترافي
 let projectEditor;
 ClassicEditor
     .create(document.querySelector('#editor'), {
@@ -288,55 +293,25 @@ ClassicEditor
     .then(editor => { projectEditor = editor; })
     .catch(error => { console.error(error); });
 
-// 2. Form Submission Handling
-document.getElementById('projectForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const description = projectEditor.getData();
-    if (!description || description.trim() === '') {
-        Swal.fire({
-            icon: 'error',
-            title: 'الوصف مطلوب',
-            text: 'يرجى كتابة تفاصيل المشروع لجذب المستقلين.',
-            confirmButtonText: 'حسناً',
-            confirmButtonColor: '#2563eb',
-            customClass: { popup: 'swal2-popup-luxury' }
-        });
-        return;
-    }
-
-    // Success Confetti Effect
-    const duration = 2 * 1000;
-    const end = Date.now() + duration;
-
-    (function frame() {
-        confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 } });
-        confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 } });
-        if (Date.now() < end) requestAnimationFrame(frame);
-    }());
-
-    // Stylish Success Dialog
-    Swal.fire({
-        title: 'تم الإرسال بنجاح! 🚀',
-        html: '<p class="text-muted">مشروعك قيد المراجعة حالياً وسينشر قريباً.</p>',
-        icon: 'success',
-        timer: 3000,
-        timerProgressBar: true,
-        showConfirmButton: false,
-        customClass: { popup: 'swal2-popup-luxury' },
-        willClose: () => {
-            document.getElementById('projectForm').submit();
-        }
-    });
-});
-
-// 3. Image Preview Logic
+// 2. معاينة الصورة بحجم 5MB
 function previewImage(input) {
     const preview = document.getElementById('image_preview');
     const placeholder = document.getElementById('upload_placeholder');
     const container = document.getElementById('preview_info_container');
 
     if (input.files && input.files[0]) {
+        // التحقق من الحجم (5 ميجا)
+        if (input.files[0].size > 5 * 1024 * 1024) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'حجم الصورة كبير جداً',
+                text: 'يرجى رفع صورة لا تتخطى 5 ميجابايت لضمان سرعة الرفع السحابي.',
+                confirmButtonColor: '#2563eb'
+            });
+            input.value = '';
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = function(e) {
             preview.src = e.target.result;
@@ -357,9 +332,46 @@ function resetImageInput(e) {
     container.classList.add('d-none');
 }
 
-// 4. Currency Switcher Label Update
+// 3. معالجة الإرسال السحابي
+document.getElementById('projectForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const description = projectEditor.getData();
+    if (!description || description.trim() === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'الوصف مطلوب',
+            text: 'التفاصيل هي ما تجذب النخبة من المستقلين، لا تتركها فارغة.',
+            confirmButtonColor: '#2563eb'
+        });
+        return;
+    }
+
+    // تأثير الاحتفال Confetti
+    const duration = 2 * 1000;
+    const end = Date.now() + duration;
+    (function frame() {
+        confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#2563eb', '#fbbf24'] });
+        confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#2563eb', '#fbbf24'] });
+        if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+
+    // حوار الرفع السحابي
+    Swal.fire({
+        title: 'جاري النشر ... 🚀',
+        html: 'نحن نقوم الآن برفع ملفاتك   وتجهيز مشروعك.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+            // الرفع الفعلي
+            document.getElementById('projectForm').submit();
+        }
+    });
+});
+
 function updateChargeNotice(val) {
-    const names = {'EGP': 'الجنيه المصري', 'USD': 'الدولار الأمريكي', 'EUR': 'اليورو'};
+    const names = { 'USD': 'الدولار الأمريكي'};
     document.getElementById('currency_type_name').innerText = names[val] || val;
 }
 </script>

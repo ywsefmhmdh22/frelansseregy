@@ -74,8 +74,9 @@ class ProjectController extends Controller
         } catch (Exception $e) {
             Log::error('Project Store Failure: ' . $e->getMessage());
 
-            if ($imagePath) Storage::disk('public')->delete($imagePath);
-            foreach ($attachmentsPaths as $path) Storage::disk('public')->delete($path);
+            // تنظيف الملفات من S3 في حال فشل العملية
+            if ($imagePath) Storage::disk('s3')->delete($imagePath);
+            foreach ($attachmentsPaths as $path) Storage::disk('s3')->delete($path);
 
             return back()->with('error', 'حدث خطأ أثناء حفظ المشروع.')->withInput();
         }
@@ -157,7 +158,7 @@ class ProjectController extends Controller
                 $amount = $project->final_price ?? $project->price;
                 $avgRating = $this->calculateAverageRating($request);
 
-                // 1. تسجيل الأرباح كـ "معلقة" للمستقل (تأكد من وجود ID المستقل)
+                // 1. تسجيل الأرباح كـ "معلقة" للمستقل
                 if (!$project->freelancer_id) {
                     throw new Exception("لا يوجد مستقل مرتبط بهذا المشروع لإرسال الأرباح إليه.");
                 }
@@ -194,7 +195,6 @@ class ProjectController extends Controller
             return redirect()->route('projects.show', $project->id)->with('success', 'تم الاستلام بنجاح، الأرباح الآن في مرحلة التعليق لضمان جودة العمل.');
 
         } catch (Exception $e) {
-            // التعديل الجوهري: إظهار الخطأ فوراً وعدم الرجوع للخلف
             Log::error('Complete Project Error: ' . $e->getMessage());
             dd([
                 'error_message' => $e->getMessage(),
@@ -208,19 +208,30 @@ class ProjectController extends Controller
 
     // --- Private Helper Methods ---
 
+    /**
+     * رفع غلاف المشروع إلى Laravel Cloud (S3)
+     */
     private function uploadProjectCover(Request $request)
     {
-        return $request->hasFile('image_url')
-            ? $request->file('image_url')->store('projects/covers', 'public')
-            : null;
+        if ($request->hasFile('image_url')) {
+            $path = $request->file('image_url')->store('projects/covers', 's3');
+            Storage::disk('s3')->setVisibility($path, 'public');
+            return $path;
+        }
+        return null;
     }
 
+    /**
+     * رفع الملحقات إلى Laravel Cloud (S3)
+     */
     private function uploadProjectAttachments(Request $request)
     {
         $paths = [];
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
-                $paths[] = $file->store('projects/attachments', 'public');
+                $path = $file->store('projects/attachments', 's3');
+                Storage::disk('s3')->setVisibility($path, 'public');
+                $paths[] = $path;
             }
         }
         return $paths;
@@ -240,7 +251,6 @@ class ProjectController extends Controller
 
     private function payoutToFreelancer(Project $project, $amount)
     {
-        // استخدام updateOrCreate لضمان وجود المحفظة وسهولة التعامل
         $fWallet = Wallet::firstOrCreate(
             ['user_id' => $project->freelancer_id],
             ['balance' => 0, 'pending_balance' => 0]
