@@ -109,12 +109,12 @@
                             <div class="row text-right">
                                 {{-- الميزانية --}}
                                 <div class="col-md-6 mb-4">
-                                    <label for="project_price" class="premium-form-label mb-3">الميزانية والعملة</label>
+                                    <label for="project_price" class="premium-form-label mb-3">الميزانية </label>
                                     <div class="d-flex gap-2">
                                         <select name="currency" id="currency_selector" class="form-select premium-select" onchange="updateChargeNotice(this.value)">
-                                            <option value="EGP" {{ old('currency') == 'EGP' ? 'selected' : '' }}>ج.م</option>
+
                                             <option value="USD" {{ old('currency') == 'USD' ? 'selected' : '' }}>USD</option>
-                                            <option value="EUR" {{ old('currency') == 'EUR' ? 'selected' : '' }}>EUR</option>
+
                                         </select>
                                         <div class="premium-input-group flex-grow-1">
                                             <i class="fas fa-wallet input-lead-icon text-success"></i>
