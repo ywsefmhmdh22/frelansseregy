@@ -15,6 +15,9 @@
         : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=10b981&color=fff';
 @endphp
 
+{{-- إضافة مكتبة Axios لضمان الرفع السحابي --}}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
 <div class="dashboard-container py-4 py-lg-5 px-2 px-lg-5" dir="rtl">
     <div class="container-fluid">
         <div class="row g-4">
@@ -22,8 +25,8 @@
             <div class="col-lg-3">
                 <aside class="sidebar-glass p-4 sticky-top shadow-sm" style="top: 20px; z-index: 100;">
                     <div class="text-center mb-4">
-                        <div class="position-relative d-inline-block profile-ring">
-                            <form id="profileImageForm" action="{{ route('profile.update_image') }}" method="POST" enctype="multipart/form-data">
+                        <div class="position-relative d-inline-block profile-ring" id="profileContainer">
+                            <form id="profileImageForm" enctype="multipart/form-data">
                                 @csrf
                                 <div class="profile-img-wrapper">
                                     <img src="{{ $profilePhoto }}"
@@ -32,10 +35,11 @@
                                          alt="{{ $user->name }}">
 
                                     <label for="profile_image_input" class="edit-overlay" title="تغيير الصورة">
-                                        <i class="fas fa-camera"></i>
+                                        <i class="fas fa-camera" id="cameraIcon"></i>
+                                        <i class="fas fa-circle-notch fa-spin d-none" id="uploadSpinner"></i>
                                     </label>
-                                    {{-- تم تعديل الـ onchange لتشغيل submit تلقائي --}}
-                                    <input type="file" id="profile_image_input" name="profile_image" class="d-none" onchange="document.getElementById('profileImageForm').submit();">
+                                    {{-- تم إيقاف الـ submit التلقائي واستبداله بـ Axios في الأسفل --}}
+                                    <input type="file" id="profile_image_input" name="profile_image" class="d-none" accept="image/*">
                                 </div>
                             </form>
                             <div class="status-pulse" data-bs-toggle="tooltip" title="متصل الآن"></div>
@@ -375,8 +379,8 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
 .sidebar-glass { background: var(--glass); backdrop-filter: blur(12px); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.6); }
 .glass-card { background: white; border-radius: 20px; border: 1px solid rgba(226, 232, 240, 0.7); }
 .profile-img-wrapper { width: 100px; height: 100px; margin: 0 auto; position: relative; }
-.profile-main-img { width: 100%; height: 100%; object-fit: cover; border-radius: 28px; border: 4px solid #fff; }
-.edit-overlay { position: absolute; bottom: -2px; left: -2px; background: var(--primary); color: white; width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #fff; }
+.profile-main-img { width: 100%; height: 100%; object-fit: cover; border-radius: 28px; border: 4px solid #fff; transition: opacity 0.3s; }
+.edit-overlay { position: absolute; bottom: -2px; left: -2px; background: var(--primary); color: white; width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #fff; z-index: 5; }
 .nav-link-custom { display: flex; align-items: center; padding: 12px 16px; color: var(--slate); text-decoration: none; border-radius: 14px; margin-bottom: 6px; transition: 0.3s; font-weight: 600; }
 .nav-link-custom:hover { background: #f1f5f9; color: var(--primary); }
 .nav-link-custom.active { background: var(--primary); color: white !important; }
@@ -408,8 +412,9 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
         myModal.show();
     }
 
-    // إدارة التحديثات التلقائية
+    // إدارة التحديثات التلقائية والرفع السحابي
     const DashboardManager = (() => {
+        // 1. تحديث عدد الرسائل
         const updateMessagesCount = async () => {
             try {
                 const response = await fetch('/messages/unread-count');
@@ -422,15 +427,59 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
             } catch (error) { console.warn('Messages update failed.'); }
         };
 
+        // 2. معالجة الرفع السحابي لـ Laravel Cloud (S3) عبر Axios
+        const handleProfileImageUpload = () => {
+            const fileInput = document.getElementById('profile_image_input');
+            if (!fileInput) return;
+
+            fileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('profile_image', file);
+                formData.append('_token', '{{ csrf_token() }}');
+
+                // تأثير بصري للتحميل
+                const preview = document.getElementById('profilePreview');
+                const cameraIcon = document.getElementById('cameraIcon');
+                const spinner = document.getElementById('uploadSpinner');
+
+                if (preview) preview.style.opacity = '0.5';
+                if (cameraIcon) cameraIcon.classList.add('d-none');
+                if (spinner) spinner.classList.remove('d-none');
+
+                // إرسال الطلب سحابياً لضمان اكتمال المعالجة
+                axios.post("{{ route('profile.update_image') }}", formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                })
+                .then(response => {
+                    // تم الرفع بنجاح - إعادة تحميل الصفحة لعرض الصورة الجديدة من S3
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error('Upload Error:', error);
+                    alert(error.response?.data?.message || 'حدث خطأ أثناء الرفع للسحاب. تأكد من حجم الصورة وإعدادات الاتصال.');
+
+                    // إعادة الشكل الطبيعي في حال الخطأ
+                    if (preview) preview.style.opacity = '1';
+                    if (cameraIcon) cameraIcon.classList.remove('d-none');
+                    if (spinner) spinner.classList.add('d-none');
+                });
+            });
+        };
+
         return {
             init: () => {
                 updateMessagesCount();
+                handleProfileImageUpload(); // تشغيل مراقب الرفع
                 setInterval(updateMessagesCount, 20000);
                 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
                 tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el) });
             }
         };
     })();
+
     document.addEventListener('DOMContentLoaded', DashboardManager.init);
 </script>
 @endsection

@@ -73,18 +73,17 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * تحديث صورة البروفايل ورفعها على Laravel Cloud (S3) حصرياً
-     * تم التعديل ليطابق منطق ServiceController
+     * تحديث صورة البروفايل ورفعها على Laravel Cloud (S3) حصرياً.
+     * تم التعديل ليدعم استجابة JSON المتوافقة مع Axios في الـ Blade.
      */
     public function updateImage(Request $request)
     {
         $request->validate([
-            'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // تم رفع الحد لـ 5 ميجا ليطابق صفحة الإكمال
         ]);
 
         try {
             $user = Auth::user();
-            // تحديد الديسك سحابياً لضمان التوافق مع Laravel Cloud
             $disk = 's3';
 
             // 1. حذف الصورة القديمة من السحاب إذا كانت موجودة
@@ -92,9 +91,8 @@ class ClientDashboardController extends Controller
                 Storage::disk($disk)->delete($user->profile_image);
             }
 
-            // 2. الرفع الجديد على لارفل كلاود (S3)
-            // ملاحظة: تم استخدام مصفوفة الإعدادات لضمان القراءة العامة للملف
-            $newAvatarPath = $request->file('profile_image')->store('avatars', [
+            // 2. الرفع الجديد على لارفل كلاود (S3) في نفس مجلد صفحة الإكمال
+            $newAvatarPath = $request->file('profile_image')->store('profile_images/avatars', [
                 'disk' => $disk,
                 'visibility' => 'public'
             ]);
@@ -102,11 +100,28 @@ class ClientDashboardController extends Controller
             // 3. تحديث مسار الصورة في قاعدة البيانات
             $user->update(['profile_image' => $newAvatarPath]);
 
-            return back()->with('success', 'تم تحديث الصورة الشخصية على السحاب بنجاح!');
+            // 4. الاستجابة: إذا كان الطلب أياكس (Axios) نرسل JSON، وإلا نرجع للخلف
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'تم تحديث الصورة الشخصية على السحاب بنجاح!',
+                    'path' => Storage::disk($disk)->url($newAvatarPath)
+                ]);
+            }
+
+            return back()->with('success', 'تم تحديث الصورة الشخصية بنجاح!');
 
         } catch (Exception $e) {
             Log::error('Laravel Cloud Avatar Upload Error: ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ أثناء الرفع إلى Laravel Cloud. تأكد من إعدادات S3.');
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'حدث خطأ أثناء الرفع للسحابة.'
+                ], 500);
+            }
+
+            return back()->with('error', 'حدث خطأ أثناء الرفع إلى Laravel Cloud.');
         }
     }
 
@@ -145,7 +160,7 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * عرض عروض المشاريع مع صور المستخدمين من السحاب
+     * عرض عروض المشاريع
      */
     public function projectOffers($id)
     {
@@ -154,7 +169,7 @@ class ClientDashboardController extends Controller
         $project = Project::where('user_id', $userId)
             ->with(['proposals' => function($query) {
                 $query->select('id', 'project_id', 'user_id', 'amount', 'duration', 'description', 'created_at')
-                      ->with('user:id,name,profile_image') // تأكدنا من جلب الحقل الصحيح للصورة
+                      ->with('user:id,name,profile_image')
                       ->latest();
             }])
             ->findOrFail((int) $id);
