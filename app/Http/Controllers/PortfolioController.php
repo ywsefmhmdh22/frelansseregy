@@ -7,18 +7,16 @@ use App\Models\Portfolio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Exception;
 
 /**
  * Class PortfolioController
- * * هذا الكنترولر مسؤول عن إدارة "معرض أعمال" المستقلين (Portfolios).
- * تم تصميمه ليتعامل مع رفع المشاريع، تنظيف البيانات، وتوثيق العمليات برمجياً
- * لرفع مستوى موثوقية النظام ومعايير الأمان.
+ * مسؤول عن إدارة "معرض أعمال" المستقلين مع دعم كامل للتخزين السحابي (S3).
  */
 class PortfolioController extends Controller
 {
     /**
      * عرض صفحة إنشاء عمل جديد في المعرض.
-     * * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -26,15 +24,13 @@ class PortfolioController extends Controller
     }
 
     /**
-     * حفظ العمل الجديد في قاعدة البيانات مع معالجة الصور وحماية XSS.
-     * * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * حفظ العمل الجديد مع رفع الصورة إلى Laravel Cloud (S3).
      */
     public function store(Request $request)
     {
-        // 1. التحقق من البيانات (Validation) مع رسائل مخصصة وتدقيق الروابط
+        // 1. التحقق من البيانات (رفع الحد لـ 5 ميجا للتوافق مع السحاب)
         $validated = $request->validate([
-            'title'       => ['required', 'string', 'max:255', 'trim'],
+            'title'       => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'min:20', 'max:5000'],
             'image'       => ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             'link'        => ['nullable', 'url'],
@@ -47,65 +43,66 @@ class PortfolioController extends Controller
         ]);
 
         try {
-            // 2. معالجة رفع الصورة باستخدام Storage (الممارسة الفضلى لأمان الملفات)
             $imagePath = null;
+
+            // 2. معالجة رفع الصورة إلى Laravel Cloud (S3)
             if ($request->hasFile('image')) {
-                // تخزين آمن في قرص public مع اسم ملف عشوائي مشفر
-                $imagePath = $request->file('image')->store('portfolios', 'public');
+                // التخزين في مجلد 'portfolios' داخل S3 مع جعل الملف متاحاً للعامة (Public)
+                $imagePath = $request->file('image')->store('portfolios', 's3');
+
+                // التأكد من أن الصورة قابلة للعرض فور الرفع
+                Storage::disk('s3')->setVisibility($imagePath, 'public');
             }
 
-            // 3. الحفظ الفعلي مع تنظيف النصوص (Sanitization) لمنع ثغرات XSS
+            // 3. الحفظ في قاعدة البيانات مع تنظيف النصوص
             Portfolio::create([
                 'user_id'     => Auth::id(),
                 'title'       => strip_tags($validated['title']),
                 'description' => strip_tags($validated['description']),
                 'image'       => $imagePath,
                 'link'        => $validated['link'],
-                'category'    => 'General', // يمكن توسيعها لاحقاً لتشمل تصنيفات حقيقية (Domain Knowledge)
+                'category'    => 'Creative Work',
             ]);
 
-            // 4. التوجيه لصفحة المعرض مع استخدام المسارات المسماة
+            // 4. التوجيه لصفحة المعرض
             return redirect()->route('profile.portfolio', ['id' => Auth::id()])
-                             ->with('success', 'تمت إضافة تحفتك الفنية إلى معرض أعمالك بنجاح!');
+                             ->with('success', 'تمت إضافة تحفتك الفنية إلى معرض أعمالك سحابياً بنجاح!');
 
-        } catch (\Exception $e) {
-            // تسجيل الخطأ في الـ Logs لتسهيل تتبع المشاكل برمجياً (Professional Practice)
-            Log::error('Portfolio Store Error: ' . $e->getMessage());
+        } catch (Exception $e) {
+            // تسجيل الخطأ وحذف الصورة من S3 في حال فشل العملية
+            Log::error('Cloud Portfolio Store Error: ' . $e->getMessage());
 
-            // حذف الصورة المرفوعة في حال فشل حفظ البيانات في الداتابيز
             if (isset($imagePath)) {
-                Storage::disk('public')->delete($imagePath);
+                Storage::disk('s3')->delete($imagePath);
             }
 
-            return back()->withErrors(['error' => 'حدث خطأ تقني أثناء معالجة الطلب.'])->withInput();
+            return back()->withErrors(['error' => 'حدث خطأ أثناء الرفع للسحاب، يرجى المحاولة لاحقاً.'])->withInput();
         }
     }
 
     /**
-     * حذف عمل من المعرض وتنظيف المساحة التخزينية.
-     * * @param  \App\Models\Portfolio  $portfolio
-     * @return \Illuminate\Http\RedirectResponse
+     * حذف عمل من المعرض وتنظيف المساحة من S3.
      */
     public function destroy(Portfolio $portfolio)
     {
-        // حماية الملكية (Authorization Logic)
+        // حماية الملكية
         if (Auth::id() !== $portfolio->user_id) {
             Log::warning("Unauthorized Portfolio deletion attempt by user ID: " . Auth::id());
             return back()->with('error', 'لا تملك صلاحية حذف هذا العمل.');
         }
 
         try {
-            // مسح الملف من السيرفر قبل حذف السجل
+            // مسح الملف من S3 قبل حذف السجل
             if ($portfolio->image) {
-                Storage::disk('public')->delete($portfolio->image);
+                Storage::disk('s3')->delete($portfolio->image);
             }
 
             $portfolio->delete();
 
-            return back()->with('success', 'تم حذف العمل بنجاح من معرض أعمالك.');
-        } catch (\Exception $e) {
-            Log::error('Portfolio Delete Error: ' . $e->getMessage());
-            return back()->with('error', 'فشل حذف العمل، حاول مرة أخرى.');
+            return back()->with('success', 'تم حذف العمل وتنظيف المساحة السحابية بنجاح.');
+        } catch (Exception $e) {
+            Log::error('S3 Portfolio Delete Error: ' . $e->getMessage());
+            return back()->with('error', 'فشل حذف العمل من السحاب، حاول مرة أخرى.');
         }
     }
 }
