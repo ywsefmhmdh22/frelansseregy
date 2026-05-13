@@ -18,8 +18,7 @@ use Exception;
 
 /**
  * Class ClientDashboardController
- * مسؤول عن لوحة تحكم العميل مع دعم تعدد العملات (EGP/USD)
- * تم الإصلاح: جعل البيانات تظهر فوراً (Real-time) وتحسين أداء الإحصائيات.
+ * مسؤول عن لوحة تحكم العميل مع دعم Laravel Cloud لتخزين الصور.
  */
 class ClientDashboardController extends Controller
 {
@@ -30,7 +29,7 @@ class ClientDashboardController extends Controller
     {
         $userId = (int) Auth::id();
 
-        // 1. جلب أحدث 5 مشاريع (Real-time) لضمان ظهور المشروع الجديد فوراً
+        // جلب المشاريع مع تنسيق السعر
         $projects = Project::where('user_id', $userId)
             ->select('id', 'title', 'status', 'admin_status', 'created_at', 'price', 'currency', 'final_price')
             ->withCount('proposals')
@@ -42,8 +41,7 @@ class ClientDashboardController extends Controller
                 return $project;
             });
 
-        // 2. الإحصائيات: استخدام Cache للإحصائيات الثقيلة فقط مع تحسين الاستعلام
-        // ملاحظة: يتم مسح هذا الكاش عند إضافة مشروع جديد لضمان الدقة
+        // الإحصائيات مع الكاش
         $stats = Cache::remember("client_stats_summary_{$userId}", 600, function () use ($userId) {
             $rawStats = Project::where('user_id', $userId)
                 ->selectRaw("
@@ -62,7 +60,6 @@ class ClientDashboardController extends Controller
             ];
         });
 
-        // 3. المحفظة (دائماً Real-time)
         $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0]);
         $walletCurrency = $wallet->currency ?? 'EGP';
         $formattedWalletBalance = $this->formatCurrency($wallet->balance, $walletCurrency);
@@ -76,42 +73,45 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * تحديث صورة البروفايل ورفعها على Laravel Cloud (S3)
+     * تحديث صورة البروفايل ورفعها على Laravel Cloud (S3) حصرياً
+     * تم التعديل ليطابق منطق ServiceController
      */
-     public function updateImage(Request $request)
-{
-    $request->validate([
-        'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-    ]);
-
-    try {
-        $user = Auth::user();
-        $disk = 's3';
-
-        // 1. حذف الصورة القديمة إذا وجدت
-        if ($user->profile_image) {
-            Storage::disk($disk)->delete($user->profile_image);
-        }
-
-        // 2. الرفع مع تحديد الصلاحية العامة (Public) لضمان ظهورها فوراً
-        $newAvatarPath = $request->file('profile_image')->store('avatars', [
-            'disk' => $disk,
-            'visibility' => 'public' // أضفنا هذا السطر ليطابق ServiceController
+    public function updateImage(Request $request)
+    {
+        $request->validate([
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // 3. تحديث قاعدة البيانات
-        $user->update(['profile_image' => $newAvatarPath]);
+        try {
+            $user = Auth::user();
+            // تحديد الديسك سحابياً لضمان التوافق مع Laravel Cloud
+            $disk = 's3';
 
-        return back()->with('success', 'تم تحديث الصورة الشخصية بنجاح!');
+            // 1. حذف الصورة القديمة من السحاب إذا كانت موجودة
+            if ($user->profile_image) {
+                Storage::disk($disk)->delete($user->profile_image);
+            }
 
-    } catch (Exception $e) {
-        Log::error('S3 Avatar Upload Error: ' . $e->getMessage());
-        return back()->with('error', 'حدث خطأ أثناء رفع الصورة للسحاب.');
+            // 2. الرفع الجديد على لارفل كلاود (S3)
+            // ملاحظة: تم استخدام مصفوفة الإعدادات لضمان القراءة العامة للملف
+            $newAvatarPath = $request->file('profile_image')->store('avatars', [
+                'disk' => $disk,
+                'visibility' => 'public'
+            ]);
+
+            // 3. تحديث مسار الصورة في قاعدة البيانات
+            $user->update(['profile_image' => $newAvatarPath]);
+
+            return back()->with('success', 'تم تحديث الصورة الشخصية على السحاب بنجاح!');
+
+        } catch (Exception $e) {
+            Log::error('Laravel Cloud Avatar Upload Error: ' . $e->getMessage());
+            return back()->with('error', 'حدث خطأ أثناء الرفع إلى Laravel Cloud. تأكد من إعدادات S3.');
+        }
     }
-}
 
     /**
-     * عرض قائمة المشاريع مع دعم Pagination وتنسيق العملات.
+     * عرض المشاريع مع دعم الترقيم
      */
     public function myProjects()
     {
@@ -121,7 +121,6 @@ class ClientDashboardController extends Controller
             ->latest()
             ->paginate(10);
 
-        // تحويل البيانات لإضافة التنسيق المالي ديناميكياً
         $myProjects->getCollection()->transform(function ($project) {
             $project->formatted_price = $this->formatCurrency($project->final_price ?? $project->price, $project->currency);
             return $project;
@@ -131,7 +130,7 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * ميثود مساعدة (Private Helper) لتنسيق العملة.
+     * تنسيق العملات
      */
     private function formatCurrency($amount, $currency)
     {
@@ -139,17 +138,14 @@ class ClientDashboardController extends Controller
         $currency = strtoupper(trim($currency ?? 'EGP'));
 
         switch ($currency) {
-            case 'USD':
-                return "$" . $amount;
-            case 'EGP':
-                return $amount . " ج.م";
-            default:
-                return $amount . " " . $currency;
+            case 'USD': return "$" . $amount;
+            case 'EGP': return $amount . " ج.م";
+            default: return $amount . " " . $currency;
         }
     }
 
     /**
-     * عرض عروض المشروع - Eager Loading لرفع الأداء.
+     * عرض عروض المشاريع مع صور المستخدمين من السحاب
      */
     public function projectOffers($id)
     {
@@ -158,7 +154,7 @@ class ClientDashboardController extends Controller
         $project = Project::where('user_id', $userId)
             ->with(['proposals' => function($query) {
                 $query->select('id', 'project_id', 'user_id', 'amount', 'duration', 'description', 'created_at')
-                      ->with('user:id,name,image_url')
+                      ->with('user:id,name,profile_image') // تأكدنا من جلب الحقل الصحيح للصورة
                       ->latest();
             }])
             ->findOrFail((int) $id);
@@ -167,7 +163,7 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * عرض المحفظة والمعاملات المالية.
+     * عرض المحفظة
      */
     public function wallet()
     {
@@ -186,12 +182,12 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * عرض المفضلات.
+     * المفضلات
      */
     public function favorites()
     {
         $favorites = Favorite::where('user_id', (int) Auth::id())
-            ->with('freelancer:id,name,image_url,freelancer_rating')
+            ->with('freelancer:id,name,profile_image,freelancer_rating')
             ->latest()
             ->paginate(12);
 
@@ -199,7 +195,7 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * إضافة/حذف من المفضلات.
+     * إضافة/حذف المفضلات
      */
     public function toggleFavorite(Request $request)
     {
@@ -222,7 +218,7 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * عملية السحب مؤمنة بـ Database Transactions و Row Level Locking.
+     * عملية سحب الرصيد
      */
     public function processWithdraw(Request $request)
     {
@@ -253,7 +249,6 @@ class ClientDashboardController extends Controller
                     'details'         => 'طلب سحب رصيد: ' . strip_tags($request->account_info)
                 ]);
 
-                // مسح الكاش عند حدوث معاملة مالية لتحديث الـ Total Spent في الإحصائيات
                 Cache::forget("client_stats_summary_{$userId}");
 
                 return redirect()->route('client.dashboard')->with('success', 'تم تسجيل طلب السحب بنجاح وهو قيد المراجعة.');
