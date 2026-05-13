@@ -13,6 +13,7 @@ use Exception;
 /**
  * Class ProfileController
  * يدير إعدادات الحساب، الهوية الرقمية، ونظام تذاكر الدعم الفني.
+ * تم تحديثه ليدعم التخزين السحابي (S3) لضمان التوافق مع Laravel Cloud.
  */
 class ProfileController extends Controller
 {
@@ -28,13 +29,11 @@ class ProfileController extends Controller
 
     /**
      * تحديث البيانات الشخصية (الاسم، الإيميل، النبذة).
-     * تم تعديل الاسم من (updateAccountBasicDiscovery) إلى (updatePersonal) ليتوافق مع الـ Route.
      */
     public function updatePersonal(Request $request)
     {
         $user = Auth::user();
 
-        // 1. التحقق الصارم (Strict Validation)
         $validatedData = $request->validate([
             'name'  => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
@@ -42,7 +41,6 @@ class ProfileController extends Controller
         ]);
 
         try {
-            // 2. التحديث مع التطهير (Data Sanitization) لمنع هجمات XSS
             $user->update([
                 'name'  => strip_tags($validatedData['name']),
                 'email' => $validatedData['email'],
@@ -58,21 +56,19 @@ class ProfileController extends Controller
 
     /**
      * تغيير كلمة المرور بنظام التشفير الآمن.
-     * تم تعديل الاسم من (secureUpdateAccountPassword) إلى (updatePassword) ليتوافق مع الـ Route.
      */
     public function updatePassword(Request $request)
     {
-        // استخدام المعايير العالمية لقوة كلمة المرور
         $request->validate([
             'current_password' => ['required', 'current_password'],
             'password'         => [
                 'required',
                 'confirmed',
                 Password::min(8)
-                    ->letters()    // أحرف
-                    ->mixedCase()  // حالة أحرف مختلطة
-                    ->numbers()    // أرقام
-                    ->symbols()    // رموز
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
             ],
         ]);
 
@@ -89,40 +85,63 @@ class ProfileController extends Controller
     }
 
     /**
-     * تحديث الصورة الرمزية للملف الشخصي (Avatar).
+     * تحديث الصورة الرمزية للملف الشخصي (Avatar) سحابياً.
+     * تم التعديل لدعم Laravel Cloud (S3) واستجابات AJAX/Axios.
      */
     public function updateImage(Request $request)
     {
+        // 1. التحقق من الصورة (رفع الحد لـ 5 ميجا لراحة المستخدم)
         $request->validate([
-            'profile_image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
 
         $user = Auth::user();
 
         try {
-            // حذف الصورة القديمة لمنع تراكم الملفات
-            if ($user->profile_image && Storage::disk('public')->exists($user->profile_image)) {
-                Storage::disk('public')->delete($user->profile_image);
+            // 2. حذف الصورة القديمة من السحاب (S3) إذا وجدت
+            // نستخدم s3 هنا لضمان حذف الملفات من Laravel Cloud
+            if ($user->profile_image) {
+                Storage::disk('s3')->delete($user->profile_image);
             }
 
-            // رفع الصورة بمسار منظم
-            $path = $request->file('profile_image')->store('profiles/' . date('Y/m'), 'public');
+            // 3. رفع الصورة الجديدة لمجلد 'profile_images/avatars' على S3
+            $path = $request->file('profile_image')->store('profile_images/avatars', 's3');
 
-            // تحديث سجل المستخدم
+            // 4. ضبط الرؤية لتكون عامة (Public) لضمان ظهور الرابط للمستخدمين
+            Storage::disk('s3')->setVisibility($path, 'public');
+
+            // 5. تحديث سجل المستخدم بالمسار الجديد
             $user->update([
                 'profile_image' => $path
             ]);
 
+            // 6. التحقق إذا كان الطلب قادم عبر Axios (AJAX)
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'تم تحديث صورتك الشخصية سحابياً بنجاح!',
+                    'image_url' => Storage::disk('s3')->url($path)
+                ]);
+            }
+
             return back()->with('success', 'تم تحديث صورتك الشخصية بنجاح!');
+
         } catch (Exception $e) {
-            Log::error("Image Upload Error [User ID: {$user->id}]: " . $e->getMessage());
+            Log::error("Cloud Image Upload Error [User ID: {$user->id}]: " . $e->getMessage());
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'حدث خطأ فني أثناء الرفع للسحاب.'
+                ], 500);
+            }
+
             return back()->with('error', 'حدث خطأ فني أثناء رفع الصورة.');
         }
     }
 
     /**
      * عرض قائمة تذاكر الدعم الفني.
-     * تم تعديل الاسم من (showSupportTicketsHistory) إلى (tickets) ليتوافق مع الـ Route.
      */
     public function tickets()
     {
@@ -131,7 +150,6 @@ class ProfileController extends Controller
 
     /**
      * إنشاء وإرسال تذكرة دعم فني جديدة.
-     * تم تعديل الاسم من (dispatchNewSupportTicket) إلى (sendTicket) ليتوافق مع الـ Route.
      */
     public function sendTicket(Request $request)
     {
@@ -142,10 +160,8 @@ class ProfileController extends Controller
         ]);
 
         try {
-            // هنا تضع منطق حفظ التذكرة في قاعدة البيانات (Ticket::create...)
-
+            // منطق حفظ التذكرة (يمكنك تفعيله لاحقاً)
             Log::channel('support')->info("New Ticket Created by User ID: " . Auth::id());
-
             return back()->with('success', 'تم إرسال تذكرتك بنجاح! سيتم الرد عليك قريباً.');
         } catch (Exception $e) {
             Log::error("Ticket Dispatch Failure: " . $e->getMessage());
