@@ -5,6 +5,15 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 {{-- مكتبة التنبيهات الاحترافية --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{{-- مكتبة Axios للرفع السحابي --}}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+@php
+    // التعديل الجديد: عرض صورة المستقل من Laravel Cloud (S3) لضمان التوافق
+    $profilePhoto = $user->profile_image
+        ? Storage::disk('s3')->url($user->profile_image)
+        : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=6366f1&color=fff&size=150';
+@endphp
 
 <div class="container-fluid py-4 px-lg-5 animate__animated animate__fadeIn" id="dashboard-wrapper" dir="rtl">
 
@@ -350,15 +359,24 @@
         <div class="glass-card p-4 rounded-5 shadow-lg border-0 text-center position-relative overflow-hidden mb-4">
             <div class="profile-bg-accent"></div>
             <div class="position-relative mb-4 pt-4">
-                <div class="avatar-container mx-auto position-relative" style="width: 120px;">
-                    <img src="{{ $user->profile_image ? asset('storage/' . $user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=6366f1&color=fff&size=150' }}"
+                <div class="avatar-container mx-auto position-relative" style="width: 120px;" id="freelancerAvatarContainer">
+                    {{-- عرض الصورة برابط S3 --}}
+                    <img src="{{ $profilePhoto }}"
+                         id="freelancerPreview"
                          class="rounded-circle border border-4 border-white shadow-sm"
                          style="width: 120px; height: 120px; object-fit: cover;">
+
                     @if(Auth::id() === $user->id)
-                        <form action="{{ route('profile.update_image') }}" method="POST" enctype="multipart/form-data" id="image-form">
+                        <form id="freelancerImageForm" enctype="multipart/form-data">
                             @csrf
-                            <input type="file" name="profile_image" id="profile-input" class="d-none" onchange="this.form.submit();">
-                            <label for="profile-input" class="avatar-edit-icon shadow-sm"><i class="fas fa-camera"></i></label>
+                            {{-- حقل الرفع المخفي --}}
+                            <input type="file" name="profile_image" id="freelancer-input" class="d-none" accept="image/*">
+
+                            {{-- أيقونة الكاميرا والـ Spinner --}}
+                            <label for="freelancer-input" class="avatar-edit-icon shadow-sm" id="cameraLabel">
+                                <i class="fas fa-camera" id="cameraIcon"></i>
+                                <i class="fas fa-circle-notch fa-spin d-none text-primary" id="uploadSpinner"></i>
+                            </label>
                         </form>
                     @endif
                 </div>
@@ -475,6 +493,58 @@
 </style>
 
 <script>
+    // 1. نظام الرفع السحابي المتطور
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('freelancer-input');
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('profile_image', file);
+                formData.append('_token', '{{ csrf_token() }}');
+
+                // تأثيرات بصرية
+                const preview = document.getElementById('freelancerPreview');
+                const cameraIcon = document.getElementById('cameraIcon');
+                const spinner = document.getElementById('uploadSpinner');
+
+                preview.style.opacity = '0.5';
+                cameraIcon.classList.add('d-none');
+                spinner.classList.remove('d-none');
+
+                // الرفع لـ S3 عبر الكنترولر المحدث
+                axios.post("{{ route('profile.update_image') }}", formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                })
+                .then(res => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم التحديث!',
+                        text: 'تم رفع صورتك الشخصية للسحاب بنجاح.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'فشل الرفع',
+                        text: err.response?.data?.message || 'تأكد من اتصالك بالسحاب وحجم الصورة.'
+                    });
+                    preview.style.opacity = '1';
+                    cameraIcon.classList.remove('d-none');
+                    spinner.classList.add('d-none');
+                });
+            });
+        }
+    });
+
+    // 2. نظام التحكيم
     function confirmDisputeAction(event, formId) {
         event.preventDefault();
         Swal.fire({
@@ -491,6 +561,25 @@
                 document.getElementById(formId).submit();
             }
         });
+    }
+
+    // 3. نظام العداد التنازلي للرصيد المعلق
+    const countdownEl = document.getElementById('unlock-countdown');
+    if (countdownEl && countdownEl.dataset.time) {
+        const unlockDate = new Date(countdownEl.dataset.time).getTime();
+        const timer = setInterval(() => {
+            const now = new Date().getTime();
+            const diff = unlockDate - now;
+            if (diff <= 0) {
+                countdownEl.innerHTML = "جاهز للصرف!";
+                clearInterval(timer);
+                return;
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            countdownEl.innerHTML = `${days}ي و ${hours}س و ${mins}د`;
+        }, 60000);
     }
 </script>
 
