@@ -15,7 +15,6 @@
                         <div class="ms-3">
                             <h4 class="fw-bold mb-2">تمت عملية الشراء بنجاح!</h4>
                             <p class="mb-3">يمكنك الآن تحميل ملف الخدمة مباشرة من الزر أدناه:</p>
-                            {{-- تم التعديل هنا لسحب ملف التحميل من Cloudflare R2 --}}
                             <a href="{{ Storage::disk('s3')->url(session('ready_file_path')) }}"
                                class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow-sm" download>
                                 <i class="fas fa-download me-2"></i> تحميل ملف الخدمة الآن
@@ -62,6 +61,7 @@
                         </p>
                     </div>
 
+                    {{-- رصيد المحفظة بالجنيه المصري --}}
                     <div class="card border-0 shadow-sm rounded-4 p-3 bg-light">
                         <div class="d-flex align-items-center">
                             <div class="ms-3">
@@ -78,7 +78,6 @@
                     <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
                         <div class="row g-0">
                             <div class="col-md-5">
-                                {{-- التعديل هنا: استخدام Storage::disk('s3')->url بدلاً من asset --}}
                                 <img src="{{ $service->image ? Storage::disk('s3')->url($service->image) : asset('images/default-service.jpg') }}" 
                                      class="img-fluid h-100 object-fit-cover" 
                                      alt="{{ $service->title }}">
@@ -96,7 +95,6 @@
                                     <p class="text-muted mb-4">{{ Str::limit($service->description, 200) }}</p>
 
                                     <div class="d-flex align-items-center p-3 bg-light rounded-3">
-                                        {{-- التعديل هنا: صورة المستخدم من الكلاود --}}
                                         <img src="{{ $service->user->profile_image ? Storage::disk('s3')->url($service->user->profile_image) : 'https://ui-avatars.com/api/?name='.urlencode($service->user->name) }}"
                                              class="rounded-circle ms-3" width="40" height="40" style="object-fit: cover;">
                                         <div class="text-end">
@@ -135,3 +133,4 @@
     .btn-success:hover { background-color: #218838; }
 </style>
 @endsection
+
