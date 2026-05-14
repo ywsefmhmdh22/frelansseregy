@@ -76,14 +76,14 @@
                                     <textarea name="description" class="premium-input" rows="5" placeholder="اكتب هنا تفاصيل الخدمة..." required>{{ old('description') }}</textarea>
                                 </div>
 
-                                {{-- السعر --}}
+                                {{-- السعر بالجنيه المصري --}}
                                 <div class="col-md-6 mb-4">
-                                    <label class="form-label text-gold-light fw-bold fs-5 mb-3">قيمة الخدمة (USD $)</label>
+                                    <label class="form-label text-gold-light fw-bold fs-5 mb-3">قيمة الخدمة (بالجنيه المصري ج.م)</label>
                                     <div class="premium-input-group price-group position-relative">
-                                        <span class="currency-label">$</span>
-                                        <input type="number" name="price" class="premium-input pe-5" placeholder="50" value="{{ old('price') }}" min="1" required>
+                                        <span class="currency-label" style="font-size: 0.9rem;">ج.م</span>
+                                        <input type="number" name="price" class="premium-input pe-5" placeholder="1500" value="{{ old('price') }}" min="1" required>
                                     </div>
-                                    <small class="text-white-50 mt-2 d-block">السعر العالمي للخدمات الاحترافية.</small>
+                                    <small class="text-white-50 mt-2 d-block">يرجى تحديد السعر بالعملة المحلية (الجنيه المصري).</small>
                                 </div>
 
                                 {{-- صورة الغلاف --}}
@@ -281,3 +281,4 @@
     .alert-premium-danger { background: rgba(220, 38, 38, 0.2); border-right: 4px solid var(--gold) !important; }
 </style>
 @endsection
+
