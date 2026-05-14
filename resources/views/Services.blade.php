@@ -70,10 +70,10 @@
                                 {{ $isReady ? 'خدمة جاهزة' : 'مشروع عادي' }}
                             </div>
 
-                            {{-- السعر بالدولار --}}
+                            {{-- السعر بالجنيه المصري --}}
                             <div class="bright-price-badge position-absolute bottom-0 end-0 m-3 shadow-lg">
-                                <small>$</small>
                                 <span class="fw-black">{{ number_format($service->price, 0) }}</span>
+                                <small style="font-size: 0.75rem;">ج.م</small>
                             </div>
                         </div>
 
