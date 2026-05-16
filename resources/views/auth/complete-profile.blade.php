@@ -120,66 +120,110 @@
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label">التخصصات والمهارات الاحترافية (يمكنك اختيار أكثر من تخصص) <span class="text-danger">*</span></label>
+                                <label class="form-label">التخصصات والمهارات الاحترافية (يمكنك اختيار من القائمة أو كتابة تخصصك يدويًا والضغط على Enter) <span class="text-danger">*</span></label>
                                 <select id="specialization_select" name="skills[]" class="form-control select2-multiple" multiple="multiple" required>
                                     @php
                                         $userSkills = is_array(auth()->user()->skills) ? auth()->user()->skills : json_decode(auth()->user()->skills ?? '[]', true);
                                     @endphp
 
+                                    <!-- 1. تطوير الويب - الخلفية (Backend Development) -->
                                     <optgroup label="تطوير الويب - الخلفية (Backend Development)">
                                         <option value="PHP / Laravel" {{ in_array('PHP / Laravel', $userSkills) ? 'selected' : '' }}>PHP / Laravel</option>
                                         <option value="Node.js / Express" {{ in_array('Node.js / Express', $userSkills) ? 'selected' : '' }}>Node.js / Express</option>
-                                        <option value="NestJS" {{ in_array('NestJS', $userSkills) ? 'selected' : '' }}>NestJS</option>
+                                        <option value="NestJS" {{ in_array('NestJS', $userSkills) ? 'selected' : '' }}>NestJS (TypeScript)</option>
                                         <option value="Python / Django" {{ in_array('Python / Django', $userSkills) ? 'selected' : '' }}>Python / Django</option>
                                         <option value="Python / FastAPI" {{ in_array('Python / FastAPI', $userSkills) ? 'selected' : '' }}>Python / FastAPI</option>
                                         <option value="ASP.NET Core" {{ in_array('ASP.NET Core', $userSkills) ? 'selected' : '' }}>ASP.NET Core (C#)</option>
                                         <option value="Java / Spring Boot" {{ in_array('Java / Spring Boot', $userSkills) ? 'selected' : '' }}>Java / Spring Boot</option>
                                         <option value="Ruby on Rails" {{ in_array('Ruby on Rails', $userSkills) ? 'selected' : '' }}>Ruby on Rails</option>
+                                        <option value="Golang (Go)" {{ in_array('Golang (Go)', $userSkills) ? 'selected' : '' }}>Golang (Go)</option>
                                     </optgroup>
 
+                                    <!-- 2. تطوير الويب - الواجهة الأمامية (Frontend Development) -->
                                     <optgroup label="تطوير الويب - الواجهة الأمامية (Frontend Development)">
                                         <option value="React.js" {{ in_array('React.js', $userSkills) ? 'selected' : '' }}>React.js</option>
                                         <option value="Next.js" {{ in_array('Next.js', $userSkills) ? 'selected' : '' }}>Next.js</option>
                                         <option value="Vue.js" {{ in_array('Vue.js', $userSkills) ? 'selected' : '' }}>Vue.js</option>
                                         <option value="Nuxt.js" {{ in_array('Nuxt.js', $userSkills) ? 'selected' : '' }}>Nuxt.js</option>
                                         <option value="Angular" {{ in_array('Angular', $userSkills) ? 'selected' : '' }}>Angular</option>
+                                        <option value="Svelte" {{ in_array('Svelte', $userSkills) ? 'selected' : '' }}>Svelte</option>
                                         <option value="HTML5 / CSS3 / JavaScript" {{ in_array('HTML5 / CSS3 / JavaScript', $userSkills) ? 'selected' : '' }}>HTML5 / CSS3 / JavaScript</option>
+                                        <option value="TypeScript" {{ in_array('TypeScript', $userSkills) ? 'selected' : '' }}>TypeScript</option>
                                         <option value="Tailwind CSS" {{ in_array('Tailwind CSS', $userSkills) ? 'selected' : '' }}>Tailwind CSS</option>
                                         <option value="Bootstrap" {{ in_array('Bootstrap', $userSkills) ? 'selected' : '' }}>Bootstrap</option>
                                     </optgroup>
 
+                                    <!-- 3. تطبيقات الموبايل (Mobile App Development) -->
                                     <optgroup label="تطبيقات الموبايل (Mobile App Development)">
-                                        <option value="Flutter" {{ in_array('Flutter', $userSkills) ? 'selected' : '' }}>Flutter</option>
+                                        <option value="Flutter" {{ in_array('Flutter', $userSkills) ? 'selected' : '' }}>Flutter (Dart)</option>
                                         <option value="React Native" {{ in_array('React Native', $userSkills) ? 'selected' : '' }}>React Native</option>
-                                        <option value="iOS (Swift)" {{ in_array('iOS (Swift)', $userSkills) ? 'selected' : '' }}>iOS (Swift)</option>
-                                        <option value="Android (Kotlin/Java)" {{ in_array('Android (Kotlin/Java)', $userSkills) ? 'selected' : '' }}>Android (Kotlin / Java)</option>
-                                        <option value="Ionic" {{ in_array('Ionic', $userSkills) ? 'selected' : '' }}>Ionic</option>
+                                        <option value="iOS (Swift)" {{ in_array('iOS (Swift)', $userSkills) ? 'selected' : '' }}>iOS Native (Swift)</option>
+                                        <option value="Android (Kotlin/Java)" {{ in_array('Android (Kotlin/Java)', $userSkills) ? 'selected' : '' }}>Android Native (Kotlin / Java)</option>
+                                        <option value="Ionic / Capacitor" {{ in_array('Ionic / Capacitor', $userSkills) ? 'selected' : '' }}>Ionic / Capacitor</option>
                                     </optgroup>
 
-                                    <optgroup label="قواعد البيانات واستضافة السيرفرات (Databases & DevOps)">
+                                    <!-- 4. البنية التحتية وقواعد البيانات (DevOps & Databases) -->
+                                    <optgroup label="البنية التحتية وقواعد البيانات (DevOps & Databases)">
                                         <option value="MySQL / PostgreSQL" {{ in_array('MySQL / PostgreSQL', $userSkills) ? 'selected' : '' }}>MySQL / PostgreSQL</option>
                                         <option value="MongoDB / NoSQL" {{ in_array('MongoDB / NoSQL', $userSkills) ? 'selected' : '' }}>MongoDB / NoSQL</option>
-                                        <option value="Redis" {{ in_array('Redis', $userSkills) ? 'selected' : '' }}>Redis</option>
+                                        <option value="Redis / Memcached" {{ in_array('Redis / Memcached', $userSkills) ? 'selected' : '' }}>Redis / Memcached</option>
                                         <option value="Firebase / Supabase" {{ in_array('Firebase / Supabase', $userSkills) ? 'selected' : '' }}>Firebase / Supabase</option>
                                         <option value="Docker / Kubernetes" {{ in_array('Docker / Kubernetes', $userSkills) ? 'selected' : '' }}>Docker / Kubernetes</option>
                                         <option value="DevOps / CI-CD" {{ in_array('DevOps / CI-CD', $userSkills) ? 'selected' : '' }}>DevOps / CI-CD</option>
                                         <option value="Cloud (AWS / GCP / Azure)" {{ in_array('Cloud (AWS / GCP / Azure)', $userSkills) ? 'selected' : '' }}>Cloud (AWS / GCP / Azure)</option>
+                                        <option value="Linux Administration" {{ in_array('Linux Administration', $userSkills) ? 'selected' : '' }}>Linux Administration (SysAdmin)</option>
                                     </optgroup>
 
+                                    <!-- 5. برمجيات سطح المكتب والأنظمة المدمجة (Desktop & Embedded) -->
+                                    <optgroup label="برمجة الأنظمة وسطح المكتب (Desktop & Embedded Systems)">
+                                        <option value="C++ / Qt" {{ in_array('C++ / Qt', $userSkills) ? 'selected' : '' }}>C++ / Qt Applications</option>
+                                        <option value="C# / WPF / WinForms" {{ in_array('C# / WPF / WinForms', $userSkills) ? 'selected' : '' }}>C# Desktop Apps</option>
+                                        <option value="Electron.js" {{ in_array('Electron.js', $userSkills) ? 'selected' : '' }}>Electron.js (Cross-Platform)</option>
+                                        <option value="Python (Flet/PyQt)" {{ in_array('Python (Flet/PyQt)', $userSkills) ? 'selected' : '' }}>Python GUI (Flet / PyQt)</option>
+                                        <option value="Embedded Systems / C" {{ in_array('Embedded Systems / C', $userSkills) ? 'selected' : '' }}>Embedded Systems / C</option>
+                                        <option value="Arduino / Raspberry Pi" {{ in_array('Arduino / Raspberry Pi', $userSkills) ? 'selected' : '' }}>إنترنت الأشياء (IoT / Arduino)</option>
+                                    </optgroup>
+
+                                    <!-- 6. الذكاء الاصطناعي وعلوم البيانات (AI & Data Science) -->
                                     <optgroup label="الذكاء الاصطناعي وتحليل البيانات (AI & Data Science)">
                                         <option value="Machine Learning" {{ in_array('Machine Learning', $userSkills) ? 'selected' : '' }}>تعلم الآلة (Machine Learning)</option>
                                         <option value="Data Analysis" {{ in_array('Data Analysis', $userSkills) ? 'selected' : '' }}>تحليل البيانات (Data Analysis)</option>
                                         <option value="Deep Learning & NLP" {{ in_array('Deep Learning & NLP', $userSkills) ? 'selected' : '' }}>الذكاء الاصطناعي ومعالجة اللغات (NLP)</option>
+                                        <option value="Computer Vision" {{ in_array('Computer Vision', $userSkills) ? 'selected' : '' }}>رؤية الحاسوب (Computer Vision)</option>
                                         <option value="Python Scripting & Automation" {{ in_array('Python Scripting & Automation', $userSkills) ? 'selected' : '' }}>أتمتة المهام وبرمجة الإسكربتات</option>
+                                        <option value="Web Scraping & Data Mining" {{ in_array('Web Scraping & Data Mining', $userSkills) ? 'selected' : '' }}>تجميع البيانات (Web Scraping)</option>
                                     </optgroup>
 
+                                    <!-- 7. الأمن السيبراني واختبار الاختراق (Cybersecurity) -->
                                     <optgroup label="الأمن السيبراني والشبكات (Cybersecurity & Networks)">
                                         <option value="Penetration Testing" {{ in_array('Penetration Testing', $userSkills) ? 'selected' : '' }}>اختبار الاختراق (Penetration Testing)</option>
                                         <option value="Ethical Hacking" {{ in_array('Ethical Hacking', $userSkills) ? 'selected' : '' }}>الهكر الأخلاقي (Ethical Hacking)</option>
-                                        <option value="Web/App Security Audit" {{ in_array('Web/App Security Audit', $userSkills) ? 'selected' : '' }}>فحص وتأمين الثغرات للمواقع والتطبيقات</option>
+                                        <option value="Web/App Security Audit" {{ in_array('Web/App Security Audit', $userSkills) ? 'selected' : '' }}>فحص وتأمين الثغرات للموقع والتطبيق</option>
                                         <option value="Network Security" {{ in_array('Network Security', $userSkills) ? 'selected' : '' }}>أمن الشبكات والأنظمة</option>
+                                        <option value="Reverse Engineering" {{ in_array('Reverse Engineering', $userSkills) ? 'selected' : '' }}>الهندسة العكسية (Reverse Engineering)</option>
                                     </optgroup>
 
+                                    <!-- 8. تطوير الألعاب (Game Development) -->
+                                    <optgroup label="تطوير وبرمجة الألعاب (Game Development)">
+                                        <option value="Unity / C#" {{ in_array('Unity / C#', $userSkills) ? 'selected' : '' }}>Unity (C#)</option>
+                                        <option value="Unreal Engine / C++" {{ in_array('Unreal Engine / C++', $userSkills) ? 'selected' : '' }}>Unreal Engine (C++)</option>
+                                        <option value="Godot Engine" {{ in_array('Godot Engine', $userSkills) ? 'selected' : '' }}>Godot Engine</option>
+                                    </optgroup>
+
+                                    <!-- 9. تقنيات البلوكشين والويب 3 (Blockchain & Web3) -->
+                                    <optgroup label="تقنيات البلوكشين والويب 3 (Blockchain & Web3)">
+                                        <option value="Smart Contracts / Solidity" {{ in_array('Smart Contracts / Solidity', $userSkills) ? 'selected' : '' }}>العقود الذكية (Solidity / Ethereum)</option>
+                                        <option value="Web3.js / Ethers.js" {{ in_array('Web3.js / Ethers.js', $userSkills) ? 'selected' : '' }}>ربط التطبيقات بالبلوكشين (Web3.js)</option>
+                                    </optgroup>
+
+                                    <!-- 10. اختبار الجودة والبرمجيات (Software Testing / QA) -->
+                                    <optgroup label="فحص الجودة والتأكد من الكود (Software QA & Testing)">
+                                        <option value="Manual Testing" {{ in_array('Manual Testing', $userSkills) ? 'selected' : '' }}>الفحص اليدوي (Manual Testing)</option>
+                                        <option value="Automation Testing" {{ in_array('Automation Testing', $userSkills) ? 'selected' : '' }}>الفحص الآلي (Selenium / Cypress)</option>
+                                        <option value="API Testing (Postman)" {{ in_array('API Testing (Postman)', $userSkills) ? 'selected' : '' }}>اختبار الـ APIs (Postman)</option>
+                                    </optgroup>
+
+                                    <!-- 11. التصميم الإبداعي وواجهات المستخدم (Design & UI/UX) -->
                                     <optgroup label="التصميم الإبداعي وواجهات المستخدم (Design & UI/UX)">
                                         <option value="UI/UX Design (Figma/Adobe XD)" {{ in_array('UI/UX Design (Figma/Adobe XD)', $userSkills) ? 'selected' : '' }}>تصميم واجهات المستخدم (UI/UX Design)</option>
                                         <option value="Graphic Design (Photoshop/Illustrator)" {{ in_array('Graphic Design (Photoshop/Illustrator)', $userSkills) ? 'selected' : '' }}>تصميم جرافيك (Graphic Design)</option>
@@ -187,12 +231,14 @@
                                         <option value="Branding & Logo Design" {{ in_array('Branding & Logo Design', $userSkills) ? 'selected' : '' }}>تصميم الهويات والشعارات</option>
                                     </optgroup>
 
+                                    <!-- 12. التصميم الهندسي والمعماري (Engineering & CAD) -->
                                     <optgroup label="التصميم الهندسي والمعماري (Engineering & CAD)">
                                         <option value="AutoCAD 2D/3D" {{ in_array('AutoCAD 2D/3D', $userSkills) ? 'selected' : '' }}>أوتوكاد (AutoCAD 2D/3D)</option>
                                         <option value="3D Modeling & Rendering" {{ in_array('3D Modeling & Rendering', $userSkills) ? 'selected' : '' }}>نمذجة ثلاثية الأبعاد وإظهار معماري</option>
                                         <option value="BIM / Revit" {{ in_array('BIM / Revit', $userSkills) ? 'selected' : '' }}>ريفت وتصميم هندسي (Revit)</option>
                                     </optgroup>
 
+                                    <!-- 13. التسويق الرقمي والمبيعات (Digital Marketing & Sales) -->
                                     <optgroup label="التسويق الرقمي والمبيعات (Digital Marketing & Sales)">
                                         <option value="SEO (Search Engine Optimization)" {{ in_array('SEO (Search Engine Optimization)', $userSkills) ? 'selected' : '' }}>تحسين محركات البحث (SEO)</option>
                                         <option value="Social Media Management" {{ in_array('Social Media Management', $userSkills) ? 'selected' : '' }}>إدارة حملات السوشيال ميديا</option>
@@ -200,12 +246,35 @@
                                         <option value="E-commerce Strategy" {{ in_array('E-commerce Strategy', $userSkills) ? 'selected' : '' }}>إدارة واستراتيجيات المتاجر الإلكترونية</option>
                                     </optgroup>
 
+                                    <!-- 14. الكتابة والترجمة وصناعة المحتوى (Writing & Translation) -->
                                     <optgroup label="الكتابة والترجمة وصناعة المحتوى (Writing & Translation)">
                                         <option value="Content Writing" {{ in_array('Content Writing', $userSkills) ? 'selected' : '' }}>كتابة المحتوى والمقالات</option>
                                         <option value="Copywriting" {{ in_array('Copywriting', $userSkills) ? 'selected' : '' }}>كتابة الإعلانات والنصوص البيعية</option>
                                         <option value="Technical Writing" {{ in_array('Technical Writing', $userSkills) ? 'selected' : '' }}>الكتابة التقنية وإعداد الشروحات</option>
                                         <option value="Professional Translation" {{ in_array('Professional Translation', $userSkills) ? 'selected' : '' }}>الترجمة الاحترافية والتعريب</option>
                                     </optgroup>
+
+                                    <!-- طباعة المهارات المخزنة مسبقاً والغير موجودة في اللستة الافتراضية (عشان تفضل مختارة) -->
+                                    @foreach($userSkills as $skill)
+                                        @if(!in_array($skill, [
+                                            'PHP / Laravel', 'Node.js / Express', 'NestJS', 'Python / Django', 'Python / FastAPI', 'ASP.NET Core', 'Java / Spring Boot', 'Ruby on Rails', 'Golang (Go)',
+                                            'React.js', 'Next.js', 'Vue.js', 'Nuxt.js', 'Angular', 'Svelte', 'HTML5 / CSS3 / JavaScript', 'TypeScript', 'Tailwind CSS', 'Bootstrap',
+                                            'Flutter', 'React Native', 'iOS (Swift)', 'Android (Kotlin/Java)', 'Ionic / Capacitor',
+                                            'MySQL / PostgreSQL', 'MongoDB / NoSQL', 'Redis / Memcached', 'Firebase / Supabase', 'Docker / Kubernetes', 'DevOps / CI-CD', 'Cloud (AWS / GCP / Azure)', 'Linux Administration',
+                                            'C++ / Qt', 'C# / WPF / WinForms', 'Electron.js', 'Python (Flet/PyQt)', 'Embedded Systems / C', 'Arduino / Raspberry Pi',
+                                            'Machine Learning', 'Data Analysis', 'Deep Learning & NLP', 'Computer Vision', 'Python Scripting & Automation', 'Web Scraping & Data Mining',
+                                            'Penetration Testing', 'Ethical Hacking', 'Web/App Security Audit', 'Network Security', 'Reverse Engineering',
+                                            'Unity / C#', 'Unreal Engine / C++', 'Godot Engine',
+                                            'Smart Contracts / Solidity', 'Web3.js / Ethers.js',
+                                            'Manual Testing', 'Automation Testing', 'API Testing (Postman)',
+                                            'UI/UX Design (Figma/Adobe XD)', 'Graphic Design (Photoshop/Illustrator)', 'Motion Graphics & Video Editing', 'Branding & Logo Design',
+                                            'AutoCAD 2D/3D', '3D Modeling & Rendering', 'BIM / Revit',
+                                            'SEO (Search Engine Optimization)', 'Social Media Management', 'Google & Facebook Ads', 'E-commerce Strategy',
+                                            'Content Writing', 'Copywriting', 'Technical Writing', 'Professional Translation'
+                                        ]))
+                                            <option value="{{ $skill }}" selected>{{ $skill }}</option>
+                                        @endif
+                                    @endforeach
                                 </select>
                             </div>
 
@@ -276,10 +345,22 @@
 <script>
 $(document).ready(function() {
     $('#specialization_select').select2({
-        placeholder: "اختر تخصصاتك المهنية والبرمجية",
+        placeholder: "اختر تخصصاتك المهنية والبرمجية أو اكتب مهارة جديدة",
         allowClear: true,
         width: '100%',
-        dir: "rtl"
+        dir: "rtl",
+        tags: true, // هتا تسمح للفريلانسر يكتب أي مهارة يدوياً وتتحول لـ Tag عند الضغط على Enter
+        createTag: function (params) {
+            var term = $.trim(params.term);
+            if (term === '') {
+                return null;
+            }
+            return {
+                id: term,
+                text: term,
+                newTag: true // علامة توضح أن التاج جديد ومكتوب يدوياً
+            }
+        }
     });
 
     $('#uploadForm').on('submit', function(e) {
