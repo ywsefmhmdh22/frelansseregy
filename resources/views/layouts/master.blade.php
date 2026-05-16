@@ -423,12 +423,16 @@
         </div>
     </section>
 
-    <footer class="d-flex flex-wrap justify-content-between align-items-center py-4 my-5 border-top border-2">
-        <p class="col-md-8 mb-0 text-muted fw-bold">
-            © 2026 Worklyday Solutions. All Rights Reserved.
-            <span class="ms-3 text-primary"><i class="fas fa-location-dot me-1"></i> Alexandria, New Borg El Arab, El Gehaz St.</span>
-        </p>
-        <ul class="nav col-md-4 justify-content-end list-unstyled d-flex gap-4 fs-5">
+    <footer class="d-flex flex-column flex-md-row justify-content-between align-items-center py-4 my-5 border-top border-2 gap-3">
+        <div class="text-center text-md-start col-md-8 mb-0 text-muted fw-bold">
+            <div class="mb-2">© 2026 Worklyday Solutions. All Rights Reserved.</div>
+            <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-3 small mt-2">
+                <span class="text-primary"><i class="fas fa-location-dot me-1"></i> Alexandria, New Borg El Arab, El Gehaz St.</span>
+                <span class="text-success"><i class="fas fa-phone me-1"></i> للتواصل مع الإدارة: <a href="tel:01556332042" class="text-success text-decoration-none fw-bold">01556332042</a></span>
+                <span class="text-info"><i class="fas fa-envelope me-1"></i> <a href="mailto:worklyday.com@gmail.com" class="text-info text-decoration-none fw-bold">worklyday.com@gmail.com</a></span>
+            </div>
+        </div>
+        <ul class="nav col-md-4 justify-content-center justify-content-md-end list-unstyled d-flex gap-4 fs-5">
             <li><a class="text-muted" href="#"><i class="fab fa-x-twitter"></i></a></li>
             <li><a class="text-muted" href="#"><i class="fab fa-instagram"></i></a></li>
             <li><a class="text-muted" href="#"><i class="fab fa-linkedin-in"></i></a></li>
