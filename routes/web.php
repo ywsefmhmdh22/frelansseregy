@@ -184,6 +184,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/services/checkout/{id}', [ServiceController::class, 'checkout'])->name('services.checkout');
         Route::get('/purchased-services', [OrderController::class, 'purchasedServices'])->name('purchased.services');
         Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.store');
+        // مسار تنفيذ الدفع من المحفظة
+        Route::post('/services/pay-wallet/{id}', [App\Http\Controllers\ServiceController::class, 'payFromWallet'])->name('service.pay.wallet');
 
         Route::get('/notifications', function () { return view('notifications.index'); })->name('notifications.index');
         Route::get('/notifications/mark-all-read', function () {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Notifications\ServicePurchasedNotification; // استدعاء كلاس الإشعارات
 use Illuminate\Http\Request;
 use App\Models\Service;
 use App\Models\Order;
@@ -12,14 +13,35 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Exception;
 
 /**
  * Class ServiceController
- * مسؤول عن إدارة "الخدمات المصغرة" التي يقدمها المستقلون (العامة والجاهزة).
+ * مسؤول عن إدارة "الخدمات المصغرة" وعمليات الدفع بالعملات المختلفة ونظام الإشعارات اللحظي.
  */
 class ServiceController extends Controller
 {
+    /**
+     * Helper: جلب سعر صرف الدولار مقابل الجنيه المصري لحظياً.
+     * المصدر: ExchangeRate-API (عالمي وموثوق).
+     */
+    private function getUsdToEgpRate()
+    {
+        try {
+            // الاتصال بـ API العملات لجلب السعر الحقيقي
+            $response = Http::timeout(5)->get("https://open.er-api.com/v6/latest/USD");
+
+            if ($response->successful()) {
+                $rates = $response->json()['rates'];
+                return $rates['EGP'] ?? 50.0; // إرجاع السعر أو 50 كاحتياط
+            }
+        } catch (Exception $e) {
+            Log::error("Exchange Rate Fetch Error: " . $e->getMessage());
+        }
+        return 50.0; // سعر احتياطي (Fallback) في حالة تعطل الـ API
+    }
+
     /**
      * عرض صفحة إضافة خدمة جديدة.
      */
@@ -29,36 +51,29 @@ class ServiceController extends Controller
     }
 
     /**
-     * حفظ الخدمة في قاعدة البيانات.
+     * حفظ الخدمة في قاعدة البيانات (رفع الصور والملفات لـ S3).
      */
     public function store(Request $request)
     {
         $validatedData = $this->validateServiceRequest($request);
         $imagePath = null;
         $readyFilePath = null;
-
-        // حددنا الديسك s3 صراحة لضمان التوافق مع Laravel Cloud
         $disk = 's3';
 
         try {
-            // 1. رفع صورة الغلاف
             if ($request->hasFile('image')) {
-                // 'public' تضمن أن الصورة ستكون متاحة للقراءة عبر الرابط المباشر
                 $imagePath = $request->file('image')->store('services/covers/' . date('Y/m'), [
                     'disk' => $disk,
                     'visibility' => 'public'
                 ]);
             }
 
-            // 2. رفع ملف الخدمة الجاهزة (إن وجد)
             if ($request->type === 'ready' && $request->hasFile('ready_file')) {
-                // نرفع الملف بوضع private (افتراضي) لأنه ملف خاص للمشتري فقط
                 $readyFilePath = $request->file('ready_file')->store('services/files/' . date('Y/m'), [
                     'disk' => $disk
                 ]);
             }
 
-            // 3. الحفظ في قاعدة البيانات
             Service::create([
                 'user_id'     => Auth::id(),
                 'title'       => strip_tags($validatedData['title']),
@@ -70,36 +85,97 @@ class ServiceController extends Controller
                 'status'      => 'active',
             ]);
 
-            return redirect()->route('freelancer.dashboard')
-                             ->with('success', 'تم نشر خدمتك الاحترافية بنجاح!');
+            return redirect()->route('freelancer.dashboard')->with('success', 'تم نشر خدمتك الاحترافية بنجاح!');
 
         } catch (Exception $processingError) {
             Log::error('Service Store Failure: ' . $processingError->getMessage());
-
-            // حذف الملفات في حالة فشل العملية لتوفير المساحة
             if ($imagePath) { Storage::disk($disk)->delete($imagePath); }
             if ($readyFilePath) { Storage::disk($disk)->delete($readyFilePath); }
-
             return back()->with('error', 'عذراً، حدث خطأ تقني أثناء حفظ الخدمة.')->withInput();
         }
     }
 
     /**
-     * عرض صفحة تأكيد الدفع (Checkout).
+     * عرض صفحة تأكيد الدفع (Checkout) وحساب السعر المعادل بالدولار.
      */
     public function checkout($id)
     {
-        $serviceInstance = Service::with('user')->findOrFail((int)$id);
+        $service = Service::with('user')->findOrFail((int)$id);
 
         if (!Auth::check()) {
             return redirect()->route('login');
         }
 
-        return view('services.checkout', ['service' => $serviceInstance]);
+        // جلب سعر الصرف وحساب المبلغ المطلوب بالدولار لعرضه للمستخدم
+        $currentRate = $this->getUsdToEgpRate();
+        $priceInUsd = round($service->price / $currentRate, 2);
+
+        return view('services.checkout', [
+            'service' => $service,
+            'priceInUsd' => $priceInUsd,
+            'rate' => $currentRate
+        ]);
     }
 
     /**
-     * معالجة طلب تسليم العمل.
+     * تنفيذ عملية الدفع من المحفظة وإرسال الإشعار للمشتري.
+     */
+    public function payFromWallet(Request $request, $id)
+    {
+        $service = Service::findOrFail($id);
+        $user = Auth::user();
+        $wallet = $user->wallet;
+
+        // إعادة حساب السعر لحظة الضغط على الزر لضمان العدالة المالية
+        $currentRate = $this->getUsdToEgpRate();
+        $priceInUsd = round($service->price / $currentRate, 2);
+
+        // التحقق من كفاية الرصيد بالدولار
+        if (!$wallet || $wallet->balance < $priceInUsd) {
+            return back()->with('error', "رصيدك غير كافٍ. المطلوب: {$priceInUsd} $ | المتوفر: " . ($wallet->balance ?? 0) . " $");
+        }
+
+        try {
+            DB::transaction(function () use ($user, $wallet, $service, $priceInUsd, $currentRate) {
+                // 1. الخصم من المحفظة بالدولار
+                $wallet->decrement('balance', $priceInUsd);
+
+                // 2. إنشاء سجل الطلب
+                $order = Order::create([
+                    'user_id' => $user->id,
+                    'seller_id' => $service->user_id,
+                    'service_id' => $service->id,
+                    'price' => $service->price, // السعر بالجنيه للتوثيق
+                    'status' => 'pending',
+                    'payment_method' => 'wallet'
+                ]);
+
+                // 3. تسجيل المعاملة المالية بالدولار
+                Transaction::create([
+                    'user_id'     => $user->id,
+                    'amount'      => $priceInUsd,
+                    'currency'    => 'USD',
+                    'type'        => 'pay',
+                    'status'      => 'completed',
+                    'source_id'   => $order->id,
+                    'source_type' => Order::class,
+                    'details'     => "شراء خدمة: {$service->title} | سعر الصرف: 1$ = {$currentRate} EGP"
+                ]);
+
+                // 4. إرسال الإشعار للمشتري (Notifications) ليظهر في الداش بورد
+                $user->notify(new ServicePurchasedNotification($service, $service->user->name));
+            });
+
+            return redirect()->route('client.dashboard')->with('success', 'تمت عملية الشراء بنجاح، وخصم المبلغ من محفظتك. تفقد صندوق الإشعارات!');
+
+        } catch (Exception $e) {
+            Log::error('Wallet Payment Error: ' . $e->getMessage());
+            return back()->with('error', 'حدث خطأ أثناء معالجة الدفع، يرجى المحاولة لاحقاً.');
+        }
+    }
+
+    /**
+     * معالجة طلب تسليم العمل من قبل المستقل.
      */
     public function requestDelivery(Order $order)
     {
@@ -117,7 +193,7 @@ class ServiceController extends Controller
     }
 
     /**
-     * إتمام العميل للطلب.
+     * إتمام العميل للطلب وتأكيد الاستلام.
      */
     public function completeOrder(Request $request, Order $order)
     {
@@ -135,7 +211,7 @@ class ServiceController extends Controller
                 $this->payoutToFreelancer($order);
             });
 
-            return back()->with('success', 'تم استلام الخدمة بنجاح، وتحويل الأرباح لرصيد المستقل المعلق.');
+            return back()->with('success', 'تم استلام الخدمة بنجاح، وتحويل الأرباح للمستقل.');
         } catch (Exception $e) {
             Log::error('Service Completion Error: ' . $e->getMessage());
             return back()->with('error', 'حدث خطأ أثناء إتمام العملية.');
