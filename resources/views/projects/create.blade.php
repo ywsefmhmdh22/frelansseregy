@@ -107,31 +107,33 @@
                             </div>
 
                             <div class="row text-right">
-                                {{-- الميزانية --}}
+                                {{-- الميزانية المحدثة بـ الحساب اللحظي جنيه/دولار --}}
                                 <div class="col-md-6 mb-4">
-                                    <label for="project_price" class="premium-form-label mb-3">الميزانية </label>
+                                    <label class="premium-form-label mb-3">الميزانية المقدرة</label>
                                     <div class="d-flex gap-2">
                                         <select name="currency" id="currency_selector" class="form-select premium-select" onchange="updateChargeNotice(this.value)">
-
-                                            <option value="USD" {{ old('currency') == 'USD' ? 'selected' : '' }}>USD</option>
-
+                                            <option value="EGP" {{ old('currency') == 'EGP' ? 'selected' : '' }}>EGP</option>
                                         </select>
                                         <div class="premium-input-group flex-grow-1">
                                             <i class="fas fa-wallet input-lead-icon text-success"></i>
                                             <input type="number" name="price" id="project_price"
                                                    class="form-control premium-input @error('price') is-invalid @enderror"
-                                                   placeholder="الميزانية" step="0.01" value="{{ old('price') }}" required>
+                                                   placeholder="الميزانية بالجنيه" step="0.01" value="{{ old('price') }}" required>
                                         </div>
                                     </div>
-                                    <div class="charge-hint mt-3 p-2 rounded-3 bg-light" id="charge_notice">
-                                        <i class="fas fa-info-circle me-1"></i> يجب شحن رصيدك بـ <span id="currency_type_name" class="fw-bold">الجنيه المصري</span> لتفعيل المشروع.
+                                    {{-- صندوق تفاعلي ذكي يظهر الحسبة الحالية لايف --}}
+                                    <div class="charge-hint mt-3 p-3 rounded-4 bg-light border-start border-success border-3 d-flex justify-content-between align-items-center" id="charge_notice">
+                                        <div>
+                                            <i class="fas fa-info-circle text-success me-1"></i> سيتم خصم ما يوازي بالدولار:
+                                        </div>
+                                        <span id="usd_live_convert" class="fw-bold text-success fs-5">0.00 $</span>
                                     </div>
                                     @error('price') <div class="error-msg mt-2">{{ $message }}</div> @enderror
                                 </div>
 
                                 {{-- المدة --}}
                                 <div class="col-md-6 mb-4">
-                                    <label for="project_duration" class="premium-form-label mb-3">مدة التنفيذ المتوقعة</label>
+                                    <label class="premium-form-label mb-3">مدة التنفيذ المتوقعة</label>
                                     <div class="premium-input-group">
                                         <i class="fas fa-hourglass-half input-lead-icon text-primary"></i>
                                         <input type="text" name="duration" id="project_duration"
@@ -180,7 +182,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; }
     border-radius: 45px !important;
 }
 
-/* التدرج اللوني للهيدر */
+/* Toggles Header */
 .standard-header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
 .premium-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-bottom: 4px solid var(--premium-gold); }
 
@@ -201,7 +203,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; }
     font-size: 0.9rem; box-shadow: 0 10px 25px rgba(250, 204, 21, 0.4);
 }
 
-/* حقول الإدخال */
+/* Inputs Label styling */
 .premium-form-label {
     color: #1e293b; font-weight: 800; font-size: 1.05rem;
     display: block; position: relative; padding-right: 15px;
@@ -233,7 +235,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; }
     width: 120px; font-weight: 800; background: var(--soft-bg);
 }
 
-/* منطقة الرفع السحابي */
+/* Cloud area upload */
 .cloud-drop-zone {
     border: 3px dashed #cbd5e1;
     background: var(--soft-bg);
@@ -256,7 +258,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; }
 }
 .btn-delete-float:hover { transform: rotate(90deg) scale(1.1); }
 
-/* الأزرار */
+/* Buttons UI */
 .btn-publish-standard {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: #fff; border: none; border-radius: 50px;
@@ -274,7 +276,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; }
 
 .error-msg { color: #ef4444; font-weight: 800; font-size: 0.85rem; }
 
-/* CKEditor Custom */
+/* CKEditor Framework */
 .ck-editor__editable { min-height: 280px !important; border-radius: 0 0 22px 22px !important; }
 </style>
 
@@ -300,7 +302,6 @@ function previewImage(input) {
     const container = document.getElementById('preview_info_container');
 
     if (input.files && input.files[0]) {
-        // التحقق من الحجم (5 ميجا)
         if (input.files[0].size > 5 * 1024 * 1024) {
             Swal.fire({
                 icon: 'warning',
@@ -332,7 +333,37 @@ function resetImageInput(e) {
     container.classList.add('d-none');
 }
 
-// 3. معالجة الإرسال السحابي
+// 3. نظام الحساب والتحويل الفوري جنيه/دولار التفاعلي المباشر
+let conversionRate = 50.0; // معدل صعود افتراضي كـ Fallback
+
+// جلب سعر الصرف لايف من الـ API المعتمد بالسيستم
+fetch('https://open.er-api.com/v6/latest/USD')
+    .then(response => response.json())
+    .then(data => {
+        if(data && data.rates && data.rates.EGP) {
+            conversionRate = data.rates.EGP;
+            calculateUsdLive(); // إعادة الحساب بالسعر الجديد
+        }
+    })
+    .catch(error => console.warn('Live rate error, using default backup rate.'));
+
+const priceInput = document.getElementById('project_price');
+const usdLiveOutput = document.getElementById('usd_live_convert');
+
+function calculateUsdLive() {
+    const egpAmount = parseFloat(priceInput.value);
+    if(egpAmount && egpAmount > 0) {
+        const usdCalculation = (egpAmount / conversionRate).toFixed(2);
+        usdLiveOutput.innerText = usdCalculation + ' $';
+    } else {
+        usdLiveOutput.innerText = '0.00 $';
+    }
+}
+
+// مراقبة كتابة الميزانية لحظة بلحظة
+priceInput.addEventListener('input', calculateUsdLive);
+
+// 4. معالجة الإرسال السحابي الفوري عبر مكتبة Axios لمنع أي تعليق أو Timeout للـ Cloud
 document.getElementById('projectForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -356,24 +387,50 @@ document.getElementById('projectForm').addEventListener('submit', function(e) {
         if (Date.now() < end) requestAnimationFrame(frame);
     }());
 
-    // حوار الرفع السحابي
+    // حوار الرفع السحابي المتطور
     Swal.fire({
-        title: 'جاري النشر ... 🚀',
-        html: 'نحن نقوم الآن برفع ملفاتك   وتجهيز مشروعك.',
+        title: 'جاري المعالجة السحابية ... 🚀',
+        html: 'يتم الآن رفع الصورة وملفات المشروع لـ Laravel Cloud بأمان.',
         allowOutsideClick: false,
         showConfirmButton: false,
         didOpen: () => {
             Swal.showLoading();
-            // الرفع الفعلي
-            document.getElementById('projectForm').submit();
+
+            // تجميع البيانات يدوياً لإرسالها بالخلفية عبر Axios لضمان الرفع لـ S3 بسلاسة
+            const formElement = document.getElementById('projectForm');
+            const formData = new FormData(formElement);
+
+            // حقن محتوى الـ CKEditor داخل الـ FormData
+            formData.set('description', description);
+
+            axios.post(formElement.action, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+            .then(response => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم النشر بنجاح!',
+                    text: 'تم رفع مشروعك وحفظه سحابياً على السيرفر بنجاح.',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    // التوجيه للداش بورد بعد النجاح
+                    window.location.href = "{{ route('client.dashboard') }}";
+                });
+            })
+            .catch(error => {
+                console.error('Cloud Upload Failure:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'فشل الرفع السحابي',
+                    text: error.response?.data?.message || 'حدث خطأ تقني أثناء معالجة البيانات، تأكد من حجم الملفات وحاول مرة أخرى.',
+                    confirmButtonColor: '#ef4444'
+                });
+            });
         }
     });
 });
-
-function updateChargeNotice(val) {
-    const names = { 'USD': 'الدولار الأمريكي'};
-    document.getElementById('currency_type_name').innerText = names[val] || val;
-}
 </script>
 
 @endsection
