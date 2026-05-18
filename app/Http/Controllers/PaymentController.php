@@ -26,7 +26,7 @@ class PaymentController extends Controller
     {
         $user = auth()->user();
 
-        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0, 'currency' => 'USD']);
 
         $transactions = Transaction::where('user_id', $user->id)
             ->whereIn('status', ['completed', 'failed', 'canceled'])
@@ -73,7 +73,7 @@ class PaymentController extends Controller
             'currency'       => 'required|in:EGP,USD',
             'payment_method' => 'required|in:card,wallet',
             'phone_number'   => 'required_if:payment_method,wallet|nullable|regex:/^01[0125][0-9]{8}$/',
-            'service_id'     => 'nullable|exists:services,id', // حقل اختياري لربط الدفع بخدمة
+            'service_id'     => 'nullable|exists:services,id',
         ]);
 
         try {
@@ -128,7 +128,7 @@ class PaymentController extends Controller
             if (!$paymentKeyResponse->successful()) throw new Exception('فشل الحصول على تصريح الدفع.');
             $paymentToken = $paymentKeyResponse->json()['token'];
 
-            // 4. تسجيل العملية
+            // 4. تسجيل العملية بنظام الانتظار
             Transaction::create([
                 'user_id'         => $user->id,
                 'amount'          => (float) $validated['amount'],
@@ -137,7 +137,7 @@ class PaymentController extends Controller
                 'payment_id'      => (string) $orderId,
                 'payment_method'  => $validated['payment_method'],
                 'status'          => 'initialized',
-                'source_id'       => $request->service_id, // ربط الطلب بالخدمة
+                'source_id'       => $request->service_id,
             ]);
 
             if ($validated['payment_method'] == 'wallet') {
@@ -171,18 +171,22 @@ class PaymentController extends Controller
         $orderId = $request->query('order');
 
         if ($success === 'true') {
-            return redirect()->route('wallet.index')->with('success', 'تم استلام طلبك بنجاح، سيظهر الرصيد فور التأكيد.');
+            // مسح كاش لوحة التحكم لإجبار الشاشة على قراءة التحديث الجديد فوراً
+            if (auth()->check()) {
+                Cache::forget("client_stats_summary_" . auth()->id());
+            }
+            return redirect()->route('client.dashboard')->with('success', 'تم استلام طلبك بنجاح، وتحديث محفظتك بالدولار حالاً!');
         }
 
         Transaction::where('payment_id', $orderId)
             ->where('status', 'initialized')
             ->update(['status' => 'canceled']);
 
-        return redirect()->route('wallet.index')->with('error', 'تم إلغاء عملية الدفع أو فشلت.');
+        return redirect()->route('client.dashboard')->with('error', 'تم إلغاء عملية الدفع أو فشلت.');
     }
 
     /**
-     * الـ Webhook الاحترافي لتحديث الرصيد وإنشاء طلبات الخدمات الجاهزة فوراً
+     * الـ Webhook الذكي والمصحح بالكامل للحسابات الدولية بالدولار
      */
     public function processedCallback(Request $request)
     {
@@ -196,7 +200,11 @@ class PaymentController extends Controller
         $orderId = (string) $obj['order']['id'];
         $success = $obj['success'];
 
-        return DB::transaction(function () use ($orderId, $success, $obj) {
+        // جلب القيمة الفعلية الصافية المبعوتة من سيرفر باي موب بالسنات (Amount cents الحقيقي المدفوع)
+        $paymobAmountCents = (float) $obj['amount_cents'];
+        $paymobAmountEgp = $paymobAmountCents / 100; // تحويلها لجنيه حقيقي
+
+        return DB::transaction(function () use ($orderId, $success, $obj, $paymobAmountEgp) {
             $transaction = Transaction::where('payment_id', $orderId)
                 ->where('status', 'initialized')
                 ->lockForUpdate()
@@ -204,25 +212,34 @@ class PaymentController extends Controller
 
             if ($transaction && $success === true) {
                 $exchangeRate = $this->getExchangeRate();
-                $amountInUsd = ($transaction->currency == 'USD') ? $transaction->amount : ($transaction->amount / $exchangeRate);
+
+                // الحسبة الذهبية: تحويل المبلغ الفعلي المستلم لـ USD فوراً لمنع التداخل
+                $amountInUsd = $paymobAmountEgp / $exchangeRate;
+
+                // خصم الـ 9% الخاصة بعمولة منصة وركلي داي من القيمة الصافية بالدولار
                 $finalNetUsd = $amountInUsd * (1 - $this->platformFee);
 
-                // 1. تحديث حالة المعاملة
+                // 1. تحديث حالة المعاملة في الداتابيز
                 $transaction->update([
                     'status' => 'completed',
                     'converted_amount' => $finalNetUsd,
-                    'details' => 'Paymob Transaction ID: ' . $obj['id']
+                    'details' => 'Paymob Live Transaction ID: ' . $obj['id']
                 ]);
 
-                // 2. تحديث محفظة المشتري (إذا كان إيداع فقط)
-                $wallet = Wallet::firstOrCreate(['user_id' => $transaction->user_id], ['balance' => 0]);
+                // 2. تحديث محفظة المشتري وإجبار العملة تكون USD لحل مشكلة الـ ج.م
+                $wallet = Wallet::firstOrCreate(
+                    ['user_id' => $transaction->user_id],
+                    ['balance' => 0, 'currency' => 'USD']
+                );
+
+                // تأكيد العملة دولار وزيادة الرصيد بالكسور الدقيقة للدولار
+                $wallet->currency = 'USD';
                 $wallet->increment('balance', $finalNetUsd);
 
-                // 3. منطق شراء الخدمة (إذا كانت المعاملة مرتبطة بـ service_id)
+                // 3. منطق شراء الخدمة
                 if ($transaction->source_id) {
                     $service = Service::find($transaction->source_id);
                     if ($service) {
-                        // تحديد حالة الطلب: إذا كانت جاهزة تصبح مكتملة فوراً
                         $isReady = ($service->type === 'ready');
                         $orderStatus = $isReady ? 'completed' : 'pending';
 
@@ -235,19 +252,22 @@ class PaymentController extends Controller
                             'completed_at' => $isReady ? now() : null,
                         ]);
 
-                        // إذا كانت جاهزة، يتم تحويل الربح للمستقل فوراً في الرصيد المعلق
                         if ($isReady) {
                             $this->payoutToFreelancerFromPayment($order);
                         }
                     }
                 }
 
-                Log::info("Payment Processed: Order #{$orderId}");
+                // تدمير وتطهير الكاش الخاص بالمستخدم فوراً لكي تظهر الـ السنتات على الشاشة لايف دون انتظار
+                Cache::forget("client_stats_summary_{$transaction->user_id}");
+
+                Log::info("Paymob Live Webhook Success: Wallet updated for User #{$transaction->user_id} with {$finalNetUsd} USD");
                 return response()->json(['status' => 'success']);
             }
 
             if ($transaction && $success !== true) {
                 $transaction->update(['status' => 'failed']);
+                Cache::forget("client_stats_summary_{$transaction->user_id}");
             }
 
             return response()->json(['status' => 'processed']);
@@ -261,7 +281,7 @@ class PaymentController extends Controller
     {
         $sellerWallet = Wallet::firstOrCreate(
             ['user_id' => $order->seller_id],
-            ['balance' => 0, 'pending_balance' => 0]
+            ['balance' => 0, 'pending_balance' => 0, 'currency' => 'USD']
         );
 
         $sellerWallet->increment('pending_balance', $order->price);

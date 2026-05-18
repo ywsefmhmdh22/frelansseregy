@@ -18,12 +18,12 @@ use Exception;
 
 /**
  * Class ClientDashboardController
- * مسؤول عن لوحة تحكم العميل مع دعم Laravel Cloud لتخزين الصور.
+ * مسؤول عن لوحة تحكم العميل مع دعم Laravel Cloud لتخزين الصور وتحديثات الدولار الحية.
  */
 class ClientDashboardController extends Controller
 {
     /**
-     * عرض الصفحة الرئيسية للوحة تحكم العميل.
+     * عرض الصفحة الرئيسية للوحة تحكم العميل المحدثة دولياً بالدولار.
      */
     public function index()
     {
@@ -41,7 +41,7 @@ class ClientDashboardController extends Controller
                 return $project;
             });
 
-        // الإحصائيات مع الكاش
+        // الإحصائيات مع الكاش التلقائي
         $stats = Cache::remember("client_stats_summary_{$userId}", 600, function () use ($userId) {
             $rawStats = Project::where('user_id', $userId)
                 ->selectRaw("
@@ -60,8 +60,11 @@ class ClientDashboardController extends Controller
             ];
         });
 
-        $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0]);
-        $walletCurrency = $wallet->currency ?? 'EGP';
+        // جلب محفظة العميل وتأمين العملة لتكون بالدولار دائماً تماشياً مع الدفع الجديد
+        $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0, 'currency' => 'USD']);
+
+        // إجبار معالجة وعرض العملة بالدولار الأمريكي عل طول لمنع ظهور ج.م
+        $walletCurrency = 'USD';
         $formattedWalletBalance = $this->formatCurrency($wallet->balance, $walletCurrency);
 
         return view('dashboards.Client Dashboard', [
@@ -74,33 +77,28 @@ class ClientDashboardController extends Controller
 
     /**
      * تحديث صورة البروفايل ورفعها على Laravel Cloud (S3) حصرياً.
-     * تم التعديل ليدعم استجابة JSON المتوافقة مع Axios في الـ Blade.
      */
     public function updateImage(Request $request)
     {
         $request->validate([
-            'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // تم رفع الحد لـ 5 ميجا ليطابق صفحة الإكمال
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
         try {
             $user = Auth::user();
             $disk = 's3';
 
-            // 1. حذف الصورة القديمة من السحاب إذا كانت موجودة
             if ($user->profile_image) {
                 Storage::disk($disk)->delete($user->profile_image);
             }
 
-            // 2. الرفع الجديد على لارفل كلاود (S3) في نفس مجلد صفحة الإكمال
             $newAvatarPath = $request->file('profile_image')->store('profile_images/avatars', [
                 'disk' => $disk,
                 'visibility' => 'public'
             ]);
 
-            // 3. تحديث مسار الصورة في قاعدة البيانات
             $user->update(['profile_image' => $newAvatarPath]);
 
-            // 4. الاستجابة: إذا كان الطلب أياكس (Axios) نرسل JSON، وإلا نرجع للخلف
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -145,12 +143,12 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * تنسيق العملات
+     * تنسيق العملات المتقدم الاحترافي للمنصة الدولية
      */
     private function formatCurrency($amount, $currency)
     {
         $amount = number_format((float)$amount, 2);
-        $currency = strtoupper(trim($currency ?? 'EGP'));
+        $currency = strtoupper(trim($currency ?? 'USD'));
 
         switch ($currency) {
             case 'USD': return "$" . $amount;
@@ -178,12 +176,12 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * عرض المحفظة
+     * عرض المحفظة التاريخية
      */
     public function wallet()
     {
         $userId = (int) Auth::id();
-        $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0]);
+        $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0, 'currency' => 'USD']);
 
         $transactions = Transaction::where('user_id', $userId)
             ->select('id', 'amount', 'type', 'status', 'payment_method', 'created_at')
@@ -233,7 +231,7 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * عملية سحب الرصيد
+     * عملية سحب الرصيد مع الحفاظ على الأمان المالي والتحكم في الكاش
      */
     public function processWithdraw(Request $request)
     {

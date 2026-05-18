@@ -159,7 +159,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                         </a>
                     </nav>
 
-                    {{-- التعديل الجوهري لقراءة الرصيد المتفورمت والجاهز من الباك إند --}}
+                    {{-- تم التعديل الجوهري لربط الرصيد الحقيقي بالمتغير القادم من الباك إند بالدولار --}}
                     <div class="wallet-widget mt-5 p-4 text-center text-white shadow-lg position-relative overflow-hidden">
                         <div class="wallet-bg-icon"><i class="fas fa-wallet"></i></div>
                         <p class="small opacity-75 mb-1 position-relative">الرصيد المتاح</p>
