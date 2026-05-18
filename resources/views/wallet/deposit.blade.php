@@ -53,7 +53,7 @@
                                 </div>
 
                                 <div class="text-muted mt-1" style="font-size: 11px;">
-                                    تطبق رسوم الخدمة والتشغيل الإدارية ({{ ($platformFee ?? 0.11) * 100 }}%)
+                                    تطبق رسوم الخدمة والتشغيل الإدارية ورسوم بوابة الدفع المستقطعة
                                 </div>
                             </div>
                         </div>
@@ -94,10 +94,13 @@
 </div>
 
 <script>
-// جلب البيانات من الكنترولر أو استخدام قيم افتراضية
-// ملاحظة: تأكد من إرسال هذه القيم من الـ Controller الخاص بك
-const EXCHANGE_RATE = {{ $exchangeRate ?? 50.0 }};
-const PLATFORM_FEE = {{ $platformFee ?? 0.11 }};
+// جلب البيانات اللحظية والدقيقة من الـ Controller بناءً على تحديث الـ .env الجديد
+const EXCHANGE_RATE = {{ $exchangeRate ?? 53.30 }};
+const PLATFORM_FEE = {{ $platformFee ?? 0.09 }}; // نسبة عمولتك الـ 9% الحقيقية
+
+// المصاريف الحية والافتراضية لبوابة الدفع Paymob (النسبة + الثابت ج.م)
+const PAYMOB_PERCENT = 0.0275;
+const PAYMOB_FLAT = 3.00;
 
 function calculateEstimate() {
     const amountInput = document.getElementById('amount');
@@ -108,7 +111,7 @@ function calculateEstimate() {
     const egpVal = document.getElementById('egp-total-val');
     const symbol = document.getElementById('currency-symbol');
 
-    // تحديث رمز العملة في الـ Input
+    // تحديث رمز العملة بجانب حقل الإدخال
     symbol.innerText = isUsd ? 'USD' : 'EGP';
 
     let amount = parseFloat(amountInput.value);
@@ -116,19 +119,35 @@ function calculateEstimate() {
     if(!isNaN(amount) && amount > 0) {
         hint.style.display = 'block';
 
-        // 1. حساب صافي الدولار (المبلغ اللي هيدخل المحفظة فعلياً)
-        let baseAmountInUsd = isUsd ? amount : (amount / EXCHANGE_RATE);
-        let netAmount = baseAmountInUsd * (1 - PLATFORM_FEE);
-        usdEstimate.innerText = netAmount.toFixed(2);
+        let totalEgpPaid = 0;
+        let paymobNetEgp = 0;
 
-        // 2. حساب المعادل بالجنيه لو كان بيختار USD
         if(isUsd) {
+            // إذا اختار المستخدم الدفع بقيمة معينة بالدولار
+            totalEgpPaid = amount * EXCHANGE_RATE;
             egpBox.style.display = 'block';
-            let totalInEgp = amount * EXCHANGE_RATE;
-            egpVal.innerText = totalInEgp.toLocaleString('en-US', {minimumFractionDigits: 2});
+            egpVal.innerText = totalEgpPaid.toLocaleString('en-US', {minimumFractionDigits: 2});
         } else {
+            // إذا أدخل المستخدم القيمة بالجنيه المصري مباشرة
+            totalEgpPaid = amount;
             egpBox.style.display = 'none';
         }
+
+        // محاكاة خصم مصاريف بوابة Paymob بالملي
+        let paymobFees = (totalEgpPaid * PAYMOB_PERCENT) + PAYMOB_FLAT;
+        paymobNetEgp = totalEgpPaid - paymobFees;
+
+        // حماية منطقية لمنع ظهور أرقام سالبة في المبالغ الصغيرة جداً
+        if(paymobNetEgp < 0) paymobNetEgp = 0;
+
+        // تحويل صافي القيمة إلى الدولار الأمريكي بناءً على السعر اللحظي
+        let amountInUsdBeforePlatformFee = paymobNetEgp / EXCHANGE_RATE;
+
+        // استقطاع عمولة منصة وركلي داي الـ 9%
+        let finalNetUsdWallet = amountInUsdBeforePlatformFee * (1 - PLATFORM_FEE);
+
+        // عرض الناتج النهائي بدقة من سنتات منورة عل الشاشة
+        usdEstimate.innerText = finalNetUsdWallet.toFixed(2);
     } else {
         hint.style.display = 'none';
     }
