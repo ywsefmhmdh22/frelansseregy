@@ -3,11 +3,9 @@
 @section('content')
 @php
     $user = auth()->user();
-    // جعل الرصيد دائماً منسوباً للدولار وإلغاء الاعتماد على متغير العملة القادم من الكونترولر
-    $walletBalance = $walletBalance ?? 0;
+    // تم ضبط المتغيرات لتستقبل البيانات من الكنترولر بشكل صحيح دون تصفيرها
     $orders = $orders ?? collect();
     $myProjects = $myProjects ?? collect();
-    $currency = '$'; // تثبيت العملة دولار
 
     // التعديل الجديد: عرض الصورة من Laravel Cloud (S3) لضمان التوافق
     $profilePhoto = $user->profile_image
@@ -161,10 +159,11 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                         </a>
                     </nav>
 
+                    {{-- التعديل الجوهري لقراءة الرصيد المتفورمت والجاهز من الباك إند --}}
                     <div class="wallet-widget mt-5 p-4 text-center text-white shadow-lg position-relative overflow-hidden">
                         <div class="wallet-bg-icon"><i class="fas fa-wallet"></i></div>
                         <p class="small opacity-75 mb-1 position-relative">الرصيد المتاح</p>
-                        <h3 class="fw-bold mb-3 position-relative" style="font-size: var(--stat-font);">{{ number_format($walletBalance, 2) . ' ' . $currency }}</h3>
+                        <h3 class="fw-bold mb-3 position-relative" style="font-size: var(--stat-font);">{{ $formattedBalance }}</h3>
                         <a href="{{ route('wallet.deposit') }}" class="btn btn-glass-white btn-sm w-100 rounded-pill fw-bold position-relative">شحن الرصيد</a>
                     </div>
                 </aside>
@@ -293,7 +292,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                                     <td>
                                         <div class="price-tag-modern">
                                             <span class="amount">{{ number_format($order->price, 2) }}</span>
-                                            <span class="currency">{{ $currency }}</span>
+                                            <span class="currency">$</span>
                                         </div>
                                     </td>
                                     <td>
@@ -321,7 +320,6 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                                             @if($order->status == 'delivered')
                                                 <a href="{{ route('orders.complete.view', $order->id) }}" class="btn btn-xs btn-success rounded-pill px-3 fw-bold">قبول</a>
                                             @endif
-
                                             <a href="{{ route('orders.show', $order->id) }}" class="btn border shadow-sm rounded-circle" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="عرض"><i class="fas fa-eye small text-primary"></i></a>
                                         </div>
                                     </td>
@@ -432,7 +430,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                         <li>سيتم الحكم بشفافية مطلقة لضمان حق المشتري والمستقل.</li>
                     </ul>
                 </div>
-                <p class="fw-bold text-dark mt-3 small">هل تريد تصعيد هذا النزاع للتحكيم الرسمي؟</p>
+                <p class="fw-bold text-dark mt-3 small">هل تريد تصعيد هذا النزاع للتحكيم الرسمي?</p>
 
                 <form id="disputeForm" action="{{ route('dispute.store') }}" method="POST">
                     @csrf
@@ -484,37 +482,8 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                 const preview = document.getElementById('profilePreview');
                 const cameraIcon = document.getElementById('cameraIcon');
                 const spinner = document.getElementById('uploadSpinner');
-
-                if (preview) preview.style.opacity = '0.5';
-                if (cameraIcon) cameraIcon.classList.add('d-none');
-                if (spinner) spinner.classList.remove('d-none');
-
-                axios.post("{{ route('profile.update_image') }}", formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                })
-                .then(response => {
-                    window.location.reload();
-                })
-                .catch(error => {
-                    if (preview) preview.style.opacity = '1';
-                    if (cameraIcon) cameraIcon.classList.remove('d-none');
-                    if (spinner) spinner.classList.add('d-none');
-                    alert('خطأ في الرفع للسحاب، تأكد من جودة الاتصال.');
-                });
             });
         };
-
-        return {
-            init: () => {
-                updateMessagesCount();
-                handleProfileImageUpload();
-                setInterval(updateMessagesCount, 20000);
-                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-                tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el) });
-            }
-        };
     })();
-
-    document.addEventListener('DOMContentLoaded', DashboardManager.init);
 </script>
 @endsection
