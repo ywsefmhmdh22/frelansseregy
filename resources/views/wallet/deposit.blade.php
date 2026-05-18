@@ -52,6 +52,11 @@
                                     </span>
                                 </div>
 
+                                <div class="text-muted mt-1 border-top pt-2 d-flex justify-content-between" style="font-size: 11px;">
+                                    <span>سعر الصرف اللحظي (API):</span>
+                                    <span class="fw-bold text-dark">1 USD = {{ number_format($exchangeRate ?? 53.30, 2) }} EGP</span>
+                                </div>
+
                                 <div class="text-muted mt-1" style="font-size: 11px;">
                                     تطبق رسوم الخدمة والتشغيل الإدارية ورسوم بوابة الدفع المستقطعة
                                 </div>
