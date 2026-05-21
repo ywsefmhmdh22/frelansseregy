@@ -14,6 +14,15 @@
     <meta property="og:description" content="نفذ مشروعك التقني الآن مع فريق من الخبراء والمتخصصين.">
     <meta property="og:type" content="website">
 
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18180050019"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'AW-18180050019');
+    </script>
+
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
@@ -248,6 +257,48 @@
         margin-bottom: 1.5rem;
     }
 
+    /* سيكشن الضمانات الجديد والأمان فوق الفوتر */
+    .guarantee-section {
+        background: var(--card-bg);
+        border: 2px dashed var(--primary-light);
+        border-radius: 30px;
+        padding: 3rem 2rem;
+        margin: 4rem auto 2rem auto;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+    }
+    .guarantee-box {
+        text-align: center;
+        padding: 1.5rem;
+        transition: 0.3s ease;
+    }
+    .guarantee-box:hover {
+        transform: scale(1.02);
+    }
+    .guarantee-icon-wrap {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin: 0 auto 1.2rem auto;
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+    }
+    .guarantee-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 0.75rem;
+    }
+    .guarantee-desc {
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
     @media (max-width: 991.98px) {
         .sidebar {
             width: 100%; height: 75px;
@@ -271,6 +322,7 @@
         .hero-section-card { padding: 5rem 1.5rem; }
         .blog-nav-btn { display: none; }
         .brand-logo-text { font-size: 1.7rem; }
+        .guarantee-section { padding: 2rem 1rem; margin: 3rem 0 1rem 0; }
     }
 </style>
 </head>
@@ -418,6 +470,42 @@
                     <div class="policy-icon"><i class="fas fa-server"></i></div>
                     <h5 class="fw-bold">سياسة التسليم</h5>
                     <p class="text-muted small">يتم تسليم الخدمات ورفعها على السيرفر الخاص بالمنصة بعد إجراء مراجعة نهائية شاملة والتأكد من رضاء العميل التام عن جودة الخدمة المقدمة.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="guarantee-section container-fluid">
+        <div class="text-center mb-5">
+            <h3 class="fw-800 text-success">لماذا تختار منصة Worklyday لإنجاز مشاريعك؟</h3>
+            <p class="text-muted">نحن نضع الأمان المالي والجودة الاحترافية في مقدمة أولوياتنا لحمايتك بالكامل</p>
+        </div>
+        <div class="row g-4 justify-content-center">
+            <div class="col-lg-4 col-md-6">
+                <div class="guarantee-box">
+                    <div class="guarantee-icon-wrap">
+                        <i class="fas fa-scale-balanced"></i>
+                    </div>
+                    <h4 class="guarantee-title">تحكيم إدارة صارم وعادل</h4>
+                    <p class="guarantee-desc">نوفر نظام تحكيم متكامل تحت إشراف مهندسين تقنيين مخصصين لفض النزاعات وضمان حقوقك والالتزام الكامل بالشروط والمواصفات المتفق عليها.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="guarantee-box">
+                    <div class="guarantee-icon-wrap">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h4 class="guarantee-title">أقل عمولة في السوق 9% فقط</h4>
+                    <p class="guarantee-desc">بدون رسوم مخفية أو عمولات ضخمة تؤثر على ميزانيتك، نقدم لك الخدمة والربط بين الأطراف بأقل نسبة اقتطاع في الوطن العربي لتوفير نفقاتك.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="guarantee-box">
+                    <div class="guarantee-icon-wrap">
+                        <i class="fas fa-vault"></i>
+                    </div>
+                    <h4 class="guarantee-title">حماية كاملة وتعليق للأموال</h4>
+                    <p class="guarantee-desc">أموالك في أمان تام داخل صندوق المنصة؛ لن يتم تحويل أو صرف أي مبالغ للمستقل إلا بعد استلامك للمشروع أو الخدمة بالكامل ومعاينتها والرضا التام عنها.</p>
                 </div>
             </div>
         </div>
