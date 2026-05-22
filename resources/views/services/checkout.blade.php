@@ -16,7 +16,6 @@
         font-family: 'Cairo', sans-serif;
     }
 
-    /* تحسينات التجاوب الذكية */
     .checkout-container {
         width: 100%;
         max-width: 1200px;
@@ -70,10 +69,9 @@
         height: 200px;
     }
 
-    /* ترتيب العناصر في الموبايل */
     @media (max-width: 768px) {
-        .order-mobile-1 { order: 1; } /* ملخص الفاتورة يظهر أولاً */
-        .order-mobile-2 { order: 2; } /* تفاصيل الخدمة تظهر ثانياً */
+        .order-mobile-1 { order: 1; }
+        .order-mobile-2 { order: 2; }
     }
 </style>
 
@@ -83,7 +81,6 @@
         {{ $service->type === 'ready' ? 'شراء وتحميل فوري' : 'تأكيد عملية الشراء' }}
     </h2>
 
-    {{-- رسالة النجاح لخدمات التحميل الفوري --}}
     @if(session('success') && session('ready_file_path'))
         <div class="alert alert-success border-0 shadow-sm rounded-4 p-4 mb-4 text-end" dir="rtl">
             <div class="d-flex align-items-center flex-wrap">
@@ -102,7 +99,6 @@
 
     <div class="row g-4" dir="rtl">
 
-        {{-- ملخص الفاتورة والدفع (الجهة اليسرى في الديسك توب / الأعلى في الموبايل) --}}
         <div class="col-lg-4 col-md-5 order-mobile-1">
             <div class="card custom-card p-4">
                 <h5 class="fw-bold mb-4 border-bottom pb-2">ملخص الفاتورة</h5>
@@ -124,32 +120,41 @@
                     </div>
                 </div>
 
-                <div class="mb-4 text-end">
-                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
-                        <div>
-                            <small class="text-muted d-block">رصيدك الحالي</small>
-                            <span class="fw-bold {{ Auth::user()->wallet->balance >= $priceInUsd ? 'text-success' : 'text-danger' }}">
-                                {{ number_format(Auth::user()->wallet->balance, 2) }} $
-                            </span>
+                @auth
+                    <div class="mb-4 text-end">
+                        <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
+                            <div>
+                                <small class="text-muted d-block">رصيدك الحالي</small>
+                                <span class="fw-bold {{ Auth::user()->wallet->balance >= $priceInUsd ? 'text-success' : 'text-danger' }}">
+                                    {{ number_format(Auth::user()->wallet->balance, 2) }} $
+                                </span>
+                            </div>
+                            <i class="fas fa-wallet text-secondary opacity-50 fs-4"></i>
                         </div>
-                        <i class="fas fa-wallet text-secondary opacity-50 fs-4"></i>
                     </div>
-                </div>
 
-                @if(!session('ready_file_path'))
-                    <form action="{{ route('service.pay.wallet', $service->id) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="btn-buy mb-3" {{ Auth::user()->wallet->balance < $priceInUsd ? 'disabled' : '' }}>
-                            <i class="fas fa-lock me-2"></i> تأكيد الدفع والطلب
-                        </button>
-                    </form>
-                @endif
+                    @if(!session('ready_file_path'))
+                        <form action="{{ route('service.pay.wallet', $service->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="btn-buy mb-3" {{ Auth::user()->wallet->balance < $priceInUsd ? 'disabled' : '' }}>
+                                <i class="fas fa-lock me-2"></i> تأكيد الدفع والطلب
+                            </button>
+                        </form>
+                    @endif
 
-                @if(Auth::user()->wallet->balance < $priceInUsd)
-                    <div class="alert alert-soft-danger border-0 small text-center p-2 mb-0">
-                        رصيدك غير كافٍ، يرجى <a href="{{ route('wallet.deposit') }}" class="fw-bold text-danger">شحن المحفظة</a>
+                    @if(Auth::user()->wallet->balance < $priceInUsd)
+                        <div class="alert alert-soft-danger border-0 small text-center p-2 mb-0">
+                            رصيدك غير كافٍ، يرجى <a href="{{ route('wallet.deposit') }}" class="fw-bold text-danger">شحن المحفظة</a>
+                        </div>
+                    @endif
+                @else
+                    <div class="alert alert-info border-0 rounded-3 p-3 text-center">
+                        <p class="mb-2 small">لإتمام عملية الشراء، يرجى تسجيل الدخول</p>
+                        <a href="{{ route('login') }}" class="btn btn-outline-primary w-100 rounded-pill">
+                            <i class="fas fa-sign-in-alt me-2"></i> تسجيل الدخول
+                        </a>
                     </div>
-                @endif
+                @endauth
 
                 <div class="text-center mt-4 pt-3 border-top">
                     <p class="text-muted small mb-0"><i class="fas fa-user-shield text-primary"></i> نظام دفع مشفر وآمن</p>
@@ -157,7 +162,6 @@
             </div>
         </div>
 
-        {{-- تفاصيل الخدمة (الجهة اليمنى) --}}
         <div class="col-lg-8 col-md-7 order-mobile-2">
             <div class="card custom-card overflow-hidden">
                 <div class="row g-0">
@@ -208,7 +212,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 @endsection

@@ -52,6 +52,12 @@ Route::get('/Services', function () {
     return view('Services', compact('allData'));
 })->name('services.index');
 
+// تم إضافة هذا الروت ليتمكن الزوار من رؤية تفاصيل الخدمة
+Route::get('/services/{id}', [ServiceController::class, 'show'])->name('services.show');
+
+// تم نقل روت الـ checkout إلى هنا ليصبح عاماً
+Route::get('/services/checkout/{id}', [ServiceController::class, 'checkout'])->name('services.checkout');
+
 Route::get('/Works', function () {
     $works = Project::where('status', 'completed')->latest()->get();
     return view('works', compact('works'));
@@ -181,7 +187,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
         Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
-        Route::get('/services/checkout/{id}', [ServiceController::class, 'checkout'])->name('services.checkout');
         Route::get('/purchased-services', [OrderController::class, 'purchasedServices'])->name('purchased.services');
         Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.store');
         // مسار تنفيذ الدفع من المحفظة

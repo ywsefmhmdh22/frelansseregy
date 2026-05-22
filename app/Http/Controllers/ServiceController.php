@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Notifications\ServicePurchasedNotification; // استدعاء كلاس الإشعارات
+use App\Notifications\ServicePurchasedNotification;
 use Illuminate\Http\Request;
 use App\Models\Service;
 use App\Models\Order;
@@ -24,22 +24,19 @@ class ServiceController extends Controller
 {
     /**
      * Helper: جلب سعر صرف الدولار مقابل الجنيه المصري لحظياً.
-     * المصدر: ExchangeRate-API (عالمي وموثوق).
      */
     private function getUsdToEgpRate()
     {
         try {
-            // الاتصال بـ API العملات لجلب السعر الحقيقي
             $response = Http::timeout(5)->get("https://open.er-api.com/v6/latest/USD");
-
             if ($response->successful()) {
                 $rates = $response->json()['rates'];
-                return $rates['EGP'] ?? 50.0; // إرجاع السعر أو 50 كاحتياط
+                return $rates['EGP'] ?? 50.0;
             }
         } catch (Exception $e) {
             Log::error("Exchange Rate Fetch Error: " . $e->getMessage());
         }
-        return 50.0; // سعر احتياطي (Fallback) في حالة تعطل الـ API
+        return 50.0;
     }
 
     /**
@@ -51,7 +48,7 @@ class ServiceController extends Controller
     }
 
     /**
-     * حفظ الخدمة في قاعدة البيانات (رفع الصور والملفات لـ S3).
+     * حفظ الخدمة في قاعدة البيانات.
      */
     public function store(Request $request)
     {
@@ -96,17 +93,15 @@ class ServiceController extends Controller
     }
 
     /**
-     * عرض صفحة تأكيد الدفع (Checkout) وحساب السعر المعادل بالدولار.
+     * عرض صفحة تأكيد الدفع (Checkout).
      */
     public function checkout($id)
     {
         $service = Service::with('user')->findOrFail((int)$id);
 
-        if (!Auth::check()) {
-            return redirect()->route('login');
-        }
+        // تم إزالة التحقق من تسجيل الدخول هنا للسماح للزوار برؤية صفحة التفاصيل
+        // يتم التحقق من تسجيل الدخول عند الضغط على زر الشراء الفعلي في الـ View
 
-        // جلب سعر الصرف وحساب المبلغ المطلوب بالدولار لعرضه للمستخدم
         $currentRate = $this->getUsdToEgpRate();
         $priceInUsd = round($service->price / $currentRate, 2);
 
@@ -118,39 +113,44 @@ class ServiceController extends Controller
     }
 
     /**
-     * تنفيذ عملية الدفع من المحفظة وإرسال الإشعار للمشتري.
+     * تنفيذ عملية الدفع من المحفظة.
      */
     public function payFromWallet(Request $request, $id)
     {
+        // حماية أمنية: الزر لا يظهر إلا للمسجلين، ولكن نضيف حماية للمسار أيضاً
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'يرجى تسجيل الدخول أولاً لإتمام عملية الشراء.');
+        }
+
+        // التحقق من إكمال البروفايل
+        if (Auth::user()->is_profile_completed == 0) {
+            return redirect()->route('profile.complete')->with('warning', 'يرجى إكمال بيانات ملفك الشخصي أولاً.');
+        }
+
         $service = Service::findOrFail($id);
         $user = Auth::user();
         $wallet = $user->wallet;
 
-        // إعادة حساب السعر لحظة الضغط على الزر لضمان العدالة المالية
         $currentRate = $this->getUsdToEgpRate();
         $priceInUsd = round($service->price / $currentRate, 2);
 
-        // التحقق من كفاية الرصيد بالدولار
         if (!$wallet || $wallet->balance < $priceInUsd) {
-            return back()->with('error', "رصيدك غير كافٍ. المطلوب: {$priceInUsd} $ | المتوفر: " . ($wallet->balance ?? 0) . " $");
+            return back()->with('error', "رصيدك غير كافٍ. المطلوب: {$priceInUsd} $");
         }
 
         try {
             DB::transaction(function () use ($user, $wallet, $service, $priceInUsd, $currentRate) {
-                // 1. الخصم من المحفظة بالدولار
                 $wallet->decrement('balance', $priceInUsd);
 
-                // 2. إنشاء سجل الطلب
                 $order = Order::create([
                     'user_id' => $user->id,
                     'seller_id' => $service->user_id,
                     'service_id' => $service->id,
-                    'price' => $service->price, // السعر بالجنيه للتوثيق
+                    'price' => $service->price,
                     'status' => 'pending',
                     'payment_method' => 'wallet'
                 ]);
 
-                // 3. تسجيل المعاملة المالية بالدولار
                 Transaction::create([
                     'user_id'     => $user->id,
                     'amount'      => $priceInUsd,
@@ -162,20 +162,19 @@ class ServiceController extends Controller
                     'details'     => "شراء خدمة: {$service->title} | سعر الصرف: 1$ = {$currentRate} EGP"
                 ]);
 
-                // 4. إرسال الإشعار للمشتري (Notifications) ليظهر في الداش بورد
                 $user->notify(new ServicePurchasedNotification($service, $service->user->name));
             });
 
-            return redirect()->route('client.dashboard')->with('success', 'تمت عملية الشراء بنجاح، وخصم المبلغ من محفظتك. تفقد صندوق الإشعارات!');
+            return redirect()->route('client.dashboard')->with('success', 'تمت عملية الشراء بنجاح.');
 
         } catch (Exception $e) {
             Log::error('Wallet Payment Error: ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ أثناء معالجة الدفع، يرجى المحاولة لاحقاً.');
+            return back()->with('error', 'حدث خطأ أثناء معالجة الدفع.');
         }
     }
 
     /**
-     * معالجة طلب تسليم العمل من قبل المستقل.
+     * معالجة طلب تسليم العمل.
      */
     public function requestDelivery(Order $order)
     {
@@ -218,10 +217,6 @@ class ServiceController extends Controller
         }
     }
 
-    // =========================================================================
-    // Helpers
-    // =========================================================================
-
     private function payoutToFreelancer(Order $order)
     {
         $amount = $order->price;
@@ -242,7 +237,7 @@ class ServiceController extends Controller
             'release_at'      => now()->addDays(7),
             'source_id'       => $order->id,
             'source_type'     => Order::class,
-            'details'         => 'أرباح معلقة عن بيع خدمة: ' . strip_tags($order->service_title ?? 'خدمة مصغرة'),
+            'details'         => 'أرباح معلقة عن بيع خدمة: ' . strip_tags($order->service->title ?? 'خدمة مصغرة'),
         ]);
     }
 
