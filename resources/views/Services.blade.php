@@ -99,8 +99,7 @@
                             </p>
 
                             <div class="d-grid pt-2">
-                                {{-- تم التغيير هنا لتوجيه المستخدم لصفحة العرض (show) بدلاً من الـ checkout --}}
-                                <a href="{{ route('services.show', $service->id) }}"
+                                <a href="{{ route('services.checkout', $service->id) }}"
                                    class="btn btn-bright-action rounded-pill fw-bold py-2 transition-all">
                                    تفاصيل الخدمة
                                 </a>
