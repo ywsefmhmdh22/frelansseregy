@@ -26,8 +26,9 @@
                             <td class="px-4 fw-bold text-info">#DS-{{ $dispute->id }}</td>
                             <td>{{ $dispute->title }}</td>
                             <td>
-                                <div class="small">العميل: {{ $dispute->user->name }}</div>
-                                <div class="small text-muted">المستقل: {{ $dispute->freelancer->name }}</div>
+                                {{-- تم إضافة المعامل ?-> لتجنب خطأ محاولة القراءة من null --}}
+                                <div class="small">العميل: {{ $dispute->user?->name ?? 'مستخدم محذوف' }}</div>
+                                <div class="small text-muted">المستقل: {{ $dispute->freelancer?->name ?? 'مستقل محذوف' }}</div>
                             </td>
                             <td class="text-success fw-bold">{{ number_format($dispute->price) }} ج.م</td>
                             <td><span class="badge bg-danger animate-pulse">قيد المراجعة</span></td>

@@ -196,24 +196,40 @@
         color: var(--primary-color);
     }
 
-    .blog-nav-btn {
+    .header-nav-btn {
         background: var(--nav-hover);
         border: 1px solid var(--primary-light);
         color: var(--primary-color);
         border-radius: 12px;
-        padding: 0.5rem 1.5rem;
+        padding: 0.5rem 1.2rem;
         display: flex;
         align-items: center;
         gap: 8px;
         font-weight: 700;
         text-decoration: none;
         transition: 0.3s;
-        margin-right: 30px;
+        margin-right: 15px;
+        font-size: 0.9rem;
+        position: relative; /* ضروري لتموضع العداد */
     }
-    .blog-nav-btn:hover {
+    .header-nav-btn:hover {
         background: var(--primary-color);
         color: white;
         transform: translateY(-2px);
+    }
+
+    /* تنسيق عداد الإشعارات الجديد */
+    .notification-badge {
+        background: #ef4444;
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        border: 2px solid var(--card-bg);
+        font-weight: bold;
     }
 
     .hero-section-card {
@@ -257,7 +273,6 @@
         margin-bottom: 1.5rem;
     }
 
-    /* سيكشن الضمانات الجديد والأمان فوق الفوتر */
     .guarantee-section {
         background: var(--card-bg);
         border: 2px dashed var(--primary-light);
@@ -320,7 +335,7 @@
         .sidebar-logo { display: none !important; }
         .main-wrapper { margin-right: 0; padding: 1rem; padding-bottom: 90px; }
         .hero-section-card { padding: 5rem 1.5rem; }
-        .blog-nav-btn { display: none; }
+        .header-nav-btn { display: none; }
         .brand-logo-text { font-size: 1.7rem; }
         .guarantee-section { padding: 2rem 1rem; margin: 3rem 0 1rem 0; }
     }
@@ -401,10 +416,23 @@
                     <i class="fas fa-moon theme-icon" aria-hidden="true"></i>
                 </button>
             </div>
-            <a href="{{ route('blog.index') }}" class="blog-nav-btn d-none d-md-flex">
-                <i class="fas fa-feather-pointed"></i>
-                <span>المدونة التقنية</span>
-            </a>
+
+            <!-- أزرار الهيدر المعدلة -->
+            <div class="d-none d-md-flex">
+                <a href="{{ route('blog.index') }}" class="header-nav-btn">
+                    <i class="fas fa-feather-pointed"></i>
+                    <span>المدونة التقنية</span>
+                </a>
+
+                <!-- زر المشاريع مع العداد -->
+                <a href="/Projects" class="header-nav-btn">
+                    @if(isset($newProjectsCount) && $newProjectsCount > 0 && !request()->is('Projects*'))
+                        <span class="notification-badge">{{ $newProjectsCount }}</span>
+                    @endif
+                    <i class="fas fa-briefcase"></i>
+                    <span>تصفح المشاريع</span>
+                </a>
+            </div>
         </div>
 
         <div class="header-actions d-flex align-items-center gap-3">
@@ -539,10 +567,10 @@
                 <p class="text-muted mb-4">يسعدنا مساعدتك في أي وقت، اختر الوسيلة المناسبة لك:</p>
                 <a href="https://wa.me/201556332042" target="_blank" class="d-flex align-items-center p-3 mb-3 border rounded-3 text-decoration-none text-dark shadow-sm">
                    <i class="fab fa-whatsapp fa-2x text-success me-3"></i>
-                    <div>
-                        <h6 class="mb-1 fw-bold">واتساب (WhatsApp)</h6>
-                        <p class="mb-0 text-muted small">رد سريع ومباشر على استفساراتكم</p>
-                    </div>
+                   <div>
+                      <h6 class="mb-1 fw-bold">واتساب (WhatsApp)</h6>
+                      <p class="mb-0 text-muted small">رد سريع ومباشر على استفساراتكم</p>
+                   </div>
                 </a>
                 <a href="mailto:ywsfmhmdh22@gmail.com" class="d-flex align-items-center p-3 border rounded-3 text-decoration-none text-dark shadow-sm">
                     <i class="far fa-envelope fa-2x text-danger me-3"></i>
@@ -557,7 +585,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
