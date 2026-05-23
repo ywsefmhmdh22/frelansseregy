@@ -52,11 +52,11 @@ Route::get('/Services', function () {
     return view('Services', compact('allData'));
 })->name('services.index');
 
-// تم إضافة هذا الروت ليتمكن الزوار من رؤية تفاصيل الخدمة
-Route::get('/services/{id}', [ServiceController::class, 'show'])->name('services.show');
-
 // تم نقل روت الـ checkout إلى هنا ليصبح عاماً
 Route::get('/services/checkout/{id}', [ServiceController::class, 'checkout'])->name('services.checkout');
+
+// تم إضافة هذا الروت ليتمكن الزوار من رؤية تفاصيل الخدمة
+Route::get('/services/{id}', [ServiceController::class, 'show'])->name('services.show');
 
 Route::get('/Works', function () {
     $works = Project::where('status', 'completed')->latest()->get();
@@ -161,6 +161,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/freelancer/dashboard', [DashboardController::class, 'index'])->name('freelancer.dashboard');
         Route::get('/client/dashboard', [ClientDashboardController::class, 'index'])->name('client.dashboard');
 
+        // مسارات الخدمات (تم تجميعها هنا لضمان عملها بشكل صحيح)
+        Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
+        Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
+
         Route::prefix('client/projects')->group(function () {
             Route::get('/', [ClientDashboardController::class, 'myProjects'])->name('projects.my_projects');
             Route::get('/create', [ProjectController::class, 'create'])->name('projects.create');
@@ -185,9 +189,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/withdraw', [WithdrawController::class, 'create'])->name('withdraw.create');
         Route::post('/withdraw/process', [WithdrawController::class, 'store'])->name('withdraw.request');
 
-        // مسارات الخدمات (تم تجميعها هنا لضمان عملها بشكل صحيح)
-        Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
-        Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
         Route::get('/purchased-services', [OrderController::class, 'purchasedServices'])->name('purchased.services');
         Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.store');
         Route::post('/services/pay-wallet/{id}', [App\Http\Controllers\ServiceController::class, 'payFromWallet'])->name('service.pay.wallet');
