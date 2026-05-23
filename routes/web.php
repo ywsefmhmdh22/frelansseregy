@@ -52,12 +52,6 @@ Route::get('/Services', function () {
     return view('Services', compact('allData'));
 })->name('services.index');
 
-// تم نقل روت الـ checkout إلى هنا ليصبح عاماً
-Route::get('/services/checkout/{id}', [ServiceController::class, 'checkout'])->name('services.checkout');
-
-// تم إضافة هذا الروت ليتمكن الزوار من رؤية تفاصيل الخدمة
-Route::get('/services/{id}', [ServiceController::class, 'show'])->name('services.show');
-
 Route::get('/Works', function () {
     $works = Project::where('status', 'completed')->latest()->get();
     return view('works', compact('works'));
@@ -144,7 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/{id}/portfolio', [UserController::class, 'showPortfolio'])->name('profile.portfolio');
 
     Route::get('/complete-profile', [ProfileCompletionController::class, 'index'])->name('profile.complete');
-    Route::post('/complete-profile', [ProfileCompletionController::class, 'store'])->name('profile.store');
+    Route::post('/complete-profile', [ProfileCompletionController::class, 'store'])->name('profile.complete.store'); // تم تغيير الاسم لتجنب تكرار الأسماء المتطابقة
 
     // --- نظام المراسلة ---
     Route::get('/chat/{user?}', [ChatController::class, 'chat'])->name('messages.chat');
@@ -160,10 +154,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/freelancer/dashboard', [DashboardController::class, 'index'])->name('freelancer.dashboard');
         Route::get('/client/dashboard', [ClientDashboardController::class, 'index'])->name('client.dashboard');
-
-        // مسارات الخدمات (تم تجميعها هنا لضمان عملها بشكل صحيح)
-        Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
-        Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
 
         Route::prefix('client/projects')->group(function () {
             Route::get('/', [ClientDashboardController::class, 'myProjects'])->name('projects.my_projects');
@@ -189,8 +179,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/withdraw', [WithdrawController::class, 'create'])->name('withdraw.create');
         Route::post('/withdraw/process', [WithdrawController::class, 'store'])->name('withdraw.request');
 
+        // 👇 تم ترتيب مسارات الخدمات هنا؛ وضعنا المسارات الثابتة أولاً تلافياً لمشكلة الـ 404 👇
+        Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
+        Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
         Route::get('/purchased-services', [OrderController::class, 'purchasedServices'])->name('purchased.services');
         Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.store');
+        // مسار تنفيذ الدفع من المحفظة
         Route::post('/services/pay-wallet/{id}', [App\Http\Controllers\ServiceController::class, 'payFromWallet'])->name('service.pay.wallet');
 
         Route::get('/notifications', function () { return view('notifications.index'); })->name('notifications.index');
@@ -205,10 +199,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/projects/{project}/proposals', [ProposalController::class, 'store'])->name('proposals.store');
     });
 
+    // 👇 تم وضع مسارات المتغيرات العامة للخدمات هنا بالأسفل لكي لا تبتلع روابط الـ create 👇
+    // تم إضافة هذا الروت ليتمكن الزوار من رؤية تفاصيل الخدمة
+    Route::get('/services/{id}', [ServiceController::class, 'show'])->name('services.show');
+    // تم نقل روت الـ checkout إلى هنا ليصبح عاماً
+    Route::get('/services/checkout/{id}', [ServiceController::class, 'checkout'])->name('services.checkout');
+
     /*
     |--------------------------------------------------------------------------
     | 4. لوحة تحكم الأدمن
     |--------------------------------------------------------------------------
+    |
     */
     Route::prefix('admin')->name('admin.')->middleware('can:admin-access')->group(function () {
 
