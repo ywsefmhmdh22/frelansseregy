@@ -185,11 +185,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/withdraw', [WithdrawController::class, 'create'])->name('withdraw.create');
         Route::post('/withdraw/process', [WithdrawController::class, 'store'])->name('withdraw.request');
 
+        // مسارات الخدمات (تم تجميعها هنا لضمان عملها بشكل صحيح)
         Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
         Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
         Route::get('/purchased-services', [OrderController::class, 'purchasedServices'])->name('purchased.services');
         Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.store');
-        // مسار تنفيذ الدفع من المحفظة
         Route::post('/services/pay-wallet/{id}', [App\Http\Controllers\ServiceController::class, 'payFromWallet'])->name('service.pay.wallet');
 
         Route::get('/notifications', function () { return view('notifications.index'); })->name('notifications.index');

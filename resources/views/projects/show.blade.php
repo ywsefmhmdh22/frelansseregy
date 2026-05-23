@@ -138,9 +138,9 @@
 
     {{-- الهيدر المحسن بالنظام المالي المزدوج --}}
     @php
-        // جلب السعر ومعدل الصرف لحساب القيمة الموازية بالدولار لايف على السيرفر
         $egpBudget = $project->price;
-        $exchangeRate = $rate ?? 50.0;
+        // التأكد من وجود المتغير أو إعطاء قيمة افتراضية لتجنب الخطأ
+        $exchangeRate = isset($rate) ? $rate : 50.0;
         $usdBudget = round($egpBudget / $exchangeRate, 2);
     @endphp
 
@@ -170,12 +170,10 @@
 
     <div class="row g-4" dir="rtl">
         <div class="col-lg-8">
-            {{-- التعديل الجوهري: عرض الصورة من Laravel Cloud (S3) لضمان التوافق --}}
             @if($project->image_url)
                 <img src="{{ Storage::disk('s3')->url($project->image_url) }}" class="project-main-img" alt="{{ $project->title }}" loading="lazy">
             @endif
 
-            {{-- كارت "المستقل المختار" --}}
             @if($project->freelancer_id)
                 <div class="glass-card p-4 mb-4 border-start border-4 border-success text-end">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
@@ -191,7 +189,6 @@
                 </div>
             @endif
 
-            {{-- إدارة المشروع --}}
             @if(auth()->check() && (auth()->id() == $project->user_id || auth()->id() == $project->freelancer_id))
                 <div class="glass-card p-4 mb-4 border-start border-4 border-primary text-end">
                     <h5 class="fw-bold mb-3 text-dark"><i class="fas fa-tasks text-primary ms-2"></i> إدارة المشروع</h5>
@@ -223,7 +220,6 @@
                 </div>
             @endif
 
-            {{-- وصف المشروع --}}
             <div class="glass-card p-4 mb-4 text-end">
                 <h4 class="fw-bold mb-4 border-bottom pb-3 text-dark"><i class="fas fa-align-left text-success ms-2"></i> وصف المشروع</h4>
                 <div class="project-description text-dark lh-lg" style="font-size: 1.05rem;">
@@ -231,7 +227,6 @@
                 </div>
             </div>
 
-            {{-- المرفقات السحابية --}}
             @if($project->attachment_urls && count($project->attachment_urls) > 0)
                 <div class="glass-card p-4 mb-4 text-end">
                     <h5 class="fw-bold mb-4 border-bottom pb-3 text-dark">
@@ -267,7 +262,6 @@
                 </div>
             @endif
 
-            {{-- فورم تقديم العرض المطور بالنظام المالي الفوري --}}
             @if(auth()->check() && auth()->user()->role == 'freelancer' && auth()->id() != $project->user_id && $project->status == 'open')
                 @php $alreadyApplied = $project->proposals->where('user_id', auth()->id())->first(); @endphp
                 @if(!$alreadyApplied)
@@ -281,7 +275,6 @@
                                     <div class="input-group">
                                         <input type="number" id="proposal_price_input" name="price" class="form-control rounded-4 shadow-sm fw-bold p-2 text-end" style="padding-left: 55px !important;" required>
                                     </div>
-                                    {{-- صندوق الحساب اللحظي للعرض المالي بالدولار للمستقل --}}
                                     <small class="text-muted d-block mt-2 fw-bold" id="proposal_usd_live">
                                         <i class="fas fa-calculator me-1"></i> ما يوازي تقريباً: <span class="text-success" id="live_usd_text">0.00 $</span>
                                     </small>
@@ -307,7 +300,6 @@
                 @endif
             @endif
 
-            {{-- قائمة العروض المعدلة بالحسبة المالية المزدوجة --}}
             <div class="mt-5 text-end">
                 <h4 class="fw-800 text-dark mb-4">العروض المقدمة على المشروع ({{ $project->proposals->count() }})</h4>
                 @forelse($project->proposals as $proposal)
@@ -352,11 +344,10 @@
                     </div>
                 @empty
                     <div class="text-center py-5 glass-card rounded-4"><p class="text-muted mb-0 small fw-bold">لا توجد عروض مقدمة على المشروع حتى الآن، كن أول من يقدم!</p></div>
-                @endforeach
+                @endforelse
             </div>
         </div>
 
-        {{-- الجانب الأيسر --}}
         <div class="col-lg-4">
             <div class="sticky-top" style="top: 20px; z-index: 10;">
                 <div class="glass-card p-4 text-center mb-4 shadow-sm">
@@ -380,7 +371,6 @@
 </div>
 
 <script>
-    // نظام حساب سعر الصرف اللحظي لايف في فورم التقديم للمستقل
     document.addEventListener('DOMContentLoaded', function() {
         const rate = {{ $exchangeRate }};
         const proposalInput = document.getElementById('proposal_price_input');
