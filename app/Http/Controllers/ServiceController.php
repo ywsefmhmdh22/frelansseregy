@@ -48,6 +48,14 @@ class ServiceController extends Controller
     }
 
     /**
+     * توجيه عرض الخدمة إلى صفحة الدفع مباشرة.
+     */
+    public function show($id)
+    {
+        return $this->checkout($id);
+    }
+
+    /**
      * حفظ الخدمة في قاعدة البيانات.
      */
     public function store(Request $request)
@@ -99,9 +107,6 @@ class ServiceController extends Controller
     {
         $service = Service::with('user')->findOrFail((int)$id);
 
-        // تم إزالة التحقق من تسجيل الدخول هنا للسماح للزوار برؤية صفحة التفاصيل
-        // يتم التحقق من تسجيل الدخول عند الضغط على زر الشراء الفعلي في الـ View
-
         $currentRate = $this->getUsdToEgpRate();
         $priceInUsd = round($service->price / $currentRate, 2);
 
@@ -117,12 +122,10 @@ class ServiceController extends Controller
      */
     public function payFromWallet(Request $request, $id)
     {
-        // حماية أمنية: الزر لا يظهر إلا للمسجلين، ولكن نضيف حماية للمسار أيضاً
         if (!Auth::check()) {
             return redirect()->route('login')->with('error', 'يرجى تسجيل الدخول أولاً لإتمام عملية الشراء.');
         }
 
-        // التحقق من إكمال البروفايل
         if (Auth::user()->is_profile_completed == 0) {
             return redirect()->route('profile.complete')->with('warning', 'يرجى إكمال بيانات ملفك الشخصي أولاً.');
         }
