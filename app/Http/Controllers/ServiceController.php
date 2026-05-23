@@ -48,11 +48,20 @@ class ServiceController extends Controller
     }
 
     /**
-     * توجيه عرض الخدمة إلى صفحة الدفع مباشرة.
+     * عرض تفاصيل الخدمة (تمت إضافتها لحل المشكلة).
      */
     public function show($id)
     {
-        return $this->checkout($id);
+        $service = Service::with('user')->findOrFail((int)$id);
+
+        $currentRate = $this->getUsdToEgpRate();
+        $priceInUsd = round($service->price / $currentRate, 2);
+
+        return view('services.create', [
+            'service' => $service,
+            'priceInUsd' => $priceInUsd,
+            'rate' => $currentRate
+        ]);
     }
 
     /**
