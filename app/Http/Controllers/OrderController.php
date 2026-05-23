@@ -25,6 +25,13 @@ class OrderController extends Controller
             return redirect()->route('login');
         }
 
+        // 👇 التعديل الجوهري لحل مشكلة الـ Undefined variable $formattedBalance 👇
+        $wallet = Wallet::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0]
+        );
+        $formattedBalance = number_format($wallet->balance, 2) . ' $';
+
         $orders = Order::with(['service', 'seller'])
             ->where('buyer_id', $user->id)
             ->latest()
@@ -34,7 +41,8 @@ class OrderController extends Controller
             ->withCount('proposals')
             ->get();
 
-        return view('dashboards.Client Dashboard', compact('orders', 'myProjects'));
+        // تمرير المتغيرات كاملة وبدون نقصان للـ View لتعمل لوحة التحكم بشكل سليم
+        return view('dashboards.Client Dashboard', compact('orders', 'myProjects', 'formattedBalance', 'user'));
     }
 
     /**
