@@ -33,7 +33,8 @@
         --primary-light: #10b981;
         --secondary-color: #b45309;
         --bg-body: #f1f5f9;
-        --card-bg: #ffffff;
+        --card-bg: rgba(255, 255, 255, 0.1);
+        --backdrop-filter: blur(10px);
         --text-main: #0f172a;
         --text-muted: #475569;
         --sidebar-width: 100px;
@@ -44,7 +45,8 @@
 
     [data-theme="dark"] {
         --bg-body: #020617;
-        --card-bg: #0f172a;
+        --card-bg: rgba(15, 23, 42, 0.2);
+        --backdrop-filter: blur(10px);
         --text-main: #f8fafc;
         --text-muted: #94a3b8;
         --border-color: #1e293b;
@@ -55,10 +57,20 @@
     body {
         margin: 0;
         font-family: 'Cairo', sans-serif;
-        background: var(--bg-body);
+        background-color: var(--bg-body);
         color: var(--text-main);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow-x: hidden;
+        background-image: linear-gradient(rgba(241, 245, 249, 0.8), rgba(241, 245, 249, 0.8)),
+                          url('https://images.for9a.com/thumb/max-760-auto-85-jpeg/t/44670-%D8%AA%D8%B5%D9%85%D9%8A%D9%85-%D8%A8%D8%AF%D9%88%D9%86-%D8%B9%D9%86%D9%88%D8%A7%D9%86--4-.png');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+
+    [data-theme="dark"] body {
+        background-image: linear-gradient(rgba(2, 6, 23, 0.9), rgba(2, 6, 23, 0.9)),
+                          url('https://square-dz-static.s3.amazonaws.com/media/blog/freelance_small_very.jpg');
     }
 
     #bg-canvas {
@@ -66,7 +78,7 @@
         top: 0; left: 0;
         width: 100%; height: 100%;
         z-index: -1;
-        opacity: 0.4;
+        opacity: 0.2;
         pointer-events: none;
     }
 
@@ -97,6 +109,7 @@
     .sidebar {
         width: var(--sidebar-width);
         background: var(--card-bg);
+        backdrop-filter: var(--backdrop-filter);
         height: 94vh;
         position: fixed;
         right: 1.5rem;
@@ -162,6 +175,7 @@
 
     .top-header {
         background: var(--card-bg);
+        backdrop-filter: var(--backdrop-filter);
         padding: 0.75rem 2rem;
         display: flex;
         justify-content: space-between;
@@ -210,7 +224,7 @@
         transition: 0.3s;
         margin-right: 15px;
         font-size: 0.9rem;
-        position: relative; /* ضروري لتموضع العداد */
+        position: relative;
     }
     .header-nav-btn:hover {
         background: var(--primary-color);
@@ -218,7 +232,6 @@
         transform: translateY(-2px);
     }
 
-    /* تنسيق عداد الإشعارات الجديد */
     .notification-badge {
         background: #ef4444;
         color: white;
@@ -232,21 +245,44 @@
         font-weight: bold;
     }
 
+    /* --- التعديل الفاخر الجديد لـ Hero Section --- */
     .hero-section-card {
-        background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #10b981 100%);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 40px;
-        padding: 7rem 4rem;
-        color: white;
+        padding: 5rem 3rem;
         margin-bottom: 4rem;
-        box-shadow: 0 30px 60px -12px rgba(6, 95, 70, 0.3);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        text-align: center;
         position: relative;
         overflow: hidden;
     }
-
-    .hero-content { position: relative; z-index: 2; text-align: center; }
+    .hero-section-card::before {
+        content: '';
+        position: absolute;
+        top: -50%; left: -50%;
+        width: 200%; height: 200%;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .hero-badge {
+        background: var(--primary-color);
+        color: #fff;
+        padding: 0.5rem 1.5rem;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        display: inline-block;
+    }
+    .hero-title { font-weight: 900; font-size: 3.5rem; color: var(--text-main); margin-bottom: 1.5rem; }
+    .hero-desc { font-size: 1.25rem; color: var(--text-muted); max-width: 800px; margin: 0 auto 3rem auto; line-height: 1.8; }
+    .hero-btns .btn { padding: 1rem 2.5rem; font-weight: 700; border-radius: 15px; transition: 0.3s; }
+    /* ------------------------------------------- */
 
     .policy-card {
         background: var(--card-bg);
+        backdrop-filter: var(--backdrop-filter);
         border: 1px solid var(--border-color);
         border-radius: 25px;
         padding: 2rem;
@@ -275,6 +311,7 @@
 
     .guarantee-section {
         background: var(--card-bg);
+        backdrop-filter: var(--backdrop-filter);
         border: 2px dashed var(--primary-light);
         border-radius: 30px;
         padding: 3rem 2rem;
@@ -334,7 +371,8 @@
         .nav-item-home .nav-link-custom span { display: none; }
         .sidebar-logo { display: none !important; }
         .main-wrapper { margin-right: 0; padding: 1rem; padding-bottom: 90px; }
-        .hero-section-card { padding: 5rem 1.5rem; }
+        .hero-section-card { padding: 3rem 1rem; }
+        .hero-title { font-size: 2rem; }
         .header-nav-btn { display: none; }
         .brand-logo-text { font-size: 1.7rem; }
         .guarantee-section { padding: 2rem 1rem; margin: 3rem 0 1rem 0; }
@@ -417,14 +455,12 @@
                 </button>
             </div>
 
-            <!-- أزرار الهيدر المعدلة -->
             <div class="d-none d-md-flex">
                 <a href="{{ route('blog.index') }}" class="header-nav-btn">
                     <i class="fas fa-feather-pointed"></i>
                     <span>المدونة التقنية</span>
                 </a>
 
-                <!-- زر المشاريع مع العداد -->
                 <a href="/Projects" class="header-nav-btn">
                     @if(isset($newProjectsCount) && $newProjectsCount > 0 && !request()->is('Projects*'))
                         <span class="notification-badge">{{ $newProjectsCount }}</span>
@@ -462,13 +498,16 @@
 
     @if(request()->is('/'))
     <section class="hero-section-card">
-        <div class="hero-content">
-            <h1 class="fw-800 display-4 mb-3">نبتكر الحلول الرقمية لمستقبلك</h1>
-            <p class="lead opacity-90 mb-5 fs-5">فريقنا المتخصص يقدم لك أفضل الخدمات البرمجية وتطوير التطبيقات بجودة تضمن نجاح أعمالك.</p>
-            <div class="d-flex justify-content-center flex-wrap gap-3">
-                <a href="/Services" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-success shadow-lg">اطلب خدمة الآن</a>
-                <a href="{{ route('works.index') }}" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold">شاهد أعمالنا</a>
-            </div>
+        <div class="hero-badge">منصة العمل الحر والحلول البرمجية</div>
+        <h1 class="hero-title">نفذ مشروعك التقني باحترافية</h1>
+        <p class="hero-desc">
+            سواء كنت تبحث عن فريق عمل متكامل ترشحه لك الإدارة لتنفيذ رؤيتك بدقة،
+            أو تفضل طرح مشروعك واستقبال العروض من أمهر المستقلين واختيار الأنسب لك..
+            نحن هنا لنضمن لك الجودة، السرعة، والضمان الكامل لحقوقك.
+        </p>
+        <div class="hero-btns d-flex justify-content-center flex-wrap gap-3">
+            <a href="/Projects" class="btn btn-success shadow-lg" style="background: var(--primary-color); border:none;">ابدأ طرح مشروعك</a>
+            <a href="/Services" class="btn btn-outline-dark">اطلب خدمة مخصصة</a>
         </div>
     </section>
     @endif
@@ -568,8 +607,8 @@
                 <a href="https://wa.me/201556332042" target="_blank" class="d-flex align-items-center p-3 mb-3 border rounded-3 text-decoration-none text-dark shadow-sm">
                    <i class="fab fa-whatsapp fa-2x text-success me-3"></i>
                    <div>
-                      <h6 class="mb-1 fw-bold">واتساب (WhatsApp)</h6>
-                      <p class="mb-0 text-muted small">رد سريع ومباشر على استفساراتكم</p>
+                     <h6 class="mb-1 fw-bold">واتساب (WhatsApp)</h6>
+                     <p class="mb-0 text-muted small">رد سريع ومباشر على استفساراتكم</p>
                    </div>
                 </a>
                 <a href="mailto:ywsfmhmdh22@gmail.com" class="d-flex align-items-center p-3 border rounded-3 text-decoration-none text-dark shadow-sm">
