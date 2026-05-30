@@ -138,7 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/{id}/portfolio', [UserController::class, 'showPortfolio'])->name('profile.portfolio');
 
     Route::get('/complete-profile', [ProfileCompletionController::class, 'index'])->name('profile.complete');
-    Route::post('/complete-profile', [ProfileCompletionController::class, 'store'])->name('profile.complete.store'); // تم تغيير الاسم لتجنب تكرار الأسماء المتطابقة
+    Route::post('/complete-profile', [ProfileCompletionController::class, 'store'])->name('profile.store'); // تم التعديل هنا ليطابق الـ Blade
 
     // --- نظام المراسلة ---
     Route::get('/chat/{user?}', [ChatController::class, 'chat'])->name('messages.chat');
