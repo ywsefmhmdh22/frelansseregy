@@ -290,7 +290,7 @@
         </div>
 
         {{-- 5. سجل المشاريع --}}
-        <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-5">
+        <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-4">
             <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
                 <h5 class="fw-black mb-0 text-dark"><i class="fas fa-tasks text-primary me-2"></i> سجل المشاريع والعروض</h5>
                 <span class="badge bg-light text-dark rounded-pill border px-3 py-2" style="font-size: 0.7rem;">إجمالي العروض: {{ $user->proposals->count() }}</span>
@@ -352,6 +352,61 @@
                 </table>
             </div>
         </div>
+
+        {{-- الجدول الجديد المضاف: إدارة وتعديل الخدمات المرفوعة الخاصة بالمستخدم --}}
+        <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-5">
+            <form action="{{ route('services.update_bulk') }}" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="fw-black mb-0 text-dark"><i class="fas fa-concierge-bell text-primary me-2"></i> الخدمات المرفوعة وإعداداتها</h5>
+                    <button type="submit" class="btn btn-sm btn-success-gradient rounded-pill px-4 fw-bold hover-up shadow-sm">
+                        <i class="fas fa-save me-1"></i> إعادة حفظ التعديلات
+                    </button>
+                </div>
+                <div class="table-responsive text-end">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="px-4 py-3">اسم الخدمة</th>
+                                <th class="text-center" style="width: 130px;">السعر ($)</th>
+                                <th class="text-center" style="width: 150px;">حالة الخدمة</th>
+                                <th class="text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $userServices = \App\Models\Service::where('user_id', auth()->id())->get();
+                            @endphp
+                            @forelse($userServices as $index => $service)
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <input type="hidden" name="services[{{ $index }}][id]" value="{{ $service->id }}">
+                                    <input type="text" name="services[{{ $index }}][title]" class="form-control form-control-sm rounded-3 border-light shadow-sm text-end fw-bold text-dark" value="{{ $service->title }}" required>
+                                </td>
+                                <td class="text-center">
+                                    <input type="number" name="services[{{ $index }}][price]" class="form-control form-control-sm rounded-3 border-light shadow-sm text-center fw-bold" value="{{ $service->price }}" min="5" step="0.01" required>
+                                </td>
+                                <td class="text-center">
+                                    <select name="services[{{ $index }}][status]" class="form-select form-select-sm rounded-3 border-light shadow-sm fw-bold">
+                                        <option value="active" {{ $service->status == 'active' ? 'selected' : '' }}>نشطة</option>
+                                        <option value="draft" {{ $service->status == 'draft' ? 'selected' : '' }}>مسودة</option>
+                                        <option value="paused" {{ $service->status == 'paused' ? 'selected' : '' }}>موقفة مؤقتاً</option>
+                                    </select>
+                                </td>
+                                <td class="text-center">
+                                    <a href="{{ route('services.show', $service->id) }}" class="btn btn-sm btn-outline-primary rounded-circle" title="عرض الخدمة على المنصة"><i class="fas fa-eye"></i></a>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="4" class="text-center py-5 text-muted">لم تقم برفع أي خدمات حتى الآن.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+
     </div>
 
     {{-- العمود الأيسر (بروفايل المستخدم) --}}
@@ -584,3 +639,4 @@
 </script>
 
 @endsection
+
