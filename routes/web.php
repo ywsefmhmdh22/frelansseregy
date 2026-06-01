@@ -182,6 +182,10 @@ Route::middleware('auth')->group(function () {
         // 👇 تم ترتيب مسارات الخدمات هنا؛ وضعنا المسارات الثابتة أولاً تلافياً لمشكلة الـ 404 👇
         Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
         Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
+        
+        // 🚀 الروت الجديد المطلوب لإعادة حفظ تعديلات الخدمات دفعة واحدة 🚀
+        Route::put('/services/update-bulk', [ServiceController::class, 'updateBulk'])->name('services.update_bulk');
+
         Route::get('/purchased-services', [OrderController::class, 'purchasedServices'])->name('purchased.services');
         Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.store');
         // مسار تنفيذ الدفع من المحفظة
