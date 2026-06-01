@@ -254,21 +254,27 @@ class ServiceController extends Controller
     }
 
     /**
-     * تحديث أسعار وحالة الخدمات دفعة واحدة من لوحة التحكم.
+     * تحديث أسعار وحالة الخدمات دفعة واحدة من لوحة التحكم (تم تصحيحها لتطابق حقول الـ Blade).
      */
     public function updateBulk(Request $request)
     {
-        if ($request->has('services')) {
-            foreach ($request->services as $serviceId => $serviceData) {
-                $service = Service::where('id', $serviceId)
-                                  ->where('user_id', Auth::id())
-                                  ->first();
+        if ($request->has('services') && is_array($request->services)) {
+            foreach ($request->services as $serviceData) {
+                // استخراج معرف الخدمة الفعلي من الحقل المخفي المبعوث من الـ Blade
+                $serviceId = $serviceData['id'] ?? null;
 
-                if ($service) {
-                    $service->update([
-                        'price'  => $serviceData['price'] ?? $service->price,
-                        'status' => $serviceData['status'] ?? $service->status,
-                    ]);
+                if ($serviceId) {
+                    $service = Service::where('id', $serviceId)
+                                      ->where('user_id', Auth::id())
+                                      ->first();
+
+                    if ($service) {
+                        $service->update([
+                            'title'  => $serviceData['title'] ?? $service->title,
+                            'price'  => isset($serviceData['price']) ? (float)$serviceData['price'] : $service->price,
+                            'status' => $serviceData['status'] ?? $service->status,
+                        ]);
+                    }
                 }
             }
             return redirect()->back()->with('success', 'تم إعادة حفظ وتحديث تعديلات الخدمات بنجاح!');
@@ -289,3 +295,4 @@ class ServiceController extends Controller
         ]);
     }
 }
+
