@@ -253,6 +253,30 @@ class ServiceController extends Controller
         ]);
     }
 
+    /**
+     * تحديث أسعار وحالة الخدمات دفعة واحدة من لوحة التحكم.
+     */
+    public function updateBulk(Request $request)
+    {
+        if ($request->has('services')) {
+            foreach ($request->services as $serviceId => $serviceData) {
+                $service = Service::where('id', $serviceId)
+                                  ->where('user_id', Auth::id())
+                                  ->first();
+
+                if ($service) {
+                    $service->update([
+                        'price'  => $serviceData['price'] ?? $service->price,
+                        'status' => $serviceData['status'] ?? $service->status,
+                    ]);
+                }
+            }
+            return redirect()->back()->with('success', 'تم إعادة حفظ وتحديث تعديلات الخدمات بنجاح!');
+        }
+
+        return redirect()->back()->with('error', 'لم يتم العثور على أي خدمات لتحديثها.');
+    }
+
     protected function validateServiceRequest(Request $request)
     {
         return $request->validate([
