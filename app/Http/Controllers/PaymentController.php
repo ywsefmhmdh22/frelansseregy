@@ -37,25 +37,25 @@ class PaymentController extends Controller
     }
 
     /**
-     * جلب سعر الصرف اللحظي مع التخزين المؤقت.
+     * جلب سعر الصرف اللحظي من الـ API المباشر لضمان دقة العمليات ومطابقتها التامة للسيستم (مع تخزين مؤقت ساعة)
      */
     protected function getExchangeRate()
     {
         return Cache::remember('usd_to_egp_rate', 3600, function () {
             try {
-                $apiKey = config('services.paymob.exchange_rate_api_key');
-                if (!$apiKey) return (float) config('services.paymob.exchange_rate', 50.0);
+                // الاتصال بـ API المباشر المستقر والمجاني لضمان الحصول على سعر الصرف الدقيق
+                $response = Http::timeout(5)->get("https://open.er-api.com/v6/latest/USD");
 
-                $response = Http::get("https://v6.exchangerate-api.com/v6/{$apiKey}/latest/USD");
                 if ($response->successful()) {
-                    $data = $response->json();
-                    return (float) ($data['conversion_rates']['EGP'] ?? config('services.paymob.exchange_rate', 50.0));
+                    $rates = $response->json()['rates'];
+                    return (float) ($rates['EGP'] ?? config('services.paymob.exchange_rate', 50.0));
                 }
-                return (float) config('services.paymob.exchange_rate', 50.0);
             } catch (Exception $e) {
-                Log::error('Exchange Rate API Error: ' . $e->getMessage());
-                return (float) config('services.paymob.exchange_rate', 50.0);
+                Log::error('Exchange Rate API Error (PaymentController): ' . $e->getMessage());
             }
+
+            // القيمة الاحتياطية المأخوذة من ملف الإعدادات في حال فشل السيرفر الخارجي بالكامل
+            return (float) config('services.paymob.exchange_rate', 50.0);
         });
     }
 
