@@ -1,7 +1,7 @@
 @extends('layouts.master')
 
 @section('content')
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght=400;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
@@ -81,6 +81,14 @@
         {{ $service->type === 'ready' ? 'شراء وتحميل فوري' : 'تأكيد عملية الشراء' }}
     </h2>
 
+    {{-- 👇 الجزء المضاف لعرض الأخطاء والرسائل التحذيرية القادمة من الـ Controller لتعرف السبب فوراً 👇 --}}
+    @if(session('error'))
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 p-3 mb-4 text-end" dir="rtl">
+            <i class="fas fa-exclamation-circle text-danger ms-2"></i>
+            <strong>تنبيه:</strong> {{ session('error') }}
+        </div>
+    @endif
+
     @if(session('success') && session('ready_file_path'))
         <div class="alert alert-success border-0 shadow-sm rounded-4 p-4 mb-4 text-end" dir="rtl">
             <div class="d-flex align-items-center flex-wrap">
@@ -125,8 +133,8 @@
                         <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
                             <div>
                                 <small class="text-muted d-block">رصيدك الحالي</small>
-                                <span class="fw-bold {{ Auth::user()->wallet->balance >= $priceInUsd ? 'text-success' : 'text-danger' }}">
-                                    {{ number_format(Auth::user()->wallet->balance, 2) }} $
+                                <span class="fw-bold {{ Auth::user()->wallet && Auth::user()->wallet->balance >= $priceInUsd ? 'text-success' : 'text-danger' }}">
+                                    {{ Auth::user()->wallet ? number_format(Auth::user()->wallet->balance, 2) : '0.00' }} $
                                 </span>
                             </div>
                             <i class="fas fa-wallet text-secondary opacity-50 fs-4"></i>
@@ -136,13 +144,13 @@
                     @if(!session('ready_file_path'))
                         <form action="{{ route('service.pay.wallet', $service->id) }}" method="POST">
                             @csrf
-                            <button type="submit" class="btn-buy mb-3" {{ Auth::user()->wallet->balance < $priceInUsd ? 'disabled' : '' }}>
+                            <button type="submit" class="btn-buy mb-3" {{ (!Auth::user()->wallet || Auth::user()->wallet->balance < $priceInUsd) ? 'disabled' : '' }}>
                                 <i class="fas fa-lock me-2"></i> تأكيد الدفع والطلب
                             </button>
                         </form>
                     @endif
 
-                    @if(Auth::user()->wallet->balance < $priceInUsd)
+                    @if(!Auth::user()->wallet || Auth::user()->wallet->balance < $priceInUsd)
                         <div class="alert alert-soft-danger border-0 small text-center p-2 mb-0">
                             رصيدك غير كافٍ، يرجى <a href="{{ route('wallet.deposit') }}" class="fw-bold text-danger">شحن المحفظة</a>
                         </div>

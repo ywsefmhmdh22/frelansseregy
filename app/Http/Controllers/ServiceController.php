@@ -151,37 +151,66 @@ class ServiceController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($user, $wallet, $service, $priceInUsd, $currentRate) {
+            // استخدام الترانزأكشن لضمان سلامة العمليات وحماية رصيد العميل
+            $order = DB::transaction(function () use ($user, $wallet, $service, $priceInUsd, $currentRate) {
+                // 1. خصم الرصيد من المحفظة
                 $wallet->decrement('balance', $priceInUsd);
 
-                $order = Order::create([
-                    'user_id' => $user->id,
-                    'seller_id' => $service->user_id,
-                    'service_id' => $service->id,
-                    'price' => $service->price,
-                    'status' => 'pending',
-                    'payment_method' => 'wallet'
+                // 2. فحص نوع الخدمة لتحديد الحالة المناسبة بشكل تلقائي وديناميكي
+                $isReady = ($service->type === 'ready');
+                $status = $isReady ? 'completed' : 'pending';
+
+                $newOrder = Order::create([
+                    'service_id'   => $service->id,
+                    'buyer_id'     => $user->id,
+                    'seller_id'    => $service->user_id,
+                    'price'        => $service->price,
+                    'status'       => $status,
+                    'completed_at' => $isReady ? now() : null
                 ]);
 
+                // 3. تسجيل المعاملة المالية
+                // 🔥 تم ضبط الـ type والـ payment_method لتطابق تماماً الميجريشن الخاص بك وتجنب قطع البيانات المسببة للخطأ 🔥
                 Transaction::create([
-                    'user_id'     => $user->id,
-                    'amount'      => $priceInUsd,
-                    'currency'    => 'USD',
-                    'type'        => 'pay',
-                    'status'      => 'completed',
-                    'source_id'   => $order->id,
-                    'source_type' => Order::class,
-                    'details'     => "شراء خدمة: {$service->title} | سعر الصرف: 1$ = {$currentRate} EGP"
+                    'user_id'        => $user->id,
+                    'amount'         => $priceInUsd,
+                    'currency'       => 'USD',
+                    'type'           => 'payment', // القيمة المعتمدة في الميجريشن لدفع مشروع/خدمة
+                    'status'         => 'completed',
+                    'payment_method' => 'Wallet',  // طريقة الدفع محفظة داخلية
+                    'source_id'      => $newOrder->id,
+                    'source_type'    => Order::class,
+                    'details'        => "شراء خدمة: {$service->title} | سعر الصرف: 1$ = {$currentRate} EGP"
                 ]);
+
+                // 4. إذا كانت خدمة جاهزة، نقوم بتحويل الأرباح للمستقل مباشرة دون انتظار
+                if ($isReady) {
+                    $sellerWallet = Wallet::firstOrCreate(
+                        ['user_id' => $service->user_id],
+                        ['balance' => 0]
+                    );
+                    $sellerWallet->increment('balance', $priceInUsd);
+                }
 
                 $user->notify(new ServicePurchasedNotification($service, $service->user->name));
+
+                return $newOrder;
             });
+
+            // 5. دعم كامل لصفحة Blade وعرض زر التحميل الأخضر للخدمات الجاهزة دون ريفريش أعمى
+            if ($service->type === 'ready') {
+                return back()->with([
+                    'success' => 'تم شراء الخدمة الجاهزة بنجاح! يمكنك الآن تحميل الملف من زر التحميل.',
+                    'ready_file_path' => $service->ready_file
+                ]);
+            }
 
             return redirect()->route('client.dashboard')->with('success', 'تمت عملية الشراء بنجاح.');
 
         } catch (Exception $e) {
             Log::error('Wallet Payment Error: ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ أثناء معالجة الدفع.');
+            // نقوم بتمرير رسالة الخطأ الحقيقية للـ Blade لتسهيل عملية التتبع إذا واجهتك أي مشكلة مستقبلية
+            return back()->with('error', 'حدث خطأ تقني أثناء معالجة الدفع: ' . $e->getMessage());
         }
     }
 
@@ -208,7 +237,8 @@ class ServiceController extends Controller
      */
     public function completeOrder(Request $request, Order $order)
     {
-        if (Auth::id() !== (int)$order->user_id) {
+        // تم التعديل ليفحص حقل buyer_id بدلاً من الحقل القديم ليكون متناسقاً تماماً
+        if (Auth::id() !== (int)$order->buyer_id) {
             return back()->with('error', 'غير مسموح لك بهذا الإجراء.');
         }
 
@@ -240,12 +270,14 @@ class ServiceController extends Controller
 
         $wallet->increment('pending_balance', $amount);
 
+        // 🔥 ضبط الحقول هنا لتتوافق مع خيارات جدول المعاملات المحدث (receive) 🔥
         Transaction::create([
             'user_id'         => $order->seller_id,
             'amount'          => $amount,
             'currency'        => 'USD',
-            'type'            => 'receive',
+            'type'            => 'receive',   // الخيار المعتمد في ميجريشن جدول الترانزأكشن
             'status'          => 'pending',
+            'payment_method'  => 'Wallet',
             'release_at'      => now()->addDays(7),
             'source_id'       => $order->id,
             'source_type'     => Order::class,
@@ -295,4 +327,3 @@ class ServiceController extends Controller
         ]);
     }
 }
-

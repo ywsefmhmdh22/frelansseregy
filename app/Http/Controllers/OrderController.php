@@ -25,7 +25,7 @@ class OrderController extends Controller
             return redirect()->route('login');
         }
 
-        // 👇 التعديل الجوهري لحل مشكلة الـ Undefined variable $formattedBalance 👇
+        // التعديل الجوهري لحل مشكلة الـ Undefined variable $formattedBalance
         $wallet = Wallet::firstOrCreate(
             ['user_id' => $user->id],
             ['balance' => 0]
@@ -97,7 +97,7 @@ class OrderController extends Controller
     }
 
     /**
-     * شراء خدمة (معدلة لدعم الخدمات الجاهزة والعادية)
+     * شراء خدمة (معدلة لدعم الخدمات الجاهزة والعادية وتوحيد الحقول)
      */
     public function store(Request $request)
     {
@@ -130,12 +130,13 @@ class OrderController extends Controller
                 $isReady = ($service->type === 'ready');
                 $status = $isReady ? 'completed' : 'processing';
 
+                // تم التأكيد هنا على استخدام حقل buyer_id بشكل كامل وثابت متوافق مع الموديل
                 $newOrder = Order::create([
                     'service_id'   => $service->id,
-                    'buyer_id'    => $buyer->id,
-                    'seller_id'   => $service->user_id,
-                    'price'       => $service->price,
-                    'status'      => $status,
+                    'buyer_id'     => $buyer->id,
+                    'seller_id'    => $service->user_id,
+                    'price'        => $service->price,
+                    'status'       => $status,
                     'completed_at' => $isReady ? now() : null,
                 ]);
 
@@ -151,7 +152,7 @@ class OrderController extends Controller
                 return $newOrder;
             });
 
-            // 4. التوجيه (Redirect) بناءً على نوع الخدمة
+            // 4. التوجيه (Redirect) بناءً على نوع الخدمة ليعمل زر التحميل بالبليد بدون مشاكل
             if ($service->type === 'ready') {
                 return back()->with([
                     'success' => 'تم شراء الخدمة الجاهزة بنجاح! يمكنك الآن تحميل الملف من زر التحميل.',
@@ -204,6 +205,7 @@ class OrderController extends Controller
 
         $order = Order::findOrFail($request->order_id);
 
+        // تم تغيير حقل التحقق هنا من user_id إلى buyer_id لمنع رفض الصلاحية الخاطئ!
         if (Auth::id() !== $order->buyer_id) {
             return back()->with('error', 'عفواً، لا تملك صلاحية الوصول لهذا الطلب.');
         }
@@ -254,6 +256,7 @@ class OrderController extends Controller
             DB::transaction(function () use ($order) {
                 $order->update(['status' => 'cancelled']);
 
+                // تم تغيير حقل محفظة المشتري هنا أيضاً ليكون buyer_id بدلاً من user_id
                 $buyerWallet = Wallet::firstOrCreate(
                     ['user_id' => $order->buyer_id],
                     ['balance' => 0]

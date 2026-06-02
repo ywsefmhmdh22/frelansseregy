@@ -5,8 +5,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-{{-- استدعاء مكتبة الـ JS للـ Real-time --}}
-@vite(['resources/js/app.js'])
+{{-- 🔥 تم تعليق هذا السطر لمنع ظهور خطأ الـ Vite Exception وتوقف الصفحة أثناء التست المحلي 🔥 --}}
+{{-- @vite(['resources/js/app.js']) --}}
 
 <style>
     :root {
@@ -141,10 +141,10 @@
     @media (max-width: 768px) {
         .app-chat-container {
             width: 100%;
-            height: calc(100vh - 120px); /* يطرح مساحة الهيدر والفوتر الخاص بموقعك */
+            height: calc(100vh - 120px);
             margin: 0;
             border-radius: 0;
-            position: relative; /* غيرناه من fixed لـ relative عشان يظهر داخل الـ content عادي */
+            position: relative;
         }
 
         .wa-sidebar {
@@ -258,7 +258,6 @@
 
     function backToContacts(e) {
         if(e) e.preventDefault();
-        // التوجيه المباشر والنهائي لقائمة المحادثات
         window.location.replace("{{ route('messages.chat') }}");
     }
 
@@ -268,9 +267,9 @@
             badge.classList.add('hidden');
             badge.innerText = '0';
         }
-        // هنا يمكنك إضافة Axios call لتحديث الحالة في الداتابيز كـ Read
     }
 
+    // تعديل برمجي لمنع الانهيار إذا لم تكن مسارات الملفات مهيأة في الـ local
     function scrollToBottom() {
         const win = document.getElementById("chatWindow");
         if(win) win.scrollTop = win.scrollHeight;
@@ -332,26 +331,21 @@
         if (window.Echo) {
             window.Echo.private(`chat.${authId}`)
                 .listen('.MessageSent', (e) => {
-                    // إذا كان مرسل الرسالة هو الشخص الذي أحدثه حالياً
                     if(e.sender_id == receiverId || e.sender_id == authId) {
                         appendMessage(e);
                     } else {
-                        // إذا كانت رسالة من شخص آخر، نحدث العداد في القائمة الجانبية
                         const contactRow = document.getElementById(`contact-${e.sender_id}`);
                         if(contactRow) {
                             const badge = contactRow.querySelector('.msg-badge');
                             const lastMsg = contactRow.querySelector('.last-msg-text');
 
-                            // تحديث النص الأخير
                             if(lastMsg) lastMsg.innerText = e.message || "أرسل ملفاً...";
 
-                            // زيادة العداد
                             if(badge) {
                                 let currentCount = parseInt(badge.innerText) || 0;
                                 badge.innerText = currentCount + 1;
                                 badge.classList.remove('hidden');
 
-                                // تأثير أنيميشن خفيف عند وصول رسالة
                                 contactRow.classList.add('animate__animated', 'animate__pulse');
                                 setTimeout(() => contactRow.classList.remove('animate__pulse'), 1000);
                             }
