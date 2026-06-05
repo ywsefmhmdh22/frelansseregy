@@ -121,10 +121,10 @@ Route::middleware('auth')->group(function () {
     Route::prefix('profile')->group(function () {
         Route::get('/settings', [ProfileController::class, 'settings'])->name('profile.settings');
         Route::post('/settings/update-personal', [ProfileController::class, 'updatePersonal'])->name('profile.update.personal');
+        // تفريغ وتعديل كلمة المرور والصورة الشخصية
         Route::post('/settings/update-password', [ProfileController::class, 'updatePassword'])->name('profile.update.password');
         Route::post('/settings/update-image', [ProfileController::class, 'updateImage'])->name('profile.update_image');
         Route::get('/portfolio/create', [PortfolioController::class, 'create'])->name('portfolio.create');
-        // تم تصحيح Portfolio Store هنا ليعمل مع الدالة الصحيحة
         Route::post('/portfolio/store', [PortfolioController::class, 'store'])->name('portfolio.store');
 
         Route::get('/orders/{order}/deliver', [OrderController::class, 'showDeliverPage'])->name('orders.deliver_page');
@@ -138,7 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/{id}/portfolio', [UserController::class, 'showPortfolio'])->name('profile.portfolio');
 
     Route::get('/complete-profile', [ProfileCompletionController::class, 'index'])->name('profile.complete');
-    Route::post('/complete-profile', [ProfileCompletionController::class, 'store'])->name('profile.store'); // تم التعديل هنا ليطابق الـ Blade
+    Route::post('/complete-profile', [ProfileCompletionController::class, 'store'])->name('profile.store');
 
     // --- نظام المراسلة ---
     Route::get('/chat/{user?}', [ChatController::class, 'chat'])->name('messages.chat');
@@ -158,7 +158,6 @@ Route::middleware('auth')->group(function () {
         Route::prefix('client/projects')->group(function () {
             Route::get('/', [ClientDashboardController::class, 'myProjects'])->name('projects.my_projects');
             Route::get('/create', [ProjectController::class, 'create'])->name('projects.create');
-            // تم تصحيح Project Store هنا ليعمل مع الدالة الصحيحة
             Route::post('/store', [ProjectController::class, 'store'])->name('projects.store');
             Route::get('/{id}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
             Route::get('/{id}/offers', [ClientDashboardController::class, 'projectOffers'])->name('projects.offers');
@@ -180,9 +179,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/withdraw/process', [WithdrawController::class, 'store'])->name('withdraw.request');
 
         // 👇 تم ترتيب مسارات الخدمات هنا؛ وضعنا المسارات الثابتة أولاً تلافياً لمشكلة الـ 404 👇
+        // تم إضافة هذا الروت ليتمكن الزوار من رؤية تفاصيل الخدمة
         Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
         Route::post('/services/store', [ServiceController::class, 'store'])->name('services.store');
-        
+
         // 🚀 الروت الجديد المطلوب لإعادة حفظ تعديلات الخدمات دفعة واحدة 🚀
         Route::put('/services/update-bulk', [ServiceController::class, 'updateBulk'])->name('services.update_bulk');
 
@@ -199,14 +199,13 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
+        // مفضلات المستقلين
         Route::get('/freelancers/favorites', [ClientDashboardController::class, 'favorites'])->name('freelancers.favorites');
         Route::post('/projects/{project}/proposals', [ProposalController::class, 'store'])->name('proposals.store');
     });
 
     // 👇 تم وضع مسارات المتغيرات العامة للخدمات هنا بالأسفل لكي لا تبتلع روابط الـ create 👇
-    // تم إضافة هذا الروت ليتمكن الزوار من رؤية تفاصيل الخدمة
     Route::get('/services/{id}', [ServiceController::class, 'show'])->name('services.show');
-    // تم نقل روت الـ checkout إلى هنا ليصبح عاماً
     Route::get('/services/checkout/{id}', [ServiceController::class, 'checkout'])->name('services.checkout');
 
     /*
@@ -224,6 +223,9 @@ Route::middleware('auth')->group(function () {
             Route::post('/user/{id}/reset-wallet', 'resetWallet')->name('user.reset-wallet');
             Route::get('/users/edit/{id}', 'editUser')->name('user.edit');
             Route::post('/withdrawals/{id}/process', 'processWithdrawal')->name('withdrawals.process');
+
+            // 🚀 الروت الجديد الخاص بالموافقة على المشاريع المعلقة من خلال الـ AdminDashboardController 🚀
+            Route::post('/project/{id}/approve', 'approveProject')->name('project.approve');
         });
 
         Route::controller(FinanceAdminController::class)->group(function () {

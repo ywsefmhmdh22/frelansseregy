@@ -221,6 +221,30 @@ class AdminDashboardController extends Controller
         }
     }
 
+    /**
+     * الموافقة على المشروع المعلق واعتماده في المنصة
+     */
+    public function approveProject($id): JsonResponse
+    {
+        try {
+            $project = Project::findOrFail($id);
+
+            // تحديث حالة مراجعة الإدارة ليصبح مقبولاً ونشطاً
+            $project->update([
+                'admin_status' => 'approved',
+                'status'       => 'open' // أو الحالة الافتراضية للمشاريع الجاهزة للتقديم للمستقلين عندك
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "تمت الموافقة على مشروع \"{$project->title}\" بنجاح ونشره"
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error approving project $id: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'حدث خطأ أثناء الموافقة على المشروع'], 500);
+        }
+    }
+
     public function editUser($id) {
         $user = User::with('wallet')->findOrFail($id);
         return view('admin.users.edit', compact('user'));

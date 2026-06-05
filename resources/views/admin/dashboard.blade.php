@@ -317,7 +317,7 @@
                             <td class="text-info fw-bold">{{ number_format($project->price, 2) }}</td>
                             <td class="small text-muted">{{ $project->created_at->format('Y-m-d') }}</td>
                             <td class="text-center">
-                                <button onclick="approveProject('{{$project->id}}')" class="btn btn-sm btn-success">موافقة</button>
+                                <button onclick="approveProject('{{$project->id}}')" class="btn btn-sm btn-success px-3 fw-bold">موافقة واعتماد</button>
                             </td>
                         </tr>
                         @empty
@@ -404,12 +404,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($disputedProjects ?? [] as $dispute)
+                        @forelse($disputes ?? [] as $dispute)
                         <tr>
-                            <td>{{ $dispute->project->title ?? 'N/A' }}</td>
-                            <td>{{ $dispute->client->name }} vs {{ $dispute->freelancer->name }}</td>
-                            <td class="text-success fw-bold">{{ number_format($dispute->amount) }} ج.م</td>
-                            <td><span class="badge bg-danger">مفتوح</span></td>
+                            <td>{{ $dispute->disputable->title ?? 'N/A' }}</td>
+                            <td>{{ $dispute->user->name ?? 'N/A' }}</td>
+                            <td class="text-success fw-bold">{{ number_format($dispute->amount ?? 0) }} ج.م</td>
+                            <td><span class="badge bg-danger">{{ $dispute->status }}</span></td>
                             <td class="text-center">
                                 <a href="{{ route('admin.disputes.show', $dispute->id) }}" class="btn btn-sm btn-outline-danger px-3 rounded-pill">دخول المحكمة</a>
                             </td>
@@ -574,6 +574,43 @@
                         setTimeout(() => location.reload(), 1500);
                     }
                 });
+            }
+        });
+    }
+
+    // --- 🚀 دالة الموافقة الفورية على المشاريع المعلقة عبر الأجاكس 🚀 ---
+    function approveProject(id) {
+        Swal.fire({
+            title: 'هل تريد الموافقة على هذا المشروع؟',
+            text: "سيتم تفعيل ونشر المشروع ليظهر لكافة المستقلين فوراً.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'نعم، موافقة واعتماد',
+            cancelButtonText: 'إلغاء',
+            background: '#0f172a',
+            color: '#fff'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'جاري الاعتماد النشر...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                fetch(`/admin/project/${id}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire({ icon: 'success', title: 'تمت العملية بنجاح', text: data.message, showConfirmButton: false, timer: 1500 });
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        Swal.fire('خطأ!', data.message || 'فشلت عملية الموافقة', 'error');
+                    }
+                })
+                .catch(err => Swal.fire('خطأ!', 'حدثت مشكلة أثناء الاتصال بالخادم الرئيسي', 'error'));
             }
         });
     }
