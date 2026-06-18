@@ -22,6 +22,10 @@
 
         <form method="POST" action="{{ route('register') }}" id="registrationForm">
             @csrf
+
+            {{-- التعديل القاطع المضاف: تمرير كود الإحالة تلقائياً مع الفورم لضمان تخطي حظر المتصفح الخفي --}}
+            <input type="hidden" name="ref" value="{{ request()->query('ref') ?? request()->cookie('referred_by') ?? session('referred_by') }}">
+
             <div id="adminHiddenFields"></div>
 
             <div class="mb-4" id="roleSelectorContainer">
@@ -171,43 +175,48 @@
         // 1. طول كلمة المرور (أدنى حد 12 للتميز)
         if (val.length >= 8) strength += 25;
         if (val.length >= 12) {
-            strength += 25;
-            document.getElementById('req-length').classList.add('req-met');
+            $el = document.getElementById('req-length');
+            if($el) $el.classList.add('req-met');
         } else {
-            document.getElementById('req-length').classList.remove('req-met');
+            $el = document.getElementById('req-length');
+            if($el) $el.classList.remove('req-met');
         }
 
         // 2. حروف كبيرة وصغيرة
         if (/[A-Z]/.test(val) && /[a-z]/.test(val)) {
             strength += 25;
-            document.getElementById('req-upper').classList.add('req-met');
+            $el = document.getElementById('req-upper');
+            if($el) $el.classList.add('req-met');
         } else {
-            document.getElementById('req-upper').classList.remove('req-met');
+            $el = document.getElementById('req-upper');
+            if($el) $el.classList.remove('req-met');
         }
 
         // 3. أرقام ورموز خاصة
         if (/[0-9]/.test(val) && /[@$!%*?&#]/.test(val)) {
             strength += 25;
-            document.getElementById('req-number').classList.add('req-met');
+            $el = document.getElementById('req-number');
+            if($el) $el.classList.add('req-met');
         } else {
-            document.getElementById('req-number').classList.remove('req-met');
+            $el = document.getElementById('req-number');
+            if($el) $el.classList.remove('req-met');
         }
 
         // Update UI
-        strengthBar.style.width = strength + '%';
+        if(strengthBar) strengthBar.style.width = strength + '%';
 
         if (val.length === 0) {
-            strengthBar.style.width = '0%';
-            strengthText.innerText = 'قوة كلمة المرور';
+            if(strengthBar) strengthBar.style.width = '0%';
+            if(strengthText) strengthText.innerText = 'قوة كلمة المرور';
         } else if (strength <= 50) {
-            strengthBar.className = 'progress-bar strength-weak';
-            strengthText.innerText = 'كلمة مرور ضعيفة جداً';
+            if(strengthBar) strengthBar.className = 'progress-bar strength-weak';
+            if(strengthText) strengthText.innerText = 'كلمة مرور ضعيفة جداً';
         } else if (strength <= 75) {
-            strengthBar.className = 'progress-bar strength-medium';
-            strengthText.innerText = 'كلمة مرور متوسطة';
+            if(strengthBar) strengthBar.className = 'progress-bar strength-medium';
+            if(strengthText) strengthText.innerText = 'كلمة مرور متوسطة';
         } else {
-            strengthBar.className = 'progress-bar strength-strong';
-            strengthText.innerText = 'كلمة مرور قوية جداً';
+            if(strengthBar) strengthBar.className = 'progress-bar strength-strong';
+            if(strengthText) strengthText.innerText = 'كلمة مرور قوية جداً';
         }
     });
 

@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Poppins:wght@700;800&display=swap');
 :root {
     --primary: #10b981;
     --primary-dark: #059669;
@@ -87,6 +87,8 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
 .notif-item { transition: 0.3s; }
 .notif-item.unread { background-color: #f0fdf4 !important; border-right: 4px solid var(--primary) !important; }
 .notif-count { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 50px; border: 2px solid white; font-weight: 900; }
+
+.client-qr-box:hover { transform: scale(1.03); }
 
 /* Media Queries للتوافق المرعب */
 @media (max-width: 991.98px) {
@@ -165,6 +167,47 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                         <p class="small opacity-75 mb-1 position-relative">الرصيد المتاح</p>
                         <h3 class="fw-bold mb-3 position-relative" style="font-size: var(--stat-font);">{{ $formattedBalance }}</h3>
                         <a href="{{ route('wallet.deposit') }}" class="btn btn-glass-white btn-sm w-100 rounded-pill fw-bold position-relative">شحن الرصيد</a>
+                    </div>
+
+                    {{-- قسم نظام الإحالة الاحترافي للعميل (الباركود المخصص + رابط الإحالة) --}}
+                    <div class="glass-card p-4 rounded-5 shadow-sm border-0 text-center mt-4 overflow-hidden position-relative animate__animated animate__fadeInUp" style="border-radius: 24px !important; background: linear-gradient(145deg, #ffffff, #fbfdfc);">
+                        <div class="position-absolute top-0 start-0 w-100 h-100 bg-success opacity-5" style="pointer-events: none; background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 80%);"></div>
+
+                        <h6 class="fw-bold mb-1 text-dark d-flex align-items-center justify-content-center">
+                            <i class="fas fa-gift text-success me-2 animate__animated animate__pulse animate__infinite"></i> برنامج السفير والمكافآت
+                        </h6>
+                        <p class="text-muted mb-3" style="font-size: 0.75rem;">انسخ كود الدعوة الخاص بك واكسب ميزات وهدايا حصرية!</p>
+
+                        @php
+                            // تعديل جذري قاطع: توليد رابط الإحالة الديناميكي الحقيقي القادم مباشرة من الـ Model
+                            $referralUrl = url('/register') . '?ref=' . $user->referral_code;
+                            $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" . urlencode($referralUrl);
+                        @endphp
+
+                        {{-- منطقة الباركود الفخم المخصص للعميل --}}
+                        <div class="client-qr-box mx-auto p-3 bg-white shadow-sm border rounded-4 mb-3 position-relative d-flex flex-column align-items-center justify-content-center" style="max-width: 170px; transition: transform 0.3s;">
+                            <img src="{{ $qrCodeUrl }}" alt="Referral QR Code" class="img-fluid rounded-3" style="width: 120px; height: 120px;">
+
+                            {{-- شعار البراند المرسوم تحت الباركود --}}
+                            <div class="brand-text-overlay mt-2 px-3 py-1 bg-dark text-white rounded-pill d-flex align-items-center justify-content-center shadow-sm" style="font-size: 0.65rem; font-family: 'Poppins', sans-serif; letter-spacing: 1px; font-weight: 800;">
+                                <i class="fas fa-globe me-1 text-success small"></i> WORKLY DAY
+                            </div>
+                        </div>
+
+                        {{-- حقل نسخ الرابط المطور --}}
+                        <div class="mb-1 text-end">
+                            <div class="input-group input-group-sm rounded-pill overflow-hidden border shadow-sm" dir="ltr" style="background: #f8fafc;">
+                                <button class="btn btn-success px-3 fw-bold border-0" type="button" id="client-copy-btn" onclick="copyClientReferralLink()">
+                                    <i class="fas fa-copy" id="client-copy-icon"></i>
+                                </button>
+                                <input type="text" class="form-control text-center bg-transparent border-0 fw-bold text-dark p-2" id="client-link-input" value="{{ $referralUrl }}" readonly style="font-size: 0.7rem;">
+                            </div>
+                        </div>
+
+                        {{-- رسالة نجاح النسخ التفاعلية --}}
+                        <div id="client-copy-toast" class="text-success small fw-bold d-none animate__animated animate__fadeInDown text-center mt-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-check-circle me-1"></i> تم نسخ رابط سفيرك بنجاح!
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -264,7 +307,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                         <h5 class="fw-bold mb-0 text-dark px-2">آخر المشتريات <i class="fas fa-shopping-bag ms-2 text-success opacity-50"></i></h5>
                     </div>
                     <div class="table-responsive">
-                        <table class="table custom-table align-middle mb-0 text-end">
+                        <table class="table table-hover align-middle mb-0 text-end custom-table">
                             <thead>
                                 <tr>
                                     <th class="ps-4">الخدمة</th>
@@ -337,14 +380,14 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                     </div>
                 </section>
 
-                {{-- المشاريع الحالية --}}
+                {{-- Projects section --}}
                 <section class="glass-card mb-4 overflow-hidden border-0 shadow-sm">
                     <div class="p-4 d-flex justify-content-between align-items-center border-bottom bg-light-soft">
                         <h5 class="fw-bold mb-0 text-dark px-2">مشاريعك المفتوحة <i class="fas fa-laptop-code ms-2 text-primary opacity-50"></i></h5>
                         <a href="{{ route('projects.my_projects') }}" class="btn btn-sm btn-link text-success fw-bold text-decoration-none">مشاهدة الكل <i class="fas fa-chevron-left small ms-1"></i></a>
                     </div>
                     <div class="table-responsive">
-                        <table class="table custom-table align-middle mb-0 text-end">
+                        <table class="table table-hover align-middle mb-0 text-end custom-table">
                             <thead>
                                 <tr>
                                     <th class="ps-4">عنوان المشروع</th>
@@ -406,6 +449,61 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                         </table>
                     </div>
                 </section>
+
+                {{-- سجل الأشخاص المسجلين من رابط الإحالة الخاص بالعميل الحالي --}}
+                <section class="glass-card mb-4 overflow-hidden border-0 shadow-sm">
+                    <div class="p-4 d-flex justify-content-between align-items-center border-bottom bg-light-soft">
+                        <h5 class="fw-bold mb-0 text-dark px-2">أعضاء مسجلين عن طريقك <i class="fas fa-users ms-2 text-primary opacity-50"></i></h5>
+                        <span class="badge bg-soft-success text-success rounded-pill border px-3 py-2 fw-bold" style="font-size: 0.7rem;">إجمالي المدعوين: {{ isset($user->referees) ? $user->referees->count() : 0 }}</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table custom-table align-middle mb-0 text-end">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">اسم المستخدم</th>
+                                    <th>نوع الحساب</th>
+                                    <th>تاريخ الانضمام</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if(isset($user->referees) && $user->referees->count() > 0)
+                                    @foreach($user->referees as $referee)
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-dark">
+                                            <i class="fas fa-user-circle me-2 opacity-50 text-secondary"></i>{{ $referee->name }}
+                                        </td>
+                                        <td>
+                                            @if($referee->role == 'freelancer')
+                                                <span class="badge bg-light text-primary border border-primary px-3 py-1 rounded-pill small fw-bold">
+                                                    <i class="fas fa-laptop-code me-1"></i> مستقل (Freelancer)
+                                                </span>
+                                            @elseif($referee->role == 'client')
+                                                <span class="badge bg-light text-success border border-success px-3 py-1 rounded-pill small fw-bold">
+                                                    <i class="fas fa-user-tie me-1"></i> عميل (Client)
+                                                </span>
+                                            @else
+                                                <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small fw-bold">
+                                                    {{ $referee->role }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="text-muted extra-small">
+                                            {{ $referee->created_at ? $referee->created_at->format('Y/m/d') : '-' }}
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                @else
+                                <tr>
+                                    <td colspan="3" class="text-center py-5 text-muted">
+                                        <i class="fas fa-link-slash d-block mb-2 opacity-25 fa-2x"></i>
+                                        لم يسجل أي مستخدم عبر رابطك حتى الآن. شارك الرابط وابدأ بجمع المكافآت!
+                                    </td>
+                                </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
         </div>
     </div>
@@ -430,7 +528,7 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
                         <li>سيتم الحكم بشفافية مطلقة لضمان حق المشتري والمستقل.</li>
                     </ul>
                 </div>
-                <p class="fw-bold text-dark mt-3 small">هل تريد تصعيد هذا النزاع للتحكيم الرسمي?</p>
+                <p class="fw-bold text-dark mt-3 small">هل تريد تصعيد هذا النزاع للتحكيم الرسمي؟</p>
 
                 <form id="disputeForm" action="{{ route('dispute.store') }}" method="POST">
                     @csrf
@@ -447,6 +545,26 @@ body { background-color: #f1f5f9; font-family: 'Cairo', sans-serif; color: var(-
 </div>
 
 <script>
+    // جافا سكريبت تفاعلية مخصصة لنسخ رابط الإحالة الخاص بالعميل
+    function copyClientReferralLink() {
+        const copyText = document.getElementById("client-link-input");
+        const copyIcon = document.getElementById("client-copy-icon");
+        const toast = document.getElementById("client-copy-toast");
+
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+
+        // تأثير تغيير الأيقونة للتأكيد البصري
+        copyIcon.className = "fas fa-check";
+        toast.classList.remove("d-none");
+
+        setTimeout(() => {
+            copyIcon.className = "fas fa-copy";
+            toast.classList.add("d-none");
+        }, 2500);
+    }
+
     function openDisputeModal(id, type) {
         document.getElementById('dispute_item_id').value = id;
         document.getElementById('dispute_type').value = type;

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 // استدعاء الموديلات المرتبطة
 use App\Models\Wallet;
@@ -15,7 +16,7 @@ use App\Models\Service;
 use App\Models\Order;
 use App\Models\Review;
 use App\Models\Portfolio;
-use App\Models\WithdrawRequest; // تم إضافة استدعاء موديل طلبات السحب
+use App\Models\WithdrawRequest;
 
 class User extends Authenticatable
 {
@@ -44,6 +45,8 @@ class User extends Authenticatable
         'role',
         'last_seen',
         'email_verified_at',
+        'referral_code', // إضافة حقل كود الإحالة
+        'referrer_id',   // إضافة معرف المحيل
     ];
 
     /**
@@ -57,25 +60,51 @@ class User extends Authenticatable
     /**
      * تحويل أنواع البيانات (Casting)
      */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_profile_completed' => 'boolean',
+        'is_banned' => 'boolean',
+        'last_seen' => 'datetime',
+        'balance' => 'decimal:2',
+        'freelancer_rating' => 'float',
+        'skills' => 'array',
+    ];
+
+    /**
+     * دالة العمليات التلقائية (Booted) لتوليد كود إحالة فريد عند إنشاء الحساب
+     */
+    protected static function booted()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_profile_completed' => 'boolean',
-            'is_banned' => 'boolean',
-            'last_seen' => 'datetime',
-            'balance' => 'decimal:2',
-            'freelancer_rating' => 'float',
-            'skills' => 'array',
-        ];
+        static::creating(function ($user) {
+            if (empty($user->referral_code)) {
+                $user->referral_code = 'REF-' . strtoupper(Str::random(8));
+            }
+        });
     }
 
-    // ================= العلاقات والوظائف =================
+    // ================= علاقات نظام الإحالة المطور =================
+
+    /**
+     * علاقة معرفة الشخص الذي قام بدعوة هذا المستخدم (المحيل)
+     */
+    public function referrer()
+    {
+        return $this->belongsTo(User::class, 'referrer_id');
+    }
+
+    /**
+     * علاقة معرفة قائمة الأشخاص الذين سجلوا عن طريق هذا المستخدم
+     */
+    public function referees()
+    {
+        return $this->hasMany(User::class, 'referrer_id');
+    }
+
+    // ================= العلاقات والوظائف الأساسية =================
 
     /**
      * علاقة طلبات السحب (واحد لمتعدد)
-     * تم إضافتها لحل مشكلة سجل العمليات في صفحة المحفظة
      */
     public function withdrawRequests()
     {

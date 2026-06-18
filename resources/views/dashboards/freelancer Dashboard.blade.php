@@ -137,347 +137,389 @@
         </div>
     </div>
 
-     <div class="row g-4 text-end">
-    <div class="col-lg-8">
-        {{-- 3. مركز القيادة والعمليات --}}
-        <div class="glass-card p-4 rounded-5 shadow-sm border-0 mb-4 overflow-hidden position-relative">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="fw-black text-dark mb-0"><i class="fas fa-chart-line text-primary me-2" aria-hidden="true"></i> مركز القيادة والعمليات</h5>
-                <div class="status-indicator d-flex align-items-center bg-light px-3 py-1 rounded-pill">
-                    <span class="small fw-bold text-success">النظام يعمل بكفاءة</span>
-                    <span class="status-pulse ms-2"></span>
+    <div class="row g-4 text-end">
+        <div class="col-lg-8">
+            {{-- 3. مركز القيادة والعمليات --}}
+            <div class="glass-card p-4 rounded-5 shadow-sm border-0 mb-4 overflow-hidden position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-black text-dark mb-0"><i class="fas fa-chart-line text-primary me-2" aria-hidden="true"></i> مركز القيادة والعمليات</h5>
+                    <div class="status-indicator d-flex align-items-center bg-light px-3 py-1 rounded-pill">
+                        <span class="small fw-bold text-success">النظام يعمل بكفاءة</span>
+                        <span class="status-pulse ms-2"></span>
+                    </div>
                 </div>
-            </div>
 
-            <div class="row g-4">
-                <div class="col-md-7">
-                    <div class="p-4 rounded-4 bg-dark-gradient text-white h-100 position-relative overflow-hidden">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="small opacity-75">مستوى البائع: <span class="text-info fw-bold">{{ $proStatus['levelPercentage'] > 80 ? 'بائع محترف' : 'بائع نشط' }}</span></span>
-                            <span class="fw-bold">{{ $proStatus['levelPercentage'] }}%</span>
-                        </div>
-                        <div class="progress mb-4" style="height: 12px; background: rgba(255,255,255,0.1); border-radius: 20px;">
-                            <div class="progress-bar bg-primary-gradient" role="progressbar" style="width: {{ $proStatus['levelPercentage'] }}%;" aria-valuenow="{{ $proStatus['levelPercentage'] }}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <div class="row g-2 text-center">
-                            <div class="col-4">
-                                <div class="p-2 rounded-3 bg-white bg-opacity-10">
-                                    <div class="small opacity-75">الموثوقية</div>
-                                    <div class="fw-bold text-success">{{ $proStatus['reliability'] }}%</div>
-                                </div>
+                <div class="row g-4">
+                    <div class="col-md-7">
+                        <div class="p-4 rounded-4 bg-dark-gradient text-white h-100 position-relative overflow-hidden">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="small opacity-75">مستوى البائع: <span class="text-info fw-bold">{{ $proStatus['levelPercentage'] > 80 ? 'بائع محترف' : 'بائع نشط' }}</span></span>
+                                <span class="fw-bold">{{ $proStatus['levelPercentage'] }}%</span>
                             </div>
-                            <div class="col-4">
-                                <div class="p-2 rounded-3 bg-white bg-opacity-10">
-                                    <div class="small opacity-75">التسليم</div>
-                                    <div class="fw-bold text-info">{{ $proStatus['delivery'] }}</div>
-                                </div>
+                            <div class="progress mb-4" style="height: 12px; background: rgba(255,255,255,0.1); border-radius: 20px;">
+                                <div class="progress-bar bg-primary-gradient" role="progressbar" style="width: {{ $proStatus['levelPercentage'] }}%;" aria-valuenow="{{ $proStatus['levelPercentage'] }}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
-                            <div class="col-4">
-                                <div class="p-2 rounded-3 bg-white bg-opacity-10">
-                                    <div class="small opacity-75">الرد</div>
-                                    <div class="fw-bold text-warning">{{ $proStatus['response'] }}</div>
+                            <div class="row g-2 text-center">
+                                <div class="col-4">
+                                    <div class="p-2 rounded-3 bg-white bg-opacity-10">
+                                        <div class="small opacity-75">الموثوقية</div>
+                                        <div class="fw-bold text-success">{{ $proStatus['reliability'] }}%</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 rounded-3 bg-white bg-opacity-10">
+                                        <div class="small opacity-75">التسليم</div>
+                                        <div class="fw-bold text-info">{{ $proStatus['delivery'] }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 rounded-3 bg-white bg-opacity-10">
+                                        <div class="small opacity-75">الرد</div>
+                                        <div class="fw-bold text-warning">{{ $proStatus['response'] }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-5">
-                    <div class="d-flex flex-column gap-2 h-100 justify-content-center">
-                        <div class="goal-item p-3 rounded-4 border bg-white d-flex align-items-center shadow-sm">
-                            <i class="fas fa-bullseye text-danger me-3 fs-4" aria-hidden="true"></i>
-                            <div class="flex-grow-1">
-                                <div class="fw-bold small">هدف الأرباح ($5,000)</div>
-                                <div class="progress mt-1" style="height: 4px;">
-                                    <div class="progress-bar bg-danger" style="width: {{ $quickGoals['income']['percentage'] }}%" role="progressbar"></div>
+                    <div class="col-md-5">
+                        <div class="d-flex flex-column gap-2 h-100 justify-content-center">
+                            <div class="goal-item p-3 rounded-4 border bg-white d-flex align-items-center shadow-sm">
+                                <i class="fas fa-bullseye text-danger me-3 fs-4" aria-hidden="true"></i>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold small">هدف الأرباح ($5,000)</div>
+                                    <div class="progress mt-1" style="height: 4px;">
+                                        <div class="progress-bar bg-danger" style="width: {{ $quickGoals['income']['percentage'] }}%" role="progressbar"></div>
+                                    </div>
                                 </div>
+                                <span class="ms-3 fw-bold">{{ $quickGoals['income']['text'] }}</span>
                             </div>
-                            <span class="ms-3 fw-bold">{{ $quickGoals['income']['text'] }}</span>
-                        </div>
-                        <div class="goal-item p-3 rounded-4 border bg-white d-flex align-items-center shadow-sm">
-                            <i class="fas fa-star text-warning me-3 fs-4" aria-hidden="true"></i>
-                            <div class="flex-grow-1">
-                                <div class="fw-bold small">التقييم العام</div>
-                                <div class="progress mt-1" style="height: 4px;">
-                                    <div class="progress-bar bg-warning" style="width: {{ $quickGoals['rating']['percentage'] }}%" role="progressbar"></div>
+                            <div class="goal-item p-3 rounded-4 border bg-white d-flex align-items-center shadow-sm">
+                                <i class="fas fa-star text-warning me-3 fs-4" aria-hidden="true"></i>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold small">التقييم العام</div>
+                                    <div class="progress mt-1" style="height: 4px;">
+                                        <div class="progress-bar bg-warning" style="width: {{ $quickGoals['rating']['percentage'] }}%" role="progressbar"></div>
+                                    </div>
                                 </div>
+                                <span class="ms-3 fw-bold">{{ $quickGoals['rating']['text'] }}</span>
                             </div>
-                            <span class="ms-3 fw-bold">{{ $quickGoals['rating']['text'] }}</span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        {{-- 4. إدارة مبيعات الخدمات --}}
-        <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-4">
-            <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="fw-black mb-0 text-dark">إدارة مبيعات الخدمات</h5>
-                <i class="fas fa-shopping-bag opacity-25"></i>
-            </div>
-            <div class="table-responsive text-end">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="px-4 py-3 border-0">الخدمة والعميل</th>
-                            <th class="border-0 text-center">النوع</th>
-                            <th class="border-0 text-center">الحالة</th>
-                            <th class="border-0 text-center">تحكيم الإدارة</th>
-                            <th class="border-0 text-center">الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($recentOrders as $order)
-                        <tr>
-                            <td class="px-4 py-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="service-icon-small bg-primary-soft rounded-3 p-2 me-3 text-primary">
-                                        <i class="fas {{ ($order->service && $order->service->type == 'ready') ? 'fa-bolt text-warning' : 'fa-box-open' }}" aria-hidden="true"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold text-dark">{{ $order->service ? Str::limit($order->service->title, 35) : 'طلب مخصص' }}</div>
-                                        <small class="text-muted"><i class="fas fa-user me-1 small" aria-hidden="true"></i> العميل: {{ $order->buyer->name ?? 'مستخدم' }}</small>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                @if($order->service && $order->service->type == 'ready')
-                                    <span class="badge bg-warning-gradient text-white rounded-pill px-2" style="font-size: 0.65rem;">جاهزة للتسليم</span>
-                                @else
-                                    <span class="badge bg-light text-dark border rounded-pill px-2" style="font-size: 0.65rem;">خدمة عادية</span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                @php
-                                    $displayStatus = ($order->service && $order->service->type == 'ready') ? 'completed' : $order->status;
-                                    $statusClasses = [
-                                        'completed' => 'bg-success-soft text-success',
-                                        'pending' => 'bg-warning-soft text-warning',
-                                        'cancelled' => 'bg-danger-soft text-danger',
-                                        'processing' => 'bg-info-soft text-info',
-                                        'disputed' => 'bg-dark text-white'
-                                    ];
-                                    $statusClass = $statusClasses[$displayStatus] ?? 'bg-secondary-soft text-dark';
-                                @endphp
-                                <span class="badge rounded-pill {{ $statusClass }} px-3 py-2 mb-1">
-                                    {{ __($displayStatus) }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <form id="dispute-order-{{ $order->id }}" action="{{ route('dispute.store') }}" method="POST" style="display: inline;">
-                                    @csrf
-                                    <input type="hidden" name="item_id" value="{{ $order->id }}">
-                                    <input type="hidden" name="type" value="service">
-                                    <button type="button" onclick="confirmDisputeAction(event, 'dispute-order-{{ $order->id }}')" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" style="font-size: 0.75rem;">
-                                        <i class="fas fa-gavel me-1"></i> طلب تحكيم
-                                    </button>
-                                </form>
-                            </td>
-                            <td class="text-center">
-                                <div class="btn-group gap-2">
-                                    <a href="{{ route('orders.show', $order->id) }}" class="btn btn-sm btn-outline-primary rounded-circle" title="عرض التفاصيل"><i class="fas fa-eye"></i></a>
-                                    @if($order->service && $order->service->type != 'ready')
-                                        <a href="{{ route('messages.chat', ['user' => $order->buyer_id]) }}" class="btn btn-sm btn-outline-info rounded-circle" title="مراسلة العميل"><i class="fas fa-comment-dots"></i></a>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr><td colspan="5" class="text-center py-5 text-muted">لا توجد مبيعات حالياً.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {{-- 5. سجل المشاريع --}}
-        <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-4">
-            <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
-                <h5 class="fw-black mb-0 text-dark"><i class="fas fa-tasks text-primary me-2"></i> سجل المشاريع والعروض</h5>
-                <span class="badge bg-light text-dark rounded-pill border px-3 py-2" style="font-size: 0.7rem;">إجمالي العروض: {{ $user->proposals->count() }}</span>
-            </div>
-            <div class="table-responsive text-end">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="px-4 py-3">المشروع</th>
-                            <th class="text-center">حالة المشروع</th>
-                            <th class="text-center">حالة الرصيد</th>
-                            <th class="text-center">تحكيم الإدارة</th>
-                            <th class="text-center">الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($user->proposals as $proposal)
-                        <tr>
-                            <td class="px-4 py-3">
-                                <div class="fw-bold text-dark">{{ Str::limit($proposal->project->title ?? 'مشروع', 40) }}</div>
-                            </td>
-                            <td class="text-center">
-                                @php
-                                    $projStatus = $proposal->project->status ?? 'open';
-                                    $projBadges = ['open' => 'bg-success-gradient', 'processing' => 'bg-warning-gradient', 'completed' => 'bg-info-gradient', 'disputed' => 'bg-dark'];
-                                    $projBadge = $projBadges[$projStatus] ?? 'bg-secondary-gradient';
-                                @endphp
-                                <span class="badge {{ $projBadge }} text-white px-3 py-2 rounded-pill small">
-                                    {{ __($projStatus) }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                @if($proposal->project && $proposal->project->selected_proposal_id == $proposal->id)
-                                    <span class="badge bg-light {{ $projStatus == 'completed' ? 'text-success border-success' : 'text-primary border-primary' }} border px-3 py-2 rounded-pill">
-                                        {{ $projStatus == 'completed' ? 'رصيد متاح' : 'رصيد معلق' }}
-                                    </span>
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                <form id="dispute-project-{{ $proposal->id }}" action="{{ route('dispute.store') }}" method="POST" style="display: inline;">
-                                    @csrf
-                                    <input type="hidden" name="item_id" value="{{ $proposal->project_id }}">
-                                    <input type="hidden" name="type" value="project">
-                                    <button type="button" onclick="confirmDisputeAction(event, 'dispute-project-{{ $proposal->id }}')" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" style="font-size: 0.75rem;">
-                                        <i class="fas fa-gavel me-1"></i> طلب تحكيم
-                                    </button>
-                                </form>
-                            </td>
-                            <td class="text-center">
-                                <a href="{{ route('projects.show', $proposal->project_id) }}" class="btn btn-sm btn-light border rounded-pill px-3 hover-up">تفاصيل</a>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr><td colspan="5" class="text-center py-5 text-muted">لا يوجد عروض مقدمة.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {{-- الجدول الجديد المضاف: إدارة وتعديل الخدمات المرفوعة الخاصة بالمستخدم --}}
-        <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-5">
-            <form action="{{ route('services.update_bulk') }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="fw-black mb-0 text-dark"><i class="fas fa-concierge-bell text-primary me-2"></i> الخدمات المرفوعة وإعداداتها</h5>
-                    <button type="submit" class="btn btn-sm btn-success-gradient rounded-pill px-4 fw-bold hover-up shadow-sm">
-                        <i class="fas fa-save me-1"></i> إعادة حفظ التعديلات
-                    </button>
+            {{-- 4. إدارة مبيعات الخدمات --}}
+            <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-4">
+                <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-black mb-0 text-dark">إدارة مبيعات الخدمات</h5>
+                    <i class="fas fa-shopping-bag opacity-25"></i>
                 </div>
                 <div class="table-responsive text-end">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="px-4 py-3">اسم الخدمة</th>
-                                <th class="text-center" style="width: 130px;">السعر ($)</th>
-                                <th class="text-center" style="width: 150px;">حالة الخدمة</th>
-                                <th class="text-center">الإجراءات</th>
+                                <th class="px-4 py-3 border-0">الخدمة والعميل</th>
+                                <th class="border-0 text-center">النوع</th>
+                                <th class="border-0 text-center">الحالة</th>
+                                <th class="border-0 text-center">تحكيم الإدارة</th>
+                                <th class="border-0 text-center">الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @php
-                                $userServices = \App\Models\Service::where('user_id', auth()->id())->get();
-                            @endphp
-                            @forelse($userServices as $index => $service)
+                            @forelse($recentOrders as $order)
                             <tr>
                                 <td class="px-4 py-3">
-                                    <input type="hidden" name="services[{{ $index }}][id]" value="{{ $service->id }}">
-                                    <input type="text" name="services[{{ $index }}][title]" class="form-control form-control-sm rounded-3 border-light shadow-sm text-end fw-bold text-dark" value="{{ $service->title }}" required>
+                                    <div class="d-flex align-items-center">
+                                        <div class="service-icon-small bg-primary-soft rounded-3 p-2 me-3 text-primary">
+                                            <i class="fas {{ ($order->service && $order->service->type == 'ready') ? 'fa-bolt text-warning' : 'fa-box-open' }}" aria-hidden="true"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ $order->service ? Str::limit($order->service->title, 35) : 'طلب مخصص' }}</div>
+                                            <small class="text-muted"><i class="fas fa-user me-1 small" aria-hidden="true"></i> العميل: {{ $order->buyer->name ?? 'مستخدم' }}</small>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="text-center">
-                                    <input type="number" name="services[{{ $index }}][price]" class="form-control form-control-sm rounded-3 border-light shadow-sm text-center fw-bold" value="{{ $service->price }}" min="5" step="0.01" required>
+                                    @if($order->service && $order->service->type == 'ready')
+                                        <span class="badge bg-warning-gradient text-white rounded-pill px-2" style="font-size: 0.65rem;">جاهزة للتسليم</span>
+                                    @else
+                                        <span class="badge bg-light text-dark border rounded-pill px-2" style="font-size: 0.65rem;">خدمة عادية</span>
+                                    @endif
                                 </td>
                                 <td class="text-center">
-                                    <select name="services[{{ $index }}][status]" class="form-select form-select-sm rounded-3 border-light shadow-sm fw-bold">
-                                        <option value="active" {{ $service->status == 'active' ? 'selected' : '' }}>نشطة</option>
-                                        <option value="draft" {{ $service->status == 'draft' ? 'selected' : '' }}>مسودة</option>
-                                        <option value="paused" {{ $service->status == 'paused' ? 'selected' : '' }}>موقفة مؤقتاً</option>
-                                    </select>
+                                    @php
+                                        $displayStatus = ($order->service && $order->service->type == 'ready') ? 'completed' : $order->status;
+                                        $statusClasses = [
+                                            'completed' => 'bg-success-soft text-success',
+                                            'pending' => 'bg-warning-soft text-warning',
+                                            'cancelled' => 'bg-danger-soft text-danger',
+                                            'processing' => 'bg-info-soft text-info',
+                                            'disputed' => 'bg-dark text-white'
+                                        ];
+                                        $statusClass = $statusClasses[$displayStatus] ?? 'bg-secondary-soft text-dark';
+                                    @endphp
+                                    <span class="badge rounded-pill {{ $statusClass }} px-3 py-2 mb-1">
+                                        {{ __($displayStatus) }}
+                                    </span>
                                 </td>
                                 <td class="text-center">
-                                    <a href="{{ route('services.show', $service->id) }}" class="btn btn-sm btn-outline-primary rounded-circle" title="عرض الخدمة على المنصة"><i class="fas fa-eye"></i></a>
+                                    <form id="dispute-order-{{ $order->id }}" action="{{ route('dispute.store') }}" method="POST" style="display: inline;">
+                                        @csrf
+                                        <input type="hidden" name="item_id" value="{{ $order->id }}">
+                                        <input type="hidden" name="type" value="service">
+                                        <button type="button" onclick="confirmDisputeAction(event, 'dispute-order-{{ $order->id }}')" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" style="font-size: 0.75rem;">
+                                            <i class="fas fa-gavel me-1"></i> طلب تحكيم
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group gap-2">
+                                        <a href="{{ route('orders.show', $order->id) }}" class="btn btn-sm btn-outline-primary rounded-circle" title="عرض التفاصيل"><i class="fas fa-eye"></i></a>
+                                        @if($order->service && $order->service->type != 'ready')
+                                            <a href="{{ route('messages.chat', ['user' => $order->buyer_id]) }}" class="btn btn-sm btn-outline-info rounded-circle" title="مراسلة العميل"><i class="fas fa-comment-dots"></i></a>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="4" class="text-center py-5 text-muted">لم تقم برفع أي خدمات حتى الآن.</td></tr>
+                            <tr><td colspan="5" class="text-center py-5 text-muted">لا توجد مبيعات حالياً.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-            </form>
-        </div>
+            </div>
 
-    </div>
-
-    {{-- العمود الأيسر (بروفايل المستخدم) --}}
-    <div class="col-lg-4">
-        <div class="glass-card p-4 rounded-5 shadow-lg border-0 text-center position-relative overflow-hidden mb-4">
-            <div class="profile-bg-accent"></div>
-            <div class="position-relative mb-4 pt-4">
-                <div class="avatar-container mx-auto position-relative" style="width: 120px;" id="freelancerAvatarContainer">
-                    {{-- عرض الصورة برابط S3 --}}
-                    <img src="{{ $profilePhoto }}"
-                         id="freelancerPreview"
-                         class="rounded-circle border border-4 border-white shadow-sm"
-                         style="width: 120px; height: 120px; object-fit: cover;">
-
-                    @if(Auth::id() === $user->id)
-                        <form id="freelancerImageForm" enctype="multipart/form-data">
-                            @csrf
-                            {{-- حقل الرفع المخفي --}}
-                            <input type="file" name="profile_image" id="freelancer-input" class="d-none" accept="image/*">
-
-                            {{-- أيقونة الكاميرا والـ Spinner --}}
-                            <label for="freelancer-input" class="avatar-edit-icon shadow-sm" id="cameraLabel">
-                                <i class="fas fa-camera" id="cameraIcon"></i>
-                                <i class="fas fa-circle-notch fa-spin d-none text-primary" id="uploadSpinner"></i>
-                            </label>
-                        </form>
-                    @endif
+            {{-- 5. سجل المشاريع --}}
+            <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-4">
+                <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="fw-black mb-0 text-dark"><i class="fas fa-tasks text-primary me-2"></i> سجل المشاريع والعروض</h5>
+                    <span class="badge bg-light text-dark rounded-pill border px-3 py-2" style="font-size: 0.7rem;">إجمالي العروض: {{ $user->proposals->count() }}</span>
+                </div>
+                <div class="table-responsive text-end">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="px-4 py-3">المشروع</th>
+                                <th class="text-center">حالة المشروع</th>
+                                <th class="text-center">حالة الرصيد</th>
+                                <th class="text-center">تحكيم الإدارة</th>
+                                <th class="text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($user->proposals as $proposal)
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <div class="fw-bold text-dark">{{ Str::limit($proposal->project->title ?? 'مشروع', 40) }}</div>
+                                </td>
+                                <td class="text-center">
+                                    @php
+                                        $projStatus = $proposal->project->status ?? 'open';
+                                        $projBadges = ['open' => 'bg-success-gradient', 'processing' => 'bg-warning-gradient', 'completed' => 'bg-info-gradient', 'disputed' => 'bg-dark'];
+                                        $projBadge = $projBadges[$projStatus] ?? 'bg-secondary-gradient';
+                                    @endphp
+                                    <span class="badge {{ $projBadge }} text-white px-3 py-2 rounded-pill small">
+                                        {{ __($projStatus) }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    @if($proposal->project && $proposal->project->selected_proposal_id == $proposal->id)
+                                        <span class="badge bg-light {{ $projStatus == 'completed' ? 'text-success border-success' : 'text-primary border-primary' }} border px-3 py-2 rounded-pill">
+                                            {{ $projStatus == 'completed' ? 'رصيد متاح' : 'رصيد معلق' }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    <form id="dispute-project-{{ $proposal->id }}" action="{{ route('dispute.store') }}" method="POST" style="display: inline;">
+                                        @csrf
+                                        <input type="hidden" name="item_id" value="{{ $proposal->project_id }}">
+                                        <input type="hidden" name="type" value="project">
+                                        <button type="button" onclick="confirmDisputeAction(event, 'dispute-project-{{ $proposal->id }}')" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" style="font-size: 0.75rem;">
+                                            <i class="fas fa-gavel me-1"></i> طلب تحكيم
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="text-center">
+                                    <a href="{{ route('projects.show', $proposal->project_id) }}" class="btn btn-sm btn-light border rounded-pill px-3 hover-up">تفاصيل</a>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="5" class="text-center py-5 text-muted">لا يوجد عروض مقدمة.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <h4 class="fw-black mb-1 text-dark">{{ $user->name }}</h4>
-            <p class="text-primary fw-bold small mb-3">{{ $user->headline ?? 'مستقل على المنصة' }}</p>
 
-            <div class="d-flex flex-wrap gap-1 justify-content-center mb-4">
+            {{-- الجدول الجديد المضاف: إدارة وتعديل الخدمات المرفوعة الخاصة بالمستخدم --}}
+            <div class="glass-card rounded-5 shadow-sm border-0 overflow-hidden mb-5">
+                <form action="{{ route('services.update_bulk') }}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="fw-black mb-0 text-dark"><i class="fas fa-concierge-bell text-primary me-2"></i> الخدمات المرفوعة وإعداداتها</h5>
+                        <button type="submit" class="btn btn-sm btn-success-gradient rounded-pill px-4 fw-bold hover-up shadow-sm">
+                            <i class="fas fa-save me-1"></i> إعادة حفظ التعديلات
+                        </button>
+                    </div>
+                    <div class="table-responsive text-end">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4 py-3">اسم الخدمة</th>
+                                    <th class="text-center" style="width: 130px;">السعر ($)</th>
+                                    <th class="text-center" style="width: 150px;">حالة الخدمة</th>
+                                    <th class="text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php
+                                    $userServices = \App\Models\Service::where('user_id', auth()->id())->get();
+                                @endphp
+                                @forelse($userServices as $index => $service)
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <input type="hidden" name="services[{{ $index }}][id]" value="{{ $service->id }}">
+                                        <input type="text" name="services[{{ $index }}][title]" class="form-control form-control-sm rounded-3 border-light shadow-sm text-end fw-bold text-dark" value="{{ $service->title }}" required>
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="number" name="services[{{ $index }}][price]" class="form-control form-control-sm rounded-3 border-light shadow-sm text-center fw-bold" value="{{ $service->price }}" min="5" step="0.01" required>
+                                    </td>
+                                    <td class="text-center">
+                                        <select name="services[{{ $index }}][status]" class="form-select form-select-sm rounded-3 border-light shadow-sm fw-bold">
+                                            <option value="active" {{ $service->status == 'active' ? 'selected' : '' }}>نشطة</option>
+                                            <option value="draft" {{ $service->status == 'draft' ? 'selected' : '' }}>مسودة</option>
+                                            <option value="paused" {{ $service->status == 'paused' ? 'selected' : '' }}>موقفة مؤقتاً</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ route('services.show', $service->id) }}" class="btn btn-sm btn-outline-primary rounded-circle" title="عرض الخدمة على المنصة"><i class="fas fa-eye"></i></a>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr><td colspan="4" class="text-center py-5 text-muted">لم تقم برفع أي خدمات حتى الآن.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{-- العمود الأيسر (بروفايل المستخدم) --}}
+        <div class="col-lg-4">
+            <div class="glass-card p-4 rounded-5 shadow-lg border-0 text-center position-relative overflow-hidden mb-4">
+                <div class="profile-bg-accent"></div>
+                <div class="position-relative mb-4 pt-4">
+                    <div class="avatar-container mx-auto position-relative" style="width: 120px;" id="freelancerAvatarContainer">
+                        {{-- عرض الصورة برابط S3 --}}
+                        <img src="{{ $profilePhoto }}"
+                             id="freelancerPreview"
+                             class="rounded-circle border border-4 border-white shadow-sm"
+                             style="width: 120px; height: 120px; object-fit: cover;">
+
+                        @if(Auth::id() === $user->id)
+                            <form id="freelancerImageForm" enctype="multipart/form-data">
+                                @csrf
+                                {{-- حقل الرفع المخفي --}}
+                                <input type="file" name="profile_image" id="freelancer-input" class="d-none" accept="image/*">
+
+                                {{-- أيقونة الكاميرا والـ Spinner --}}
+                                <label for="freelancer-input" class="avatar-edit-icon shadow-sm" id="cameraLabel">
+                                    <i class="fas fa-camera" id="cameraIcon"></i>
+                                    <i class="fas fa-circle-notch fa-spin d-none text-primary" id="uploadSpinner"></i>
+                                </label>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+                <h4 class="fw-black mb-1 text-dark">{{ $user->name }}</h4>
+                <p class="text-primary fw-bold small mb-3">{{ $user->headline ?? 'مستقل على المنصة' }}</p>
+
+                <div class="d-flex flex-wrap gap-1 justify-content-center mb-4">
+                    @php
+                        $userSkills = is_string($skills) ? explode(',', $skills) : ($skills ?? []);
+                    @endphp
+                    @foreach(array_slice($userSkills, 0, 5) as $skill)
+                        <span class="skill-tag">#{{ trim($skill) }}</span>
+                    @endforeach
+                </div>
+
+                <div class="stats-row d-flex justify-content-between bg-light rounded-4 p-3 mb-4">
+                    <div class="text-center flex-grow-1">
+                        <div class="fw-black">{{ ($completedServicesCount ?? 0) + ($completedProjectsCount ?? 0) }}</div>
+                        <small class="text-muted">المكتمل</small>
+                    </div>
+                    <div class="vr opacity-25"></div>
+                    <div class="text-center flex-grow-1">
+                        <div class="fw-black">{{ number_format($projRating ?? 0, 1) }}</div>
+                        <small class="text-muted">تقييم</small>
+                    </div>
+                    <div class="vr opacity-25"></div>
+                    <div class="text-center flex-grow-1">
+                        <div class="fw-black">{{ $user->proposals()->count() }}</div>
+                        <small class="text-muted">عرض</small>
+                    </div>
+                </div>
+
+                <a href="{{ route('profile.settings') }}" class="btn btn-primary-gradient w-100 rounded-pill py-3 fw-black shadow-sm mb-2 hover-up">
+                    <i class="fas fa-cog me-2"></i> تعديل بياناتي
+                </a>
+            </div>
+
+            {{-- قسم نظام الإحالة الاحترافي المحمي كلياً والمطابق لـ Client Dashboard --}}
+            <div class="glass-card p-4 rounded-5 shadow-sm border-0 text-center mb-4 overflow-hidden position-relative animate__animated animate__fadeInUp" style="border-radius: 24px !important; background: linear-gradient(145deg, #ffffff, #fbfdfc);">
+                <div class="position-absolute top-0 start-0 w-100 h-100 bg-success opacity-5" style="pointer-events: none; background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 80%);"></div>
+
+                <h6 class="fw-bold mb-1 text-dark d-flex align-items-center justify-content-center">
+                    <i class="fas fa-gift text-success me-2 animate__animated animate__pulse animate__infinite"></i> برنامج السفير والمكافآت
+                </h6>
+                <p class="text-muted mb-3" style="font-size: 0.75rem;">انسخ كود الدعوة الخاص بك واكسب ميزات وهدايا حصرية!</p>
+
                 @php
-                    $userSkills = is_string($skills) ? explode(',', $skills) : ($skills ?? []);
+                    // تعديل قاطع ومحمي تماماً: سحب الكود الحقيقي والفريد مع كود احتياطي آمن
+                    $userCode = !empty($user->referral_code) ? $user->referral_code : 'WORKLY';
+                    $referralUrl = url('/register') . '?ref=' . $userCode;
+                    $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" . urlencode($referralUrl);
                 @endphp
-                @foreach(array_slice($userSkills, 0, 5) as $skill)
-                    <span class="skill-tag">#{{ trim($skill) }}</span>
-                @endforeach
+
+                {{-- منطقة الباركود الفخم المخصص للمستقل --}}
+                <div class="qr-container mx-auto p-3 bg-white shadow-sm border rounded-4 mb-3 position-relative d-flex flex-column align-items-center justify-content-center" style="max-width: 170px; transition: transform 0.3s;">
+                    <img src="{{ $qrCodeUrl }}" alt="Referral QR Code" class="img-fluid rounded-3" style="width: 120px; height: 120px;">
+
+                    {{-- شعار البراند المرسوم تحت الباركود --}}
+                    <div class="brand-text-overlay mt-2 px-3 py-1 bg-dark text-white rounded-pill d-flex align-items-center justify-content-center shadow-sm" style="font-size: 0.65rem; font-family: 'Poppins', sans-serif; letter-spacing: 1px; font-weight: 800;">
+                        <i class="fas fa-globe me-1 text-success small"></i> WORKLY DAY
+                    </div>
+                </div>
+
+                {{-- حقل نسخ الرابط المطور --}}
+                <div class="mb-1 text-end">
+                    <div class="input-group input-group-sm rounded-pill overflow-hidden border shadow-sm" dir="ltr" style="background: #f8fafc;">
+                        <button class="btn btn-success px-3 fw-bold border-0" type="button" id="copy-ref-btn" onclick="copyReferralLink()">
+                            <i class="fas fa-copy" id="copy-icon"></i>
+                        </button>
+                        <input type="text" class="form-control text-center bg-transparent border-0 fw-bold text-dark p-2" id="referral-link-input" value="{{ $referralUrl }}" readonly style="font-size: 0.7rem;">
+                    </div>
+                </div>
+
+                {{-- رسالة نجاح النسخ التفاعلية --}}
+                <div id="copy-toast" class="text-success small fw-bold d-none animate__animated animate__fadeInDown text-center mt-2" style="font-size: 0.75rem;">
+                    <i class="fas fa-check-circle me-1"></i> تم نسخ رابط سفيرك بنجاح!
+                </div>
             </div>
 
-            <div class="stats-row d-flex justify-content-between bg-light rounded-4 p-3 mb-4">
-                <div class="text-center flex-grow-1">
-                    <div class="fw-black">{{ ($completedServicesCount ?? 0) + ($completedProjectsCount ?? 0) }}</div>
-                    <small class="text-muted">المكتمل</small>
-                </div>
-                <div class="vr opacity-25"></div>
-                <div class="text-center flex-grow-1">
-                    <div class="fw-black">{{ number_format($projRating ?? 0, 1) }}</div>
-                    <small class="text-muted">تقييم</small>
-                </div>
-                <div class="vr opacity-25"></div>
-                <div class="text-center flex-grow-1">
-                    <div class="fw-black">{{ $user->proposals()->count() }}</div>
-                    <small class="text-muted">عرض</small>
-                </div>
-            </div>
-
-            <a href="{{ route('profile.settings') }}" class="btn btn-primary-gradient w-100 rounded-pill py-3 fw-black shadow-sm mb-2 hover-up">
-                <i class="fas fa-cog me-2"></i> تعديل بياناتي
-            </a>
-        </div>
-
-        <div class="glass-card p-4 rounded-5 shadow-sm border-0 bg-dark-gradient text-white">
-            <div class="d-flex align-items-center">
-                <div class="bg-white bg-opacity-10 p-3 rounded-circle me-3">
-                    <i class="fas fa-shield-halved text-info fs-4"></i>
-                </div>
-                <div class="text-end">
-                    <h6 class="mb-1 fw-bold">حماية المعاملات</h6>
-                    <small class="opacity-75">جميع مدفوعاتك محمية بنظام التحكيم الذكي.</small>
+            <div class="glass-card p-4 rounded-5 shadow-sm border-0 bg-dark-gradient text-white">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white bg-opacity-10 p-3 rounded-circle me-3">
+                        <i class="fas fa-shield-halved text-info fs-4"></i>
+                    </div>
+                    <div class="text-end">
+                        <h6 class="mb-1 fw-bold">حماية المعاملات</h6>
+                        <small class="opacity-75">جميع مدفوعاتك محمية بنظام التحكيم الذكي.</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -485,7 +527,7 @@
 </div>
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Poppins:wght@700;800&display=swap');
     :root {
         --primary-gradient: linear-gradient(135deg, #6366f1, #a855f7);
         --dark-gradient: linear-gradient(135deg, #1e293b, #0f172a);
@@ -540,6 +582,8 @@
     .table thead th { font-weight: 700; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .progress-bar { transition: width 1s ease-in-out; }
 
+    .qr-container:hover { transform: scale(1.04); }
+
     @media (max-width: 768px) {
         .wallet-banner { text-align: center !important; }
         .wallet-banner .text-end { text-align: center !important; }
@@ -548,6 +592,26 @@
 </style>
 
 <script>
+    // نظام نسخ الرابط التفاعلي مع توست الإشعار
+    function copyReferralLink() {
+        const copyText = document.getElementById("referral-link-input");
+        const copyIcon = document.getElementById("copy-icon");
+        const toast = document.getElementById("copy-toast");
+
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+
+        // تبديل الأيقونة مؤقتاً لتأكيد النسخ
+        copyIcon.className = "fas fa-check";
+        toast.classList.remove("d-none");
+
+        setTimeout(() => {
+            copyIcon.className = "fas fa-copy";
+            toast.classList.add("d-none");
+        }, 2500);
+    }
+
     // 1. نظام الرفع السحابي المتطور
     document.addEventListener('DOMContentLoaded', function() {
         const fileInput = document.getElementById('freelancer-input');
@@ -637,6 +701,4 @@
         }, 60000);
     }
 </script>
-
 @endsection
-

@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Support\Facades\Cookie; // استدعاء ممر الكوكيز
 use Exception;
 
 class AuthController extends Controller
@@ -51,11 +52,23 @@ class AuthController extends Controller
             'password.mixed_case' => 'يجب أن تحتوي كلمة المرور على حروف كبيرة وصغيرة (A, a).',
             'password.numbers' => 'يجب أن تحتوي كلمة المرور على أرقام على الأقل.',
             'password.symbols' => 'يجب أن تحتوي كلمة المرور على رموز خاصة مثل (@, $, !, %, *).',
-            'password.uncompromised' => 'كلمة المرور هذه مسربة في اختراقات سابقة، يرجى اختيار كلمة أكثر أماناً.',
+            'password.uncompromised' => 'كلمة المرور هذه مسربة in اختراقات سابقة، يرجى اختيار كلمة أكثر أماناً.',
             'password.confirmed' => 'تأكيد كلمة المرور غير متطابق.',
         ]);
 
         try {
+            // --- ميكانيكية التقاط نظام الإحالة المطورة والمضمونة 100% ---
+            // التعديل هنا: الفحص يبدأ من حقل الفورم، ثم الرابط المباشر، ثم الجلسة (المدعومة بالـ Middleware الجديد)، ثم الكوكيز
+            $referrerCode = $request->input('ref')
+                ?? $request->query('ref')
+                ?? $request->session()->get('referred_by')
+                ?? $request->cookie('referred_by');
+
+            $referrer = null;
+            if (!empty($referrerCode)) {
+                $referrer = User::where('referral_code', $referrerCode)->first();
+            }
+
             $user = User::create([
                 'name'                => strip_tags($request->name),
                 'email'               => $request->email,
@@ -63,6 +76,7 @@ class AuthController extends Controller
                 'role'                => $request->role,
                 'verification_status' => 'pending',
                 'is_banned'           => false,
+                'referrer_id'         => $referrer ? $referrer->id : null, // ربط الحساب بالشخص المحيل بالضبط فوراً بمجرد التسجيل
             ]);
 
             Auth::login($user);
