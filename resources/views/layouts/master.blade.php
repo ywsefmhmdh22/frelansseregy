@@ -604,7 +604,7 @@
             </div>
             <div class="modal-body p-4">
                 <p class="text-muted mb-4">يسعدنا مساعدتك في أي وقت، اختر الوسيلة المناسبة لك:</p>
-                <a href="https://wa.me/201556332042" target="_blank" class="d-flex align-items-center p-3 mb-3 border rounded-3 text-decoration-none text-dark shadow-sm">
+                <a href="https://wa.me/201032182961" target="_blank" class="d-flex align-items-center p-3 mb-3 border rounded-3 text-decoration-none text-dark shadow-sm">
                    <i class="fab fa-whatsapp fa-2x text-success me-3"></i>
                    <div>
                      <h6 class="mb-1 fw-bold">واتساب (WhatsApp)</h6>
